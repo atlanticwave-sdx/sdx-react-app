@@ -14,6 +14,12 @@ export const config = {
     return "https://lmarinve.github.io";
   },
   
+  // Get the current app path based on environment
+  getAppPath: () => {
+    const isProduction = process.env.NODE_ENV === 'production';
+    return isProduction ? "/multi-provider-authe" : "";
+  },
+  
   // CILogon - Updated with correct OIDC settings
   cilogon: {
     clientId: "cilogon:/client_id/e33e29a20f84e0edd144d1e9a6e2b0",
@@ -22,7 +28,11 @@ export const config = {
     tokenUrl: "https://cilogon.org/oauth2/token",
     jwksUrl: "https://cilogon.org/oauth2/certs",
     issuerUrl: "https://cilogon.org",
-    redirectUri: "https://lmarinve.github.io/multi-provider-authe/auth/callback/cilogon", // Updated to match current GitHub Pages URL structure
+    get redirectUri() {
+      const baseUrl = config.getBaseUrl();
+      const appPath = config.getAppPath();
+      return `${baseUrl}${appPath}/auth/callback/cilogon`;
+    },
     usePkce: true // PKCE is required with S256
   },
   
@@ -34,7 +44,9 @@ export const config = {
     tokenUrl: "https://orcid.org/oauth/token",
     scope: "/authenticate",
     get redirectUri() {
-      return `${config.getBaseUrl()}/multi-provider-authe/auth/callback/orcid`;
+      const baseUrl = config.getBaseUrl();
+      const appPath = config.getAppPath();
+      return `${baseUrl}${appPath}/auth/callback/orcid`;
     },
     usePkce: true
   },

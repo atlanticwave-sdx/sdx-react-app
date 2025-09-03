@@ -31,33 +31,21 @@ function App() {
       const path = window.location.pathname;
       const searchParams = new URLSearchParams(window.location.search);
       
-      // Handle both with and without /multi-provider-authe prefix
-      if (path === "/multi-provider-authe/login" || path === "/login") {
+      // Determine base path based on environment
+      const isProduction = process.env.NODE_ENV === 'production';
+      const basePath = isProduction ? "/multi-provider-authe" : "";
+      
+      // Handle login page
+      if (path === `${basePath}/login`) {
         const provider = searchParams.get("provider") as Provider;
         if (provider && ["cilogon", "orcid"].includes(provider)) {
           setLoginProvider(provider);
         }
         setCurrentPage("login");
-        
-        // If accessing without prefix, redirect to correct URL
-        if (path === "/login") {
-          const correctPath = `/multi-provider-authe/login${provider ? `?provider=${provider}` : ""}`;
-          window.history.replaceState({}, "", correctPath);
-        }
-      } else if (path === "/multi-provider-authe/token" || path === "/token") {
+      } else if (path === `${basePath}/token`) {
         setCurrentPage("token");
-        
-        // If accessing without prefix, redirect to correct URL
-        if (path === "/token") {
-          window.history.replaceState({}, "", "/multi-provider-authe/token");
-        }
       } else {
         setCurrentPage("landing");
-        
-        // Ensure we're on the correct landing URL
-        if (path !== "/multi-provider-authe" && path !== "/") {
-          window.history.replaceState({}, "", "/multi-provider-authe");
-        }
       }
     };
 
@@ -67,18 +55,22 @@ function App() {
   }, []);
 
   const navigateTo = (page: Page, provider?: Provider) => {
-    let path = "/multi-provider-authe";
+    // Determine base path based on environment
+    const isProduction = process.env.NODE_ENV === 'production';
+    const basePath = isProduction ? "/multi-provider-authe" : "";
+    
+    let path = basePath || "/";
     
     switch (page) {
       case "login":
-        path = `/multi-provider-authe/login${provider ? `?provider=${provider}` : ""}`;
+        path = `${basePath}/login${provider ? `?provider=${provider}` : ""}`;
         if (provider) setLoginProvider(provider);
         break;
       case "token":
-        path = "/multi-provider-authe/token";
+        path = `${basePath}/token`;
         break;
       case "landing":
-        path = "/multi-provider-authe";
+        path = basePath || "/";
         break;
     }
     
