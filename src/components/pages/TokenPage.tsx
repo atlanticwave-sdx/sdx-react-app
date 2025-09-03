@@ -10,6 +10,7 @@ import { TokenStorage, decodeJWT } from "@/lib/token-storage";
 import { sendTokenToBackend } from "@/lib/backend";
 import { TokenStatus } from "@/components/TokenStatus";
 import { useTokenRefresh } from "@/hooks/useTokenRefresh";
+import { SessionSelection } from "@/components/SessionSelection";
 import sdxLogo from "@/assets/images/sdx-logo.svg";
 
 interface TokenPageProps {
@@ -24,6 +25,7 @@ export function TokenPage({ onBack }: TokenPageProps) {
   const [selectedToken, setSelectedToken] = useState<TokenData | null>(null);
   const [claims, setClaims] = useState<TokenClaims | null>(null);
   const [isSending, setIsSending] = useState(false);
+  const [showSessionSelection, setShowSessionSelection] = useState(false);
 
   // Initialize token refresh system
   const { refreshStatus, isTokenNearExpiry } = useTokenRefresh({
@@ -137,26 +139,8 @@ export function TokenPage({ onBack }: TokenPageProps) {
   const handleSendToBackend = async () => {
     if (!selectedToken) return;
 
-    setIsSending(true);
-    try {
-      const response = await sendTokenToBackend(selectedToken);
-      
-      if (response.ok) {
-        const result = await response.json();
-        toast.success("Successfully connected to API!");
-        console.log("Backend response:", result);
-      } else {
-        const error = await response.text();
-        toast.error(`API connection failed: ${response.status} ${response.statusText}`);
-        console.error("Backend error:", error);
-      }
-    } catch (error) {
-      const message = error instanceof Error ? error.message : "Failed to connect to API";
-      toast.error(`Network error: ${message}`);
-      console.error("Send token error:", error);
-    } finally {
-      setIsSending(false);
-    }
+    // Show session selection instead of directly sending to backend
+    setShowSessionSelection(true);
   };
 
   const handleClearAllTokens = () => {
@@ -164,6 +148,7 @@ export function TokenPage({ onBack }: TokenPageProps) {
     setTokens({});
     setSelectedToken(null);
     setClaims(null);
+    setShowSessionSelection(false);
     toast.success("All tokens cleared");
   };
 
@@ -188,6 +173,16 @@ export function TokenPage({ onBack }: TokenPageProps) {
   };
 
   const availableTokens = Object.entries(tokens);
+
+  // Show session selection if user clicked "Connect using API"
+  if (showSessionSelection && selectedToken) {
+    return (
+      <SessionSelection 
+        token={selectedToken}
+        onBack={() => setShowSessionSelection(false)}
+      />
+    );
+  }
 
   if (availableTokens.length === 0) {
     return (
@@ -483,11 +478,11 @@ export function TokenPage({ onBack }: TokenPageProps) {
               <div className="space-y-4">
                 <Button
                   onClick={handleSendToBackend}
-                  disabled={isSending || !TokenStorage.isTokenValid(selectedToken)}
+                  disabled={!TokenStorage.isTokenValid(selectedToken)}
                   className="w-full py-4 text-lg font-semibold bg-[rgb(50,135,200)] hover:bg-[rgb(64,143,204)] text-[rgb(255,255,255)] disabled:opacity-50"
                   size="lg"
                 >
-                  {isSending ? "Connecting..." : "Connect using API"}
+                  Connect using API
                 </Button>
 
                 {/* MEICAN and FABRIC connection buttons */}
