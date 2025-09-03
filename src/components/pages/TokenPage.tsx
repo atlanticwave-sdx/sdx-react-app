@@ -143,15 +143,15 @@ export function TokenPage({ onBack }: TokenPageProps) {
       
       if (response.ok) {
         const result = await response.json();
-        toast.success("Token sent to backend successfully!");
+        toast.success("Successfully connected to API!");
         console.log("Backend response:", result);
       } else {
         const error = await response.text();
-        toast.error(`Backend request failed: ${response.status} ${response.statusText}`);
+        toast.error(`API connection failed: ${response.status} ${response.statusText}`);
         console.error("Backend error:", error);
       }
     } catch (error) {
-      const message = error instanceof Error ? error.message : "Failed to send token";
+      const message = error instanceof Error ? error.message : "Failed to connect to API";
       toast.error(`Network error: ${message}`);
       console.error("Send token error:", error);
     } finally {
@@ -487,7 +487,7 @@ export function TokenPage({ onBack }: TokenPageProps) {
                   className="w-full py-4 text-lg font-semibold bg-[rgb(50,135,200)] hover:bg-[rgb(64,143,204)] text-[rgb(255,255,255)] disabled:opacity-50"
                   size="lg"
                 >
-                  {isSending ? "Sending..." : "Send Token to Backend"}
+                  {isSending ? "Connecting..." : "Connect using API"}
                 </Button>
 
                 {/* MEICAN and FABRIC connection buttons */}
