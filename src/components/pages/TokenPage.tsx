@@ -15,9 +15,10 @@ import sdxLogo from "@/assets/images/sdx-logo.svg";
 
 interface TokenPageProps {
   onBack: () => void;
+  onNavigateToDashboard?: () => void;
 }
 
-export function TokenPage({ onBack }: TokenPageProps) {
+export function TokenPage({ onBack, onNavigateToDashboard }: TokenPageProps) {
   const [tokens, setTokens] = useState<{
     cilogon?: TokenData;
     orcid?: TokenData;
@@ -242,9 +243,16 @@ export function TokenPage({ onBack }: TokenPageProps) {
         </div>
       </div>
         
-        <Button variant="ghost" onClick={onBack} className="mb-8 -ml-2 text-base text-[rgb(50,135,200)] hover:bg-[rgb(236,244,250)]">
-          ← Back to selection
-        </Button>
+        <div className="flex items-center gap-4 mb-8">
+          <Button variant="ghost" onClick={onBack} className="-ml-2 text-base text-[rgb(50,135,200)] hover:bg-[rgb(236,244,250)]">
+            ← Back to selection
+          </Button>
+          {onNavigateToDashboard && (
+            <Button variant="outline" onClick={onNavigateToDashboard} className="text-base border-[rgb(120,176,219)] text-[rgb(50,135,200)] hover:bg-[rgb(236,244,250)]">
+              📊 View Dashboard
+            </Button>
+          )}
+        </div>
 
         <Card className="shadow-lg border-2 border-[rgb(120,176,219)] bg-[rgb(255,255,255)]">
           <CardHeader className="pb-8">
@@ -320,9 +328,16 @@ export function TokenPage({ onBack }: TokenPageProps) {
         </div>
       </div>
       
-      <Button variant="ghost" onClick={onBack} className="mb-8 -ml-2 text-base text-[rgb(50,135,200)] hover:bg-[rgb(236,244,250)]">
-        ← Back to selection
-      </Button>
+      <div className="flex items-center gap-4 mb-8">
+        <Button variant="ghost" onClick={onBack} className="-ml-2 text-base text-[rgb(50,135,200)] hover:bg-[rgb(236,244,250)]">
+          ← Back to selection
+        </Button>
+        {onNavigateToDashboard && (
+          <Button variant="outline" onClick={onNavigateToDashboard} className="text-base border-[rgb(120,176,219)] text-[rgb(50,135,200)] hover:bg-[rgb(236,244,250)]">
+            📊 View Dashboard
+          </Button>
+        )}
+      </div>
 
       <div className="grid lg:grid-cols-3 gap-8">
         {/* Token Refresh Status */}

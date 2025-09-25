@@ -12,6 +12,7 @@ interface LandingPageProps {
   selectedProvider?: Provider;
   onProviderSelect: (provider: Provider) => void;
   onLogin: (provider: Provider) => void;
+  onNavigateToDashboard?: () => void;
 }
 
 const providerInfo = {
@@ -32,7 +33,8 @@ const providerInfo = {
 export function LandingPage({
   selectedProvider,
   onProviderSelect,
-  onLogin
+  onLogin,
+  onNavigateToDashboard
 }: LandingPageProps) {
   const [email, setEmail] = useState("");
   const [isEmailVerified, setIsEmailVerified] = useKV("auth.email-verified", false);
@@ -91,6 +93,19 @@ export function LandingPage({
 
   return (
     <div className="min-h-screen bg-white p-3 pt-8">
+      {/* Dashboard button in top right */}
+      {onNavigateToDashboard && (
+        <div className="fixed top-4 right-4 z-40">
+          <Button 
+            variant="outline" 
+            onClick={onNavigateToDashboard}
+            className="border-[rgb(120,176,219)] text-[rgb(50,135,200)] hover:bg-[rgb(236,244,250)]"
+          >
+            📊 Dashboard
+          </Button>
+        </div>
+      )}
+      
       <div className="max-w-2xl mx-auto space-y-8">
         {/* Header */}
         <div className="text-center space-y-4">

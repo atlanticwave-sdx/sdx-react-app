@@ -1,0 +1,35 @@
+/* Import Leaflet CSS */
+@import 'leaflet/dist/leaflet.css';
+
+/* Custom styles for Leaflet markers */
+.custom-node-marker {
+  background: transparent;
+  border: none;
+}
+
+/* Fix for Leaflet attribution */
+.leaflet-control-attribution {
+  background-color: rgba(255, 255, 255, 0.8) !important;
+  font-size: 10px !important;
+}
+
+/* Custom popup styling */
+.leaflet-popup-content-wrapper {
+  border-radius: 8px;
+}
+
+.leaflet-popup-content {
+  margin: 8px 12px;
+  font-family: inherit;
+}
+
+/* Ensure map controls are visible */
+.leaflet-control-zoom a {
+  background-color: white;
+  color: #333;
+  border: 1px solid #ccc;
+}
+
+.leaflet-control-zoom a:hover {
+  background-color: #f0f0f0;
+}

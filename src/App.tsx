@@ -5,13 +5,14 @@ import { toast } from "sonner";
 import { LandingPage } from "@/components/pages/LandingPage";
 import { LoginPage } from "@/components/pages/LoginPage";
 import { TokenPage } from "@/components/pages/TokenPage";
+import { Dashboard } from "@/components/pages/Dashboard";
 import { TokenExpiryNotification } from "@/components/TokenExpiryNotification";
 import { config } from "@/lib/config";
 import { Provider } from "@/lib/config";
 import { TokenStorage } from "@/lib/token-storage";
 import { useTokenRefresh } from "@/hooks/useTokenRefresh";
 
-type Page = "landing" | "login" | "token";
+type Page = "landing" | "login" | "token" | "dashboard";
 
 function App() {
   const [currentPage, setCurrentPage] = useState<Page>("landing");
@@ -44,6 +45,8 @@ function App() {
         setCurrentPage("login");
       } else if (path === `${basePath}/token`) {
         setCurrentPage("token");
+      } else if (path === `${basePath}/dashboard`) {
+        setCurrentPage("dashboard");
       } else {
         setCurrentPage("landing");
       }
@@ -69,6 +72,9 @@ function App() {
       case "token":
         path = `${basePath}/token`;
         break;
+      case "dashboard":
+        path = `${basePath}/dashboard`;
+        break;
       case "landing":
         path = basePath || "/";
         break;
@@ -93,6 +99,15 @@ function App() {
     navigateTo("landing");
   };
 
+  const handleNavigateToDashboard = () => {
+    navigateTo("dashboard");
+  };
+
+  const handleNavigateToTokens = () => {
+    navigateTo("token");
+  };
+
+
   return (
     <div className="min-h-screen" style={{ backgroundColor: 'rgb(255, 255, 255)' }}>
       <Toaster />
@@ -108,6 +123,7 @@ function App() {
           selectedProvider={selectedProvider}
           onProviderSelect={setSelectedProvider}
           onLogin={handleLogin}
+          onNavigateToDashboard={handleNavigateToDashboard}
         />
       )}
       
@@ -122,6 +138,14 @@ function App() {
       {currentPage === "token" && (
         <TokenPage
           onBack={handleBackToLanding}
+          onNavigateToDashboard={handleNavigateToDashboard}
+        />
+      )}
+
+      {currentPage === "dashboard" && (
+        <Dashboard
+          onBack={handleBackToLanding}
+          onNavigateToTokens={handleNavigateToTokens}
         />
       )}
     </div>
