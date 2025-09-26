@@ -11,19 +11,22 @@ import { config } from "@/lib/config";
 import { Provider } from "@/lib/config";
 import { TokenStorage } from "@/lib/token-storage";
 import { useTokenRefresh } from "@/hooks/useTokenRefresh";
+import { CaptchaTestPage } from "@/components/pages/CaptchaTestPage";
 
-type Page = "landing" | "login" | "token" | "dashboard";
+type Page = "landing" | "login" | "token" | "dashboard" | "captcha-test";
 
 function App() {
   const [currentPage, setCurrentPage] = useState<Page>("landing");
-  const [selectedProvider, setSelectedProvider] = useState<Provider | undefined>();
+  const [selectedProvider, setSelectedProvider] = useState<
+    Provider | undefined
+  >();
   const [loginProvider, setLoginProvider] = useState<Provider | undefined>();
 
   // Initialize automatic token refresh system
   const tokenRefresh = useTokenRefresh({
     refreshBeforeExpiryMinutes: 5,
     checkIntervalMinutes: 1,
-    showNotifications: true
+    showNotifications: true,
   });
 
   // Handle URL navigation
@@ -31,11 +34,11 @@ function App() {
     const updatePageFromURL = () => {
       const path = window.location.pathname;
       const searchParams = new URLSearchParams(window.location.search);
-      
+
       // Determine base path based on environment
-      const isProduction = process.env.NODE_ENV === 'production';
+      const isProduction = process.env.NODE_ENV === "production";
       const basePath = isProduction ? "/multi-provider-authe" : "";
-      
+
       // Handle login page
       if (path === `${basePath}/login`) {
         const provider = searchParams.get("provider") as Provider;
@@ -43,6 +46,8 @@ function App() {
           setLoginProvider(provider);
         }
         setCurrentPage("login");
+      } else if (path === `${basePath}/captcha-test`) {
+        setCurrentPage("captcha-test");
       } else if (path === `${basePath}/token`) {
         setCurrentPage("token");
       } else if (path === `${basePath}/dashboard`) {
@@ -59,11 +64,11 @@ function App() {
 
   const navigateTo = (page: Page, provider?: Provider) => {
     // Determine base path based on environment
-    const isProduction = process.env.NODE_ENV === 'production';
+    const isProduction = process.env.NODE_ENV === "production";
     const basePath = isProduction ? "/multi-provider-authe" : "";
-    
+
     let path = basePath || "/";
-    
+
     switch (page) {
       case "login":
         path = `${basePath}/login${provider ? `?provider=${provider}` : ""}`;
@@ -79,7 +84,7 @@ function App() {
         path = basePath || "/";
         break;
     }
-    
+
     window.history.pushState({}, "", path);
     setCurrentPage(page);
   };
@@ -107,17 +112,19 @@ function App() {
     navigateTo("token");
   };
 
-
   return (
-    <div className="min-h-screen" style={{ backgroundColor: 'rgb(255, 255, 255)' }}>
+    <div
+      className="min-h-screen"
+      style={{ backgroundColor: "rgb(255, 255, 255)" }}
+    >
       <Toaster />
-      
+
       {/* Token expiry notifications - shown on all pages */}
-      <TokenExpiryNotification 
+      <TokenExpiryNotification
         warningMinutes={15}
         className="fixed top-4 left-4 right-4 z-50 max-w-4xl mx-auto"
       />
-      
+
       {currentPage === "landing" && (
         <LandingPage
           selectedProvider={selectedProvider}
@@ -126,7 +133,11 @@ function App() {
           onNavigateToDashboard={handleNavigateToDashboard}
         />
       )}
-      
+
+      {currentPage === "captcha-test" && (
+        <CaptchaTestPage onBack={handleBackToLanding} />
+      )}
+
       {currentPage === "login" && loginProvider && (
         <LoginPage
           provider={loginProvider}
@@ -134,7 +145,7 @@ function App() {
           onBack={handleBackToLanding}
         />
       )}
-      
+
       {currentPage === "token" && (
         <TokenPage
           onBack={handleBackToLanding}
