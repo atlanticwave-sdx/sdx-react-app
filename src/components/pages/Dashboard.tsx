@@ -1,7 +1,21 @@
+// Dashboard.tsx
+
 import { useState, useEffect } from "react";
-import { MapContainer, TileLayer, Marker, Popup, Polyline } from 'react-leaflet';
-import { LatLngExpression } from 'leaflet';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  MapContainer,
+  TileLayer,
+  Marker,
+  Popup,
+  Polyline,
+} from "react-leaflet";
+import { LatLngExpression } from "leaflet";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -10,15 +24,18 @@ import { TokenData } from "@/lib/types";
 import { TokenStorage } from "@/lib/token-storage";
 import { NewL2VPNModal, L2VPNData } from "@/components/NewL2VPNModal";
 import sdxLogo from "@/assets/images/sdx-logo.svg";
-import '@/styles/leaflet.css';
+import "@/styles/leaflet.css";
 
 // Fix Leaflet default markers
-import L from 'leaflet';
+import L from "leaflet";
 delete (L.Icon.Default.prototype as any)._getIconUrl;
 L.Icon.Default.mergeOptions({
-  iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon-2x.png',
-  iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon.png',
-  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png',
+  iconRetinaUrl:
+    "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon-2x.png",
+  iconUrl:
+    "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon.png",
+  shadowUrl:
+    "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png",
 });
 
 interface DashboardProps {
@@ -46,31 +63,122 @@ interface Connection {
   path: LatLngExpression[];
 }
 
+// --- API DATA PARSER ---
+// This utility function transforms the raw API data into the format our component needs.
+// It's placed outside the component to avoid re-declaration on every render.
+function parseSdxTopology(data: any): {
+  nodes: NetworkNode[];
+  connections: Connection[];
+} {
+  const nodeMap = new Map<string, any>();
+  data.nodes.forEach((node: any) => nodeMap.set(node.name, node));
+
+  const connectionCounts: { [key: string]: number } = {};
+
+  const connections: Connection[] = data.links.map((link: any): Connection => {
+    const sourceNode = nodeMap.get(link.ports[0].node);
+    const destinationNode = nodeMap.get(link.ports[1].node);
+
+    // Increment connection count for each node ID.
+    if (sourceNode)
+      connectionCounts[sourceNode.id] =
+        (connectionCounts[sourceNode.id] || 0) + 1;
+    if (destinationNode)
+      connectionCounts[destinationNode.id] =
+        (connectionCounts[destinationNode.id] || 0) + 1;
+
+    return {
+      id: link.id,
+      name: link.name,
+      source: sourceNode?.short_name || "Unknown",
+      destination: destinationNode?.short_name || "Unknown",
+      type: "L2VPN", // Assuming L2VPN for now
+      bandwidth: `${(link.bandwidth / 1000).toFixed(2)} Gbps`,
+      status: link.status === "up" ? "active" : "inactive",
+      path: [
+        sourceNode
+          ? [sourceNode.location.latitude, sourceNode.location.longitude]
+          : [0, 0],
+        destinationNode
+          ? [
+              destinationNode.location.latitude,
+              destinationNode.location.longitude,
+            ]
+          : [0, 0],
+      ],
+    };
+  });
+
+  const nodes: NetworkNode[] = data.nodes.map(
+    (node: any): NetworkNode => ({
+      id: node.id,
+      name: node.name,
+      city: node.location.address || "Unknown Location",
+      coordinates: [node.location.latitude, node.location.longitude],
+      status:
+        node.status === "up" || node.state === "enabled"
+          ? "active"
+          : "inactive",
+      connections: connectionCounts[node.id] || 0,
+    })
+  );
+
+  return { nodes, connections };
+}
+
 export function Dashboard({ onBack, onNavigateToTokens }: DashboardProps) {
   const [tokens, setTokens] = useState<{
     cilogon?: TokenData;
     orcid?: TokenData;
   }>({});
+  const [networkNodes, setNetworkNodes] = useState<NetworkNode[]>([]);
+  const [connections, setConnections] = useState<Connection[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [showNewL2VPNModal, setShowNewL2VPNModal] = useState(false);
-  const [connections] = useState<Connection[]>([]);
 
-  // Empty network nodes - will be populated with topology data later
-  const [networkNodes] = useState<NetworkNode[]>([]);
-
+  // Update the useEffect hook
   useEffect(() => {
     loadTokens();
+    fetchTopology();
   }, []);
+
+  const fetchTopology = async () => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      // The API endpoint you provided
+      const response = await fetch("/api/SDX-Controller/topology");
+      if (!response.ok) {
+        throw new Error(`Error fetching topology: ${response.statusText}`);
+      }
+      const data = await response.json();
+
+      // Process the raw data (next step)
+      const { nodes, connections } = parseSdxTopology(data);
+
+      // Update state to re-render the map
+      setNetworkNodes(nodes);
+      setConnections(connections);
+    } catch (err: any) {
+      setError(err.message);
+      toast.error("Failed to load network topology.");
+      console.error(err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const loadTokens = () => {
     const cilogon = TokenStorage.getToken("cilogon");
     const orcid = TokenStorage.getToken("orcid");
 
     const validTokens: any = {};
-    
+
     if (cilogon && TokenStorage.isTokenValid(cilogon)) {
       validTokens.cilogon = cilogon;
     }
-    
+
     if (orcid && TokenStorage.isTokenValid(orcid)) {
       validTokens.orcid = orcid;
     }
@@ -89,8 +197,10 @@ export function Dashboard({ onBack, onNavigateToTokens }: DashboardProps) {
     // For now, just show a message that the L2VPN request has been received
     // Later this will integrate with backend to create actual L2VPN connections
     console.log("L2VPN Data:", l2vpnData);
-    toast.success(`L2VPN request "${l2vpnData.name}" received. Backend integration pending.`);
-    
+    toast.success(
+      `L2VPN request "${l2vpnData.name}" received. Backend integration pending.`
+    );
+
     // TODO: Integrate with backend API to create actual L2VPN connections
     // This will involve:
     // 1. Send L2VPN request to backend with endpoint details
@@ -101,24 +211,36 @@ export function Dashboard({ onBack, onNavigateToTokens }: DashboardProps) {
 
   const getNodeColor = (status: string) => {
     switch (status) {
-      case "active": return "#22c55e"; // green
-      case "inactive": return "#ef4444"; // red  
-      case "maintenance": return "#f59e0b"; // yellow
-      default: return "#6b7280"; // gray
+      case "active":
+        return "#22c55e"; // green
+      case "inactive":
+        return "#ef4444"; // red
+      case "maintenance":
+        return "#f59e0b"; // yellow
+      default:
+        return "#6b7280"; // gray
     }
   };
 
   const getConnectionColor = (status: string) => {
     switch (status) {
-      case "active": return "#22c55e";
-      case "inactive": return "#ef4444";
-      case "configuring": return "#f59e0b";
-      default: return "#6b7280";
+      case "active":
+        return "#22c55e";
+      case "inactive":
+        return "#ef4444";
+      case "configuring":
+        return "#f59e0b";
+      default:
+        return "#6b7280";
     }
   };
 
-  const activeNodes = networkNodes.filter(node => node.status === "active").length;
-  const activeConnections = connections.filter(conn => conn.status === "active").length;
+  const activeNodes = networkNodes.filter(
+    (node) => node.status === "active"
+  ).length;
+  const activeConnections = connections.filter(
+    (conn) => conn.status === "active"
+  ).length;
   const availableTokens = Object.entries(tokens);
   const hasValidTokens = availableTokens.length > 0;
 
@@ -132,9 +254,13 @@ export function Dashboard({ onBack, onNavigateToTokens }: DashboardProps) {
             <div className="flex items-center gap-6">
               {/* Logo */}
               <div className="w-14 h-14 bg-white border-2 border-[rgb(120,176,219)] rounded-2xl flex items-center justify-center shadow-lg hover:shadow-xl transition-shadow duration-200">
-                <img src={sdxLogo} alt="SDX Logo" className="h-9 w-auto object-contain" />
+                <img
+                  src={sdxLogo}
+                  alt="SDX Logo"
+                  className="h-9 w-auto object-contain"
+                />
               </div>
-              
+
               {/* Title Section */}
               <div>
                 <h1 className="text-2xl font-bold text-[rgb(64,143,204)] mb-1">
@@ -150,13 +276,23 @@ export function Dashboard({ onBack, onNavigateToTokens }: DashboardProps) {
             <div className="flex items-center gap-6">
               <div className="text-right">
                 <div className="flex items-center gap-2 mb-1">
-                  <div className={`w-2 h-2 rounded-full ${hasValidTokens ? 'bg-green-500' : 'bg-gray-400'}`}></div>
+                  <div
+                    className={`w-2 h-2 rounded-full ${
+                      hasValidTokens ? "bg-green-500" : "bg-gray-400"
+                    }`}
+                  ></div>
                   <span className="text-sm font-semibold text-[rgb(64,143,204)]">
-                    {hasValidTokens ? `Authenticated via ${Object.keys(tokens).map(k => k.toUpperCase()).join(', ')}` : 'Not authenticated'}
+                    {hasValidTokens
+                      ? `Authenticated via ${Object.keys(tokens)
+                          .map((k) => k.toUpperCase())
+                          .join(", ")}`
+                      : "Not authenticated"}
                   </span>
                 </div>
                 <div className="text-xs text-[rgb(50,135,200)] opacity-80">
-                  {networkNodes.length === 0 ? 'Ready for topology data' : `${activeNodes} active nodes • ${activeConnections} active connections`}
+                  {networkNodes.length === 0
+                    ? "Ready for topology data"
+                    : `${activeNodes} active nodes • ${activeConnections} active connections`}
                 </div>
               </div>
             </div>
@@ -173,7 +309,7 @@ export function Dashboard({ onBack, onNavigateToTokens }: DashboardProps) {
               >
                 🔐 Manage Tokens
               </Button>
-              
+
               <Button
                 onClick={onBack}
                 variant="ghost"
@@ -198,7 +334,7 @@ export function Dashboard({ onBack, onNavigateToTokens }: DashboardProps) {
                 <span className="mr-2 text-lg">🔗</span>
                 New L2VPN
               </Button>
-              
+
               <Button
                 onClick={handleLogout}
                 variant="outline"
@@ -219,8 +355,9 @@ export function Dashboard({ onBack, onNavigateToTokens }: DashboardProps) {
           <div className="max-w-7xl mx-auto">
             <Alert className="border-2 border-yellow-200 bg-yellow-50">
               <AlertDescription className="text-yellow-800">
-                <span className="font-semibold">Authentication required.</span> Please{" "}
-                <button 
+                <span className="font-semibold">Authentication required.</span>{" "}
+                Please{" "}
+                <button
                   onClick={onNavigateToTokens}
                   className="underline hover:no-underline font-medium"
                 >
@@ -239,7 +376,9 @@ export function Dashboard({ onBack, onNavigateToTokens }: DashboardProps) {
           {/* Map - Full Width */}
           <Card className="shadow-lg border-2 border-[rgb(120,176,219)] h-[700px]">
             <CardHeader className="pb-4">
-              <CardTitle className="text-xl text-[rgb(64,143,204)]">Network Topology</CardTitle>
+              <CardTitle className="text-xl text-[rgb(64,143,204)]">
+                Network Topology
+              </CardTitle>
               <CardDescription className="text-[rgb(50,135,200)]">
                 Interactive map view - topology data will be loaded here
               </CardDescription>
@@ -249,36 +388,47 @@ export function Dashboard({ onBack, onNavigateToTokens }: DashboardProps) {
                 <MapContainer
                   center={[39.8283, -98.5795]} // Geographic center of US
                   zoom={4}
-                  style={{ height: '100%', width: '100%' }}
+                  style={{ height: "100%", width: "100%" }}
                   zoomControl={true}
                 >
                   <TileLayer
                     url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
                     attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
                   />
-                  
+
                   {/* Network Nodes - Empty for now, will be populated with topology data */}
                   {networkNodes.map((node) => (
                     <Marker
                       key={node.id}
                       position={node.coordinates}
                       icon={L.divIcon({
-                        className: 'custom-node-marker',
-                        html: `<div style="background-color: ${getNodeColor(node.status)}; width: 16px; height: 16px; border-radius: 50%; border: 3px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.3);"></div>`,
+                        className: "custom-node-marker",
+                        html: `<div style="background-color: ${getNodeColor(
+                          node.status
+                        )}; width: 16px; height: 16px; border-radius: 50%; border: 3px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.3);"></div>`,
                         iconSize: [22, 22],
-                        iconAnchor: [11, 11]
+                        iconAnchor: [11, 11],
                       })}
                     >
                       <Popup>
+                        parseSDXTopology
                         <div className="p-2">
-                          <div className="font-semibold text-[rgb(64,143,204)]">{node.name}</div>
-                          <div className="text-sm text-[rgb(50,135,200)]">{node.city}</div>
+                          <div className="font-semibold text-[rgb(64,143,204)]">
+                            {node.name}
+                          </div>
+                          <div className="text-sm text-[rgb(50,135,200)]">
+                            {node.city}
+                          </div>
                           <div className="text-xs mt-1">
-                            <Badge className={`text-xs ${
-                              node.status === 'active' ? 'bg-green-100 text-green-800' :
-                              node.status === 'maintenance' ? 'bg-yellow-100 text-yellow-800' :
-                              'bg-red-100 text-red-800'
-                            }`}>
+                            <Badge
+                              className={`text-xs ${
+                                node.status === "active"
+                                  ? "bg-green-100 text-green-800"
+                                  : node.status === "maintenance"
+                                  ? "bg-yellow-100 text-yellow-800"
+                                  : "bg-red-100 text-red-800"
+                              }`}
+                            >
                               {node.status}
                             </Badge>
                           </div>
@@ -289,32 +439,44 @@ export function Dashboard({ onBack, onNavigateToTokens }: DashboardProps) {
                       </Popup>
                     </Marker>
                   ))}
-                  
+
                   {/* Connection Lines - Empty for now, will be populated with topology data */}
                   {connections.map((connection) => (
                     <Polyline
                       key={connection.id}
                       positions={connection.path}
                       color={getConnectionColor(connection.status)}
-                      weight={connection.status === 'active' ? 4 : 2}
-                      opacity={connection.status === 'active' ? 0.8 : 0.5}
-                      dashArray={connection.status === 'configuring' ? '10, 10' : undefined}
+                      weight={connection.status === "active" ? 4 : 2}
+                      opacity={connection.status === "active" ? 0.8 : 0.5}
+                      dashArray={
+                        connection.status === "configuring"
+                          ? "10, 10"
+                          : undefined
+                      }
                     >
                       <Popup>
                         <div className="p-2">
-                          <div className="font-semibold text-[rgb(64,143,204)]">{connection.name}</div>
+                          <div className="font-semibold text-[rgb(64,143,204)]">
+                            {connection.name}
+                          </div>
                           <div className="text-sm text-[rgb(50,135,200)]">
                             {connection.source} → {connection.destination}
                           </div>
                           <div className="text-xs mt-1">
-                            <Badge className={`text-xs mr-2 ${
-                              connection.status === 'active' ? 'bg-green-100 text-green-800' :
-                              connection.status === 'configuring' ? 'bg-yellow-100 text-yellow-800' :
-                              'bg-red-100 text-red-800'
-                            }`}>
+                            <Badge
+                              className={`text-xs mr-2 ${
+                                connection.status === "active"
+                                  ? "bg-green-100 text-green-800"
+                                  : connection.status === "configuring"
+                                  ? "bg-yellow-100 text-yellow-800"
+                                  : "bg-red-100 text-red-800"
+                              }`}
+                            >
                               {connection.status}
                             </Badge>
-                            <span className="text-[rgb(50,135,200)]">{connection.type}</span>
+                            <span className="text-[rgb(50,135,200)]">
+                              {connection.type}
+                            </span>
                           </div>
                           <div className="text-xs text-[rgb(50,135,200)] mt-1">
                             {connection.bandwidth}

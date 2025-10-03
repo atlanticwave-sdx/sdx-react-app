@@ -23,4 +23,17 @@ export default defineConfig({
       '@': resolve(projectRoot, 'src')
     }
   },
+  server: {
+    port: 80, // run on port 80
+    host: true, // allow access from localhost and 127.0.0.1
+    // --- ADD THIS PROXY CONFIGURATION ---
+    proxy: {
+      "/api": {
+        target: "http://aw-sdx-controller.renci.org:8081",
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api/, ""),
+      },
+    },
+    // ------------------------------------
+  },
 });
