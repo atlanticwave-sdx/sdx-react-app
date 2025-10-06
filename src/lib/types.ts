@@ -1,11 +1,14 @@
 export type Provider = "cilogon" | "orcid";
 
 export interface TokenData {
-  id_token: string;
+  id_token?: string;
+  access_token?: string;
   refresh_token?: string;
   expires_in: number;
   issued_at: number;
-  provider: Provider;
+  provider?: Provider;
+  token_type?: string;
+  scope?: string;
 }
 
 export interface TokenClaims {
