@@ -8,16 +8,20 @@ const TOKEN_KEYS = {
 export class TokenStorage {
   static getToken(provider: keyof typeof TOKEN_KEYS): TokenData | null {
     try {
-      const stored = localStorage.getItem(TOKEN_KEYS[provider]);
+      const key = TOKEN_KEYS[provider];
+      const stored = localStorage.getItem(key);
       if (!stored) return null;
       return JSON.parse(stored);
-    } catch {
+    } catch (error) {
       return null;
     }
   }
 
   static setToken(provider: keyof typeof TOKEN_KEYS, token: TokenData): void {
-    localStorage.setItem(TOKEN_KEYS[provider], JSON.stringify(token));
+    const key = TOKEN_KEYS[provider];
+    console.log(`TokenStorage.setToken(${provider}):`, { key, token });
+    localStorage.setItem(key, JSON.stringify(token));
+    console.log(`TokenStorage.setToken(${provider}) completed`);
   }
 
   static removeToken(provider: keyof typeof TOKEN_KEYS): void {
@@ -31,10 +35,37 @@ export class TokenStorage {
   }
 
   static isTokenValid(token: TokenData | null): boolean {
-    if (!token) return false;
+    console.log('TokenStorage.isTokenValid called with:', token);
+    
+    if (!token) {
+      console.log('Token is null/undefined');
+      return false;
+    }
+    
+    if (!token.issued_at || !token.expires_in) {
+      console.log('Token missing issued_at or expires_in:', { issued_at: token.issued_at, expires_in: token.expires_in });
+      return false;
+    }
+    
+    if (!token.access_token && !token.id_token) {
+      console.log('Token missing both access_token and id_token');
+      return false;
+    }
+    
     const now = Math.floor(Date.now() / 1000);
     const expiresAt = token.issued_at + token.expires_in;
-    return expiresAt > now;
+    const isValid = expiresAt > now;
+    
+    console.log('Token validation:', {
+      now,
+      issued_at: token.issued_at,
+      expires_in: token.expires_in,
+      expiresAt,
+      timeLeft: expiresAt - now,
+      isValid
+    });
+    
+    return isValid;
   }
 
   static getTokenExpiryDate(token: TokenData): Date {
@@ -85,4 +116,30 @@ export function decodeJWT(token: string): any {
   } catch {
     return null;
   }
+}
+
+/**
+ * Check if email validation can be skipped based on JWT claims
+ */
+export function canSkipEmailValidation(token: TokenData): { canSkip: boolean; email?: string; eppn?: string } {
+  if (!token.id_token) {
+    return { canSkip: false };
+  }
+  
+  const claims = decodeJWT(token.id_token);
+  if (!claims) {
+    return { canSkip: false };
+  }
+  
+  const email = claims.email || claims.mail;
+  const eppn = claims.eppn;
+  
+  console.log('JWT Claims check:', { email, eppn, claims });
+  
+  // Can skip if both eppn and email are present
+  if (eppn && email) {
+    return { canSkip: true, email, eppn };
+  }
+  
+  return { canSkip: false, email, eppn };
 }

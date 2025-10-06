@@ -38,17 +38,24 @@ export const config = {
   
   // ORCID - Using sandbox environment for testing
   orcid: {
-    clientId: "APP-S3BU1LVHOTHITEU2", // Updated with proper ORCID client ID
+    clientId: "APP-6U5WZH9AC4EYDVAD", // Updated with proper ORCID client ID
+    clientSecret: "c839f6ee-8991-4b4e-9ae3-aab528adc22c", // Client secret for token exchange
     issuerUrl: "https://orcid.org",
     authUrl: "https://orcid.org/oauth/authorize", 
     tokenUrl: "https://orcid.org/oauth/token",
-    scope: "/authenticate",
+    logoutUrl: "https://orcid.org/signout", // ORCID logout endpoint
+    scope: "openid /authenticate",
     get redirectUri() {
       const baseUrl = config.getBaseUrl();
       const appPath = config.getAppPath();
       return `${baseUrl}${appPath}/auth/callback/orcid`;
     },
-    usePkce: true
+    get postLogoutRedirectUri() {
+      const baseUrl = config.getBaseUrl();
+      const appPath = config.getAppPath();
+      return `${baseUrl}${appPath}/`;
+    },
+    usePkce: false // Switch to client_secret flow instead of PKCE
   },
   
   // Connection services (used after obtaining identity tokens)
