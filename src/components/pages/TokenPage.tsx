@@ -11,6 +11,8 @@ import { sendTokenToBackend } from "@/lib/backend";
 import { TokenStatus } from "@/components/TokenStatus";
 import { useTokenRefresh } from "@/hooks/useTokenRefresh";
 import { SessionSelection } from "@/components/SessionSelection";
+import { ORCIDProvider } from "@/lib/providers/orcid";
+import { SessionManager } from "@/lib/session";
 import sdxLogo from "@/assets/images/sdx-logo.svg";
 
 interface TokenPageProps {
@@ -35,7 +37,57 @@ export function TokenPage({ onBack, onNavigateToDashboard }: TokenPageProps) {
     showNotifications: true
   });
 
+  const checkForORCIDAuthResult = async () => {
+    try {
+      console.log('TokenPage: Checking for ORCID auth result...');
+      const authResult = localStorage.getItem('orcid_auth_result');
+      console.log('TokenPage: Found auth result:', authResult);
+      
+      if (authResult) {
+        const result = JSON.parse(authResult);
+        console.log('TokenPage: Parsed auth result:', result);
+        
+        if (result.type === 'ORCID_AUTH_SUCCESS' && Date.now() - result.timestamp < 300000) {
+          console.log('TokenPage: Valid ORCID auth result found, processing token exchange...');
+          localStorage.removeItem('orcid_auth_result');
+          
+          try {
+            // If code verifier is included in the stored result, restore it to sessionStorage
+            if (result.codeVerifier) {
+              console.log('TokenPage: Restoring PKCE parameters from stored auth result');
+              sessionStorage.setItem('orcid_state', result.state);
+              sessionStorage.setItem('orcid_code_verifier', result.codeVerifier);
+            }
+            
+            const orcidProvider = new ORCIDProvider();
+            console.log('TokenPage: Starting token exchange with code:', result.code, 'state:', result.state);
+            const token = await orcidProvider.exchangeCodeForToken(result.code, result.state);
+            console.log('TokenPage: ORCID token exchange successful:', token);
+            toast.success("✅ ORCID authentication successful!");
+            
+            // Reload tokens to show the new ORCID token
+            setTimeout(() => {
+              loadTokens();
+            }, 500);
+          } catch (exchangeError) {
+            console.error('TokenPage: ORCID token exchange failed:', exchangeError);
+            toast.error(`ORCID authentication failed: ${exchangeError instanceof Error ? exchangeError.message : 'Unknown error'}`);
+          }
+        } else {
+          console.log('TokenPage: Auth result expired or invalid type');
+        }
+      } else {
+        console.log('TokenPage: No ORCID auth result found in localStorage');
+      }
+    } catch (e) {
+      console.error('TokenPage: Error checking for ORCID auth result:', e);
+    }
+  };
+
   useEffect(() => {
+    // Check for ORCID auth result from callback redirect
+    checkForORCIDAuthResult();
+    
     // Initial load
     loadTokens();
     
@@ -79,40 +131,35 @@ export function TokenPage({ onBack, onNavigateToDashboard }: TokenPageProps) {
   useEffect(() => {
     if (selectedToken) {
       const tokenClaims = decodeJWT(selectedToken.id_token);
-      setClaims(tokenClaims);
+      // If JWT decoding fails, create basic claims for display
+      if (!tokenClaims) {
+        setClaims({
+          sub: `${selectedToken.provider}-user`,
+          iss: selectedToken.provider === 'orcid' ? 'https://orcid.org' : selectedToken.provider,
+          exp: selectedToken.issued_at + selectedToken.expires_in,
+          iat: selectedToken.issued_at
+        });
+      } else {
+        setClaims(tokenClaims);
+      }
     } else {
       setClaims(null);
     }
   }, [selectedToken]);
 
   const loadTokens = () => {
-    console.log('Loading tokens from storage...');
     const cilogon = TokenStorage.getToken("cilogon");
     const orcid = TokenStorage.getToken("orcid");
-
-    console.log('Found tokens:', { 
-      cilogon: cilogon ? 'present' : 'missing',
-      orcid: orcid ? 'present' : 'missing'
-    });
 
     const validTokens: any = {};
     
     if (cilogon && TokenStorage.isTokenValid(cilogon)) {
       validTokens.cilogon = cilogon;
-      console.log('CILogon token is valid');
-    } else if (cilogon) {
-      console.log('CILogon token is expired');
     }
     
     if (orcid && TokenStorage.isTokenValid(orcid)) {
       validTokens.orcid = orcid;
-      console.log('ORCID token is valid');
-    } else if (orcid) {
-      console.log('ORCID token is expired');
     }
-
-
-    console.log('Valid tokens count:', Object.keys(validTokens).length);
     setTokens(validTokens);
 
     // Show success message if we just got new tokens
@@ -132,8 +179,20 @@ export function TokenPage({ onBack, onNavigateToDashboard }: TokenPageProps) {
     const mostRecentToken = tokensByTimestamp[0]?.[1] as TokenData | undefined;
     
     if (mostRecentToken && (!selectedToken || mostRecentToken.issued_at > selectedToken.issued_at)) {
-      console.log('Auto-selecting most recent token:', mostRecentToken.provider);
       setSelectedToken(mostRecentToken);
+      
+      // Create session and redirect to dashboard if we have valid tokens
+      if (Object.keys(validTokens).length > 0 && !SessionManager.isAuthenticated()) {
+        SessionManager.createSession(mostRecentToken.provider);
+        toast.success(`🎉 Successfully authenticated with ${mostRecentToken.provider.toUpperCase()}!`);
+        
+        // Redirect to dashboard after a short delay
+        setTimeout(() => {
+          if (onNavigateToDashboard) {
+            onNavigateToDashboard();
+          }
+        }, 2000);
+      }
     }
   };
 

@@ -1,0 +1,107 @@
+/* Topology Map Modal Z-Index Fix */
+[data-radix-portal] {
+  z-index: 10000 !important;
+}
+
+/* Ensure dialog overlay has higher z-index than leaflet map */
+.topology-modal-overlay {
+  z-index: 9999 !important;
+}
+
+.topology-modal-content {
+  z-index: 10000 !important;
+}
+
+/* Leaflet map container should have lower z-index */
+.leaflet-container {
+  z-index: 1 !important;
+  background-color: transparent !important;
+}
+
+/* Ensure map is visible in dark mode */
+.dark .leaflet-container {
+  opacity: 1 !important;
+  visibility: visible !important;
+}
+
+/* Leaflet controls should stay above map but below modals */
+.leaflet-control-container {
+  z-index: 1000 !important;
+}
+
+/* Leaflet popup should be below modals */
+.leaflet-popup {
+  z-index: 1002 !important;
+}
+
+/* Leaflet tooltip should be below modals */
+.leaflet-tooltip {
+  z-index: 1001 !important;
+}
+
+/* Theme-aware tooltip styles */
+.leaflet-tooltip-light {
+  background-color: rgba(255, 255, 255, 0.95) !important;
+  color: #1f2937 !important;
+  border: 1px solid #d1d5db !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
+  font-weight: 500 !important;
+}
+
+.leaflet-tooltip-light::before {
+  border-top-color: rgba(255, 255, 255, 0.95) !important;
+}
+
+.leaflet-tooltip-dark {
+  background-color: rgba(31, 41, 55, 0.95) !important;
+  color: #f3f4f6 !important;
+  border: 1px solid #4b5563 !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4) !important;
+  font-weight: 500 !important;
+}
+
+.leaflet-tooltip-dark::before {
+  border-top-color: rgba(31, 41, 55, 0.95) !important;
+}
+
+/* Theme-aware popup styles */
+.leaflet-popup-light .leaflet-popup-content-wrapper {
+  background-color: #ffffff !important;
+  color: #1f2937 !important;
+  border: 1px solid #d1d5db !important;
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15) !important;
+}
+
+.leaflet-popup-light .leaflet-popup-tip {
+  background-color: #ffffff !important;
+  border: 1px solid #d1d5db !important;
+}
+
+.leaflet-popup-dark .leaflet-popup-content-wrapper {
+  background-color: #1f2937 !important;
+  color: #f3f4f6 !important;
+  border: 1px solid #4b5563 !important;
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.4) !important;
+}
+
+.leaflet-popup-dark .leaflet-popup-tip {
+  background-color: #1f2937 !important;
+  border: 1px solid #4b5563 !important;
+}
+
+/* Custom marker styles */
+.custom-node-marker {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+/* Map tiles styling for better theme integration */
+.map-tiles-light {
+  filter: none;
+}
+
+.map-tiles-dark {
+  /* Use native dark tiles instead of filtering - no additional filter needed */
+  filter: none;
+}

@@ -1,65 +1,49 @@
 import { useState, useEffect } from "react";
-import { MapContainer, TileLayer, Marker, Popup, Polyline } from 'react-leaflet';
-import { LatLngExpression } from 'leaflet';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { toast } from "sonner";
-import { TokenData } from "@/lib/types";
+import { TokenData, TopologyResponse, TopologyNode, TopologyLink } from "@/lib/types";
 import { TokenStorage } from "@/lib/token-storage";
+import { ApiService } from "@/lib/api";
+import { processTopologyData, convertToMapFormat, ProcessedTopology } from "@/lib/topology-processor";
+import { config } from "@/lib/config";
 import { NewL2VPNModal, L2VPNData } from "@/components/NewL2VPNModal";
+import { TopologyMap } from "@/components/TopologyMap";
+import { ThemeToggle } from "@/components/ThemeToggle";
 import sdxLogo from "@/assets/images/sdx-logo.svg";
-import '@/styles/leaflet.css';
 
-// Fix Leaflet default markers
-import L from 'leaflet';
-delete (L.Icon.Default.prototype as any)._getIconUrl;
-L.Icon.Default.mergeOptions({
-  iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon-2x.png',
-  iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon.png',
-  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png',
-});
 
 interface DashboardProps {
   onBack: () => void;
   onNavigateToTokens: () => void;
+  onLogout?: () => void;
 }
 
-interface NetworkNode {
-  id: string;
-  name: string;
-  city: string;
-  coordinates: LatLngExpression;
-  status: "active" | "inactive" | "maintenance";
-  connections: number;
-}
 
-interface Connection {
-  id: string;
-  name: string;
-  source: string;
-  destination: string;
-  type: "L2VPN" | "L3VPN" | "P2P";
-  bandwidth: string;
-  status: "active" | "inactive" | "configuring";
-  path: LatLngExpression[];
-}
-
-export function Dashboard({ onBack, onNavigateToTokens }: DashboardProps) {
+export function Dashboard({ onBack, onNavigateToTokens, onLogout }: DashboardProps) {
   const [tokens, setTokens] = useState<{
     cilogon?: TokenData;
     orcid?: TokenData;
   }>({});
   const [showNewL2VPNModal, setShowNewL2VPNModal] = useState(false);
-  const [connections] = useState<Connection[]>([]);
-
-  // Empty network nodes - will be populated with topology data later
-  const [networkNodes] = useState<NetworkNode[]>([]);
+  const [topology, setTopology] = useState<TopologyResponse | null>(null);
+  const [processedTopology, setProcessedTopology] = useState<ProcessedTopology | null>(null);
+  const [isLoadingTopology, setIsLoadingTopology] = useState(false);
+  const [topologyError, setTopologyError] = useState<string | null>(null);
+  const [allowedDomains] = useState<string[]>(config.topology.allowedDomains);
 
   useEffect(() => {
     loadTokens();
   }, []);
+
+  useEffect(() => {
+    // Load topology when we have valid authentication
+    if (Object.keys(tokens).length > 0 && ApiService.hasValidAuth()) {
+      loadTopology();
+    }
+  }, [tokens]);
 
   const loadTokens = () => {
     const cilogon = TokenStorage.getToken("cilogon");
@@ -76,6 +60,45 @@ export function Dashboard({ onBack, onNavigateToTokens }: DashboardProps) {
     }
 
     setTokens(validTokens);
+  };
+
+  const loadTopology = async () => {
+    setIsLoadingTopology(true);
+    setTopologyError(null);
+    
+    try {
+      console.log('Loading topology data from API...');
+      const topologyData = await ApiService.getTopology();
+      console.log('Raw topology data received:', topologyData);
+      
+      setTopology(topologyData);
+      
+      // Process topology data using PHP-equivalent logic
+      console.log('Processing topology data with allowed domains:', allowedDomains);
+      const processed = processTopologyData(topologyData, allowedDomains);
+      console.log('Processed topology data:', processed);
+      
+      setProcessedTopology(processed);
+      
+      
+      const nodeCount = Object.keys(processed.nodes_array).length;
+      const linkCount = processed.latlng_array.length;
+      
+      toast.success(`Topology processed: ${nodeCount} location groups, ${linkCount} connections`);
+      
+    } catch (error) {
+      console.error('Failed to load topology:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+      setTopologyError(errorMessage);
+      
+      if (errorMessage.includes('authentication')) {
+        toast.error('Authentication failed. Please login again.');
+      } else {
+        toast.error(`Failed to load topology: ${errorMessage}`);
+      }
+    } finally {
+      setIsLoadingTopology(false);
+    }
   };
 
   const handleLogout = () => {
@@ -99,33 +122,16 @@ export function Dashboard({ onBack, onNavigateToTokens }: DashboardProps) {
     // 4. Show connection status updates
   };
 
-  const getNodeColor = (status: string) => {
-    switch (status) {
-      case "active": return "#22c55e"; // green
-      case "inactive": return "#ef4444"; // red  
-      case "maintenance": return "#f59e0b"; // yellow
-      default: return "#6b7280"; // gray
-    }
-  };
 
-  const getConnectionColor = (status: string) => {
-    switch (status) {
-      case "active": return "#22c55e";
-      case "inactive": return "#ef4444";
-      case "configuring": return "#f59e0b";
-      default: return "#6b7280";
-    }
-  };
-
-  const activeNodes = networkNodes.filter(node => node.status === "active").length;
-  const activeConnections = connections.filter(conn => conn.status === "active").length;
+  const nodeCount = processedTopology ? Object.keys(processedTopology.nodes_array).length : 0;
+  const linkCount = processedTopology ? processedTopology.latlng_array.length : 0;
   const availableTokens = Object.entries(tokens);
   const hasValidTokens = availableTokens.length > 0;
 
   return (
-    <div className="min-h-screen bg-[rgb(255,255,255)]">
+    <div className="min-h-screen bg-background text-foreground">
       {/* Beautiful Clean Header */}
-      <div className="bg-gradient-to-r from-white to-[rgb(248,251,255)] border-b border-[rgb(200,220,240)] shadow-sm">
+      <div className="bg-gradient-to-r from-background to-muted border-b border-border shadow-sm">
         <div className="max-w-7xl mx-auto px-8 py-6">
           {/* Top Row - Logo, Title & Status */}
           <div className="flex items-center justify-between mb-6">
@@ -146,7 +152,7 @@ export function Dashboard({ onBack, onNavigateToTokens }: DashboardProps) {
               </div>
             </div>
 
-            {/* Status Info */}
+            {/* Status Info & Theme Toggle */}
             <div className="flex items-center gap-6">
               <div className="text-right">
                 <div className="flex items-center gap-2 mb-1">
@@ -156,9 +162,10 @@ export function Dashboard({ onBack, onNavigateToTokens }: DashboardProps) {
                   </span>
                 </div>
                 <div className="text-xs text-[rgb(50,135,200)] opacity-80">
-                  {networkNodes.length === 0 ? 'Ready for topology data' : `${activeNodes} active nodes • ${activeConnections} active connections`}
+                  {nodeCount === 0 ? 'Ready for topology data' : `${nodeCount} locations • ${linkCount} connections`}
                 </div>
               </div>
+              <ThemeToggle />
             </div>
           </div>
 
@@ -182,10 +189,35 @@ export function Dashboard({ onBack, onNavigateToTokens }: DashboardProps) {
               >
                 ← Back to Main
               </Button>
+              
+              {onLogout && (
+                <Button
+                  onClick={onLogout}
+                  variant="outline"
+                  size="sm"
+                  className="text-red-600 border-red-300 hover:bg-red-50 transition-all duration-200"
+                >
+                  🚪 Logout
+                </Button>
+              )}
             </div>
 
             {/* Primary Action Buttons */}
             <div className="flex items-center gap-4">
+              <Button
+                onClick={loadTopology}
+                disabled={!hasValidTokens || isLoadingTopology}
+                variant="outline"
+                size="sm"
+                className="border-[rgb(120,176,219)] text-[rgb(50,135,200)] hover:bg-[rgb(236,244,250)] disabled:opacity-50"
+              >
+                {isLoadingTopology ? (
+                  <>🔄 Loading...</>
+                ) : (
+                  <>🔄 Refresh Topology</>
+                )}
+              </Button>
+              
               <Button
                 onClick={() => {
                   console.log("New Connection button clicked");
@@ -233,6 +265,26 @@ export function Dashboard({ onBack, onNavigateToTokens }: DashboardProps) {
         </div>
       )}
 
+      {/* Topology Error */}
+      {topologyError && (
+        <div className="px-6 py-4">
+          <div className="max-w-7xl mx-auto">
+            <Alert className="border-2 border-red-200 bg-red-50">
+              <AlertDescription className="text-red-800">
+                <span className="font-semibold">Failed to load topology:</span> {topologyError}{" "}
+                <button 
+                  onClick={loadTopology}
+                  disabled={isLoadingTopology}
+                  className="underline hover:no-underline font-medium disabled:opacity-50"
+                >
+                  {isLoadingTopology ? 'Loading...' : 'Retry'}
+                </button>
+              </AlertDescription>
+            </Alert>
+          </div>
+        </div>
+      )}
+
       {/* Main Content - Full Width Map */}
       <div className="px-6 py-6">
         <div className="max-w-7xl mx-auto">
@@ -241,89 +293,27 @@ export function Dashboard({ onBack, onNavigateToTokens }: DashboardProps) {
             <CardHeader className="pb-4">
               <CardTitle className="text-xl text-[rgb(64,143,204)]">Network Topology</CardTitle>
               <CardDescription className="text-[rgb(50,135,200)]">
-                Interactive map view - topology data will be loaded here
+                {isLoadingTopology ? (
+                  "Loading topology data from API..."
+                ) : topology ? (
+                  `Showing ${topology.nodes.length} nodes and ${topology.links.length} links from SDX API`
+                ) : (
+                  "Interactive map view - click 'Refresh Topology' to load data"
+                )}
               </CardDescription>
             </CardHeader>
             <CardContent className="p-4 h-[600px]">
               <div className="h-full rounded-lg overflow-hidden border border-[rgb(120,176,219)]">
-                <MapContainer
-                  center={[39.8283, -98.5795]} // Geographic center of US
-                  zoom={4}
-                  style={{ height: '100%', width: '100%' }}
-                  zoomControl={true}
-                >
-                  <TileLayer
-                    url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                    attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                {processedTopology ? (
+                  <TopologyMap 
+                    processedData={processedTopology} 
+                    linksArray={processedTopology.links_array}
                   />
-                  
-                  {/* Network Nodes - Empty for now, will be populated with topology data */}
-                  {networkNodes.map((node) => (
-                    <Marker
-                      key={node.id}
-                      position={node.coordinates}
-                      icon={L.divIcon({
-                        className: 'custom-node-marker',
-                        html: `<div style="background-color: ${getNodeColor(node.status)}; width: 16px; height: 16px; border-radius: 50%; border: 3px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.3);"></div>`,
-                        iconSize: [22, 22],
-                        iconAnchor: [11, 11]
-                      })}
-                    >
-                      <Popup>
-                        <div className="p-2">
-                          <div className="font-semibold text-[rgb(64,143,204)]">{node.name}</div>
-                          <div className="text-sm text-[rgb(50,135,200)]">{node.city}</div>
-                          <div className="text-xs mt-1">
-                            <Badge className={`text-xs ${
-                              node.status === 'active' ? 'bg-green-100 text-green-800' :
-                              node.status === 'maintenance' ? 'bg-yellow-100 text-yellow-800' :
-                              'bg-red-100 text-red-800'
-                            }`}>
-                              {node.status}
-                            </Badge>
-                          </div>
-                          <div className="text-xs text-[rgb(50,135,200)] mt-1">
-                            {node.connections} connections
-                          </div>
-                        </div>
-                      </Popup>
-                    </Marker>
-                  ))}
-                  
-                  {/* Connection Lines - Empty for now, will be populated with topology data */}
-                  {connections.map((connection) => (
-                    <Polyline
-                      key={connection.id}
-                      positions={connection.path}
-                      color={getConnectionColor(connection.status)}
-                      weight={connection.status === 'active' ? 4 : 2}
-                      opacity={connection.status === 'active' ? 0.8 : 0.5}
-                      dashArray={connection.status === 'configuring' ? '10, 10' : undefined}
-                    >
-                      <Popup>
-                        <div className="p-2">
-                          <div className="font-semibold text-[rgb(64,143,204)]">{connection.name}</div>
-                          <div className="text-sm text-[rgb(50,135,200)]">
-                            {connection.source} → {connection.destination}
-                          </div>
-                          <div className="text-xs mt-1">
-                            <Badge className={`text-xs mr-2 ${
-                              connection.status === 'active' ? 'bg-green-100 text-green-800' :
-                              connection.status === 'configuring' ? 'bg-yellow-100 text-yellow-800' :
-                              'bg-red-100 text-red-800'
-                            }`}>
-                              {connection.status}
-                            </Badge>
-                            <span className="text-[rgb(50,135,200)]">{connection.type}</span>
-                          </div>
-                          <div className="text-xs text-[rgb(50,135,200)] mt-1">
-                            {connection.bandwidth}
-                          </div>
-                        </div>
-                      </Popup>
-                    </Polyline>
-                  ))}
-                </MapContainer>
+                ) : (
+                  <div className="h-full flex items-center justify-center text-gray-500">
+                    {isLoadingTopology ? "Loading topology map..." : "Click 'Refresh Topology' to load the map"}
+                  </div>
+                )}
               </div>
             </CardContent>
           </Card>

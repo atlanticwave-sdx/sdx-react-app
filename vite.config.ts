@@ -12,7 +12,7 @@ const projectRoot = process.env.PROJECT_ROOT || import.meta.dirname
 export default defineConfig({
   base: process.env.NODE_ENV === 'production' ? "/multi-provider-authe/" : "/",
   server: {
-    host: '127.0.0.1',
+    host: '127.0.0.1'
   },
   plugins: [
     react(),

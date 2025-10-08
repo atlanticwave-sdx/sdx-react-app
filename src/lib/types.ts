@@ -65,3 +65,64 @@ export type DeviceFlowState = {
   token?: TokenData;
   message?: string;
 };
+
+// Topology API types
+export interface TopologyNode {
+  id: string;
+  name: string;
+  type?: string;
+  location?: {
+    latitude?: number;
+    longitude?: number;
+    address?: string;
+    iso3166_2_lvl4?: string; // Added for PHP compatibility
+  };
+  ports?: any[]; // Ports are directly on the node, not in properties
+  private_attributes?: any[];
+  short_name?: string;
+  properties?: {
+    status?: string;
+    connections?: number;
+    [key: string]: any;
+  };
+}
+
+export interface TopologyLink {
+  id: string;
+  name?: string;
+  ports?: string[]; // Ports are directly on the link, not in properties
+  bandwidth?: number;
+  latency?: number;
+  availability?: number;
+  packet_loss?: number;
+  residual_bandwidth?: number;
+  state?: string;
+  status?: string;
+  timestamp?: string;
+  private_attributes?: string;
+  short_name?: string;
+  measurement_period?: string;
+  // Legacy fields for compatibility
+  source?: string;
+  target?: string;
+  type?: string;
+  properties?: {
+    [key: string]: any;
+  };
+}
+
+export interface TopologyResponse {
+  nodes: TopologyNode[];
+  links: TopologyLink[];
+  metadata?: {
+    version?: string;
+    timestamp?: string;
+    description?: string;
+  };
+}
+
+export interface ApiError {
+  error: string;
+  message?: string;
+  details?: any;
+}

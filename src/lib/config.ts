@@ -4,6 +4,19 @@ export const config = {
   backend: {
     baseUrl: "https://sdxapi.atlanticwave-sdx.ai/"
   },
+  
+  // Topology API configuration
+  api: {
+    baseUrl: "http://localhost:3002/api", // Use backend server
+    endpoints: {
+      topology: "/topology"
+    }
+  },
+  
+  // Topology filtering configuration
+  topology: {
+    allowedDomains: ["ampath.net", "sax.net", "tenet.ac.za", "amlight.net"]
+  },
   tokenHandoffPath: "/auth/oidc-token",
   
   // Get the current base URL dynamically
