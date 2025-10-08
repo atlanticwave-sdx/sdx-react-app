@@ -25,12 +25,9 @@ async function generateCodeChallenge(verifier: string): Promise<string> {
 export class ORCIDProvider {
   // Generate auth URL for ORCID OAuth flow
   async getAuthUrl(): Promise<string> {
-    const codeVerifier = generateCodeVerifier();
-    const codeChallenge = await generateCodeChallenge(codeVerifier);
     const state = crypto.randomUUID();
 
-    // Store PKCE values
-    sessionStorage.setItem('orcid_code_verifier', codeVerifier);
+    // Store state for validation (no PKCE needed with client_secret flow)
     sessionStorage.setItem('orcid_state', state);
 
     const params = new URLSearchParams({
@@ -39,8 +36,6 @@ export class ORCIDProvider {
       redirect_uri: config.orcid.redirectUri,
       scope: config.orcid.scope,
       state,
-      code_challenge: codeChallenge,
-      code_challenge_method: 'S256',
     });
 
     return `${config.orcid.authUrl}?${params}`;
@@ -113,14 +108,20 @@ export class ORCIDProvider {
   }
 
   async exchangeCodeForToken(code: string, state: string): Promise<TokenData> {
+    console.log('ORCID exchangeCodeForToken called with:', { code, state });
+    
     const storedState = sessionStorage.getItem('orcid_state');
     const codeVerifier = sessionStorage.getItem('orcid_code_verifier');
+    
+    console.log('ORCID stored values:', { storedState, codeVerifier: !!codeVerifier });
 
     if (!storedState || storedState !== state) {
+      console.error('ORCID state mismatch:', { storedState, receivedState: state });
       throw new Error('Invalid state parameter');
     }
 
     if (!codeVerifier) {
+      console.error('ORCID code verifier not found in sessionStorage');
       throw new Error('Code verifier not found');
     }
 
@@ -138,6 +139,9 @@ export class ORCIDProvider {
     });
 
     try {
+      console.log('ORCID making token request to:', config.orcid.tokenUrl);
+      console.log('ORCID request params:', params.toString());
+      
       const response = await fetch(config.orcid.tokenUrl, {
         method: 'POST',
         headers: {
@@ -146,14 +150,41 @@ export class ORCIDProvider {
         body: params.toString(),
       });
 
+      console.log('ORCID token response status:', response.status);
+
       if (!response.ok) {
+        const errorText = await response.text();
+        console.error('ORCID token exchange error response:', errorText);
         throw new Error(`Token exchange failed: ${response.status} ${response.statusText}`);
       }
 
       const tokenResponse = await response.json();
+      console.log('ORCID token response:', tokenResponse);
       
+      // ORCID doesn't provide id_token, so we create a minimal JWT-like structure
+      // using the access_token if it's a JWT, or create a basic token
+      let idToken = tokenResponse.id_token;
+      if (!idToken && tokenResponse.access_token) {
+        // Check if access_token is a JWT (has 3 parts separated by dots)
+        if (tokenResponse.access_token.split('.').length === 3) {
+          idToken = tokenResponse.access_token;
+        } else {
+          // Create a minimal JWT-like token for ORCID
+          const header = btoa(JSON.stringify({ alg: "none", typ: "JWT" }));
+          const payload = btoa(JSON.stringify({
+            iss: "https://orcid.org",
+            sub: "orcid-user",
+            aud: config.orcid.clientId,
+            exp: Math.floor(Date.now() / 1000) + (tokenResponse.expires_in || 3600),
+            iat: Math.floor(Date.now() / 1000),
+            access_token: tokenResponse.access_token
+          }));
+          idToken = `${header}.${payload}.`;
+        }
+      }
+
       const tokenData: TokenData = {
-        id_token: tokenResponse.id_token || tokenResponse.access_token,
+        id_token: idToken,
         refresh_token: tokenResponse.refresh_token,
         expires_in: tokenResponse.expires_in || 3600,
         issued_at: Math.floor(Date.now() / 1000),

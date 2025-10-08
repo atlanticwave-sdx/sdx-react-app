@@ -3,11 +3,11 @@ const cors = require('cors');
 const fetch = require('node-fetch');
 
 const app = express();
-const PORT = 3001;
+const PORT = 3002;
 
 // Enable CORS for frontend
 app.use(cors({
-  origin: ['http://127.0.0.1:5002', 'http://localhost:5002', 'http://127.0.0.1:5173', 'http://localhost:5173'],
+  origin: ['http://127.0.0.1:5002', 'http://localhost:5002', 'http://127.0.0.1:5000', 'http://localhost:5000', 'http://127.0.0.1:5173', 'http://localhost:5173'],
   credentials: true
 }));
 
@@ -19,6 +19,14 @@ const ORCID_CONFIG = {
   clientId: 'APP-6U5WZH9AC4EYDVAD',
   clientSecret: 'c839f6ee-8991-4b4e-9ae3-aab528adc22c',
   tokenUrl: 'https://orcid.org/oauth/token'
+};
+
+// SDX API configuration
+const SDX_API_CONFIG = {
+  baseUrl: 'http://localhost:6098',
+  endpoints: {
+    topology: '/topology'
+  }
 };
 
 // OAuth token exchange endpoint
@@ -99,6 +107,103 @@ app.post('/oauth/exchange', async (req, res) => {
     console.error('OAuth exchange error:', error);
     res.status(500).json({
       error: 'Internal server error during token exchange',
+      message: error.message
+    });
+  }
+});
+
+// =============================================================================
+// SDX API ENDPOINTS
+// =============================================================================
+
+// Middleware to validate Bearer token (optional for now)
+const validateToken = (req, res, next) => {
+  const authHeader = req.headers.authorization;
+  if (authHeader && authHeader.startsWith('Bearer ')) {
+    const token = authHeader.substring(7);
+    // TODO: Add JWT validation here if needed
+    req.token = token;
+    console.log('Request authenticated with token:', token.substring(0, 20) + '...');
+  } else {
+    console.log('Request without authentication token');
+  }
+  next(); // Continue regardless for now
+};
+
+// Topology endpoint
+app.get('/api/topology', validateToken, async (req, res) => {
+  try {
+    console.log('Topology request received');
+    
+    const topologyUrl = `${SDX_API_CONFIG.baseUrl}${SDX_API_CONFIG.endpoints.topology}`;
+    console.log('Fetching topology from:', topologyUrl);
+    
+    const response = await fetch(topologyUrl, {
+      method: 'GET',
+      headers: {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
+      },
+    });
+    
+    console.log('Topology API response status:', response.status);
+    
+    if (!response.ok) {
+      console.error('Topology API error:', response.status, response.statusText);
+      return res.status(response.status).json({
+        error: 'Failed to fetch topology data',
+        details: response.statusText,
+        status: response.status
+      });
+    }
+    
+    const topologyData = await response.json();
+    console.log('Topology data received, nodes:', topologyData.nodes?.length, 'links:', topologyData.links?.length);
+    
+    // Return the topology data
+    res.json({
+      success: true,
+      data: topologyData,
+      timestamp: new Date().toISOString()
+    });
+    
+  } catch (error) {
+    console.error('Topology endpoint error:', error);
+    res.status(500).json({
+      error: 'Internal server error while fetching topology',
+      message: error.message
+    });
+  }
+});
+
+// General SDX API proxy endpoint
+app.all('/api/sdx/*', validateToken, async (req, res) => {
+  try {
+    const sdxPath = req.path.replace('/api/sdx', '');
+    const sdxUrl = `${SDX_API_CONFIG.baseUrl}${sdxPath}`;
+    
+    console.log(`Proxying ${req.method} request to:`, sdxUrl);
+    
+    const response = await fetch(sdxUrl, {
+      method: req.method,
+      headers: {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
+        ...(req.token && { 'Authorization': `Bearer ${req.token}` }),
+      },
+      ...(req.method !== 'GET' && req.method !== 'HEAD' && { body: JSON.stringify(req.body) }),
+    });
+    
+    console.log(`SDX API response status: ${response.status}`);
+    
+    const responseData = await response.json();
+    
+    res.status(response.status).json(responseData);
+    
+  } catch (error) {
+    console.error('SDX API proxy error:', error);
+    res.status(500).json({
+      error: 'Internal server error while proxying SDX API request',
       message: error.message
     });
   }

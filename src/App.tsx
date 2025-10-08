@@ -65,8 +65,14 @@ function App() {
       } else if (path === `${basePath}/dashboard`) {
         // Check authentication before allowing dashboard access
         console.log('Dashboard accessed, checking authentication...');
+        console.log('Current localStorage session:', localStorage.getItem('sdx_user_session'));
+        console.log('Available tokens:', {
+          orcid: !!TokenStorage.getToken("orcid"),
+          cilogon: !!TokenStorage.getToken("cilogon")
+        });
+        
         const isAuth = SessionManager.isAuthenticated();
-        console.log('Dashboard auth check:', isAuth);
+        console.log('Dashboard auth check result:', isAuth);
         
         if (isAuth) {
           console.log('Dashboard authenticated, setting state');
@@ -74,6 +80,7 @@ function App() {
           setCurrentPage("dashboard");
         } else {
           console.log('Not authenticated, redirecting to landing');
+          console.log('Session state:', SessionManager.getSession());
           setIsAuthenticated(false);
           setCurrentPage("landing");
           window.history.replaceState({}, "", basePath || "/");

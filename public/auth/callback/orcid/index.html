@@ -66,6 +66,65 @@
                 statusEl.innerHTML = `<div class="${type}">${message}</div>`;
             }
 
+            async function callTokenEndpoint(code, state, codeVerifier) {
+                try {
+                    showStatus('Exchanging code for token...', 'success');
+                    
+                    // ORCID token endpoint configuration
+                    const clientId = 'APP-X5DJHSAWBMGWEVJ1'; // From your config
+                    const redirectUri = window.location.origin + '/auth/callback/orcid/';
+                    
+                    // Prepare token exchange request
+                    const params = new URLSearchParams({
+                        grant_type: 'authorization_code',
+                        code: code,
+                        client_id: clientId,
+                        redirect_uri: redirectUri,
+                        code_verifier: codeVerifier,
+                    });
+
+                    console.log('Making token request to ORCID with params:', params.toString());
+                    
+                    const response = await fetch('https://orcid.org/oauth/token', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/x-www-form-urlencoded',
+                        },
+                        body: params.toString(),
+                    });
+
+                    console.log('ORCID token response status:', response.status);
+                    const responseText = await response.text();
+                    console.log('ORCID token response body:', responseText);
+                    
+                    let tokenResponse;
+                    try {
+                        tokenResponse = JSON.parse(responseText);
+                    } catch (e) {
+                        throw new Error(`Invalid JSON response: ${responseText}`);
+                    }
+
+                    if (!response.ok) {
+                        throw new Error(`Token exchange failed: ${response.status} ${response.statusText} - ${responseText}`);
+                    }
+
+                    // Display the token response
+                    showStatus(`
+                        <h3>Token Response Received!</h3>
+                        <pre style="text-align: left; background: rgba(0,0,0,0.3); padding: 1rem; border-radius: 4px; margin-top: 1rem; overflow-x: auto;">
+${JSON.stringify(tokenResponse, null, 2)}
+                        </pre>
+                        <p style="margin-top: 1rem;">Check the console for full details.</p>
+                    `, 'success');
+                    
+                    console.log('ORCID token response parsed:', tokenResponse);
+                    
+                } catch (error) {
+                    console.error('Token exchange error:', error);
+                    showStatus(`Token exchange failed: ${error.message}`, 'error');
+                }
+            }
+
             function handleAuthCallback() {
                 try {
                     // Extract authorization code and state from URL
@@ -118,7 +177,20 @@
                             window.close();
                         }, 1500);
                     } else {
-                        showStatus('Unable to communicate with parent window. You can close this window manually.', 'error');
+                        // If this is not a popup (no opener), call the /token endpoint directly
+                        showStatus('Calling token endpoint...', 'success');
+                        
+                        console.log('ORCID callback: calling /token endpoint directly');
+                        console.log('Code:', code, 'State:', state);
+                        
+                        // Get PKCE parameters from sessionStorage
+                        const storedState = sessionStorage.getItem('orcid_state');
+                        const codeVerifier = sessionStorage.getItem('orcid_code_verifier');
+                        
+                        console.log('ORCID callback: PKCE params:', { storedState, codeVerifier: !!codeVerifier });
+                        
+                        // Call the ORCID token endpoint directly
+                        callTokenEndpoint(code, state, codeVerifier);
                     }
 
                 } catch (err) {
