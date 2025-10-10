@@ -10,7 +10,7 @@ try {
     theme = JSON.parse(fs.readFileSync(themePath, "utf-8"));
   }
 } catch (err) {
-  console.error('failed to parse custom styles', err)
+  console.error("failed to parse custom styles", err);
 }
 const defaultTheme = {
   container: {
@@ -50,6 +50,10 @@ const defaultTheme = {
         a11: "var(--color-neutral-a11)",
         a12: "var(--color-neutral-a12)",
         contrast: "var(--color-neutral-contrast)",
+      },
+
+      fontFamily: {
+        sans: ["Lato", "sans-serif"], // Add this for brand consistency
       },
       accent: {
         1: "var(--color-accent-1)",
@@ -139,7 +143,7 @@ const defaultTheme = {
     96: "var(--size-96)",
   },
   darkMode: ["selector", '[data-appearance="dark"]'],
-}
+};
 
 export default {
   content: ["./index.html", "./src/**/*.{js,ts,jsx,tsx}"],
