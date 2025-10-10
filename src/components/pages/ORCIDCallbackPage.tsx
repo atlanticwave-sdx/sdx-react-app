@@ -106,7 +106,7 @@ export function ORCIDCallbackPage({
   };
 
   const exchangeViaBackend = async (authCode: string, authState: string) => {
-    const backendUrl = "http://localhost:3001/oauth/exchange";
+    const backendUrl = "http://localhost:3002/oauth/exchange";
 
     console.log("Making request to backend:", backendUrl);
 

@@ -159,20 +159,31 @@ export function Dashboard({ onBack, onNavigateToTokens }: DashboardProps) {
           {/* Top Row - Logo, Title & Status */}
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center gap-6">
-              {/* Logo */}
-              <div className="w-14 h-14 bg-white border-2 border-[rgb(120,176,219)] rounded-2xl flex items-center justify-center shadow-lg hover:shadow-xl transition-shadow duration-200">
-                <img
-                  src={sdxLogo}
-                  alt="SDX Logo"
-                  className="h-9 w-auto object-contain"
-                />
-              </div>
-
               {/* Title Section */}
               <div>
-                <h1 className="text-2xl font-bold text-[rgb(64,143,204)] mb-1">
-                  AtlanticWave-SDX Dashboard
-                </h1>
+                {/* Logo Start*/}
+                <div className="flex items-center justify-center gap-4 -ml-[1.5rem]">
+                  <img
+                    src={sdxLogo}
+                    alt="SDX Logo"
+                    className="h-[110px] w-[110px] object-contain"
+                  />
+                  <div className="text-left">
+                    <h1 className="text-4xl tracking-tight leading-tight font-serif">
+                      <span className="text-sky-500 font-extrabold">
+                        Atlantic
+                      </span>
+                      <span className="text-blue-800">Wave </span>
+                      <span className="inline-block bg-sky-400 text-white rounded-md pl-[4px] pr-[10px] pt-[8px] text-xl font-serif tracking-wide text-superbold">
+                        SDX
+                      </span>
+                    </h1>
+                    <h2 className="text-xs uppercase tracking-tight leading-tight text-blue-800 mt-[-6px]">
+                      International Distributed Software-Defined Exchange
+                    </h2>
+                  </div>
+                </div>
+                {/* Logo End*/}
                 <p className="text-[rgb(50,135,200)] font-medium">
                   Network Topology & Connection Management
                 </p>
