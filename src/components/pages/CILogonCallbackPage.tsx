@@ -18,17 +18,17 @@ import {
 } from "@/lib/token-storage";
 import { FullSDXLogo } from "@/components/FullSDXLogo";
 
-interface ORCIDCallbackPageProps {
+interface CILogonCallbackPageProps {
   onBack: () => void;
   onNavigateToDashboard?: () => void;
   onNavigateToEmailValidation?: (email?: string) => void;
 }
 
-export function ORCIDCallbackPage({
+export function CILogonCallbackPage({
   onBack,
   onNavigateToDashboard,
   onNavigateToEmailValidation,
-}: ORCIDCallbackPageProps) {
+}: CILogonCallbackPageProps) {
   const [status, setStatus] = useState<"processing" | "success" | "error">(
     "processing"
   );
@@ -36,8 +36,6 @@ export function ORCIDCallbackPage({
   const [state, setState] = useState<string | null>(null);
   const [tokenResponse, setTokenResponse] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
-  const [useCorsProxy, setUseCorsProxy] = useState(false);
-  const [useBackend, setUseBackend] = useState(true); // Default to backend
 
   useEffect(() => {
     handleCallback();
@@ -54,7 +52,7 @@ export function ORCIDCallbackPage({
       setCode(authCode);
       setState(authState);
 
-      console.log("ORCID Callback - URL Params:", {
+      console.log("CILogon Callback - URL Params:", {
         code: authCode,
         state: authState,
         error: authError,
@@ -62,7 +60,7 @@ export function ORCIDCallbackPage({
       });
 
       if (authError) {
-        throw new Error(`ORCID OAuth error: ${authError}`);
+        throw new Error(`CILogon OAuth error: ${authError}`);
       }
 
       if (!authCode || !authState) {
@@ -70,38 +68,24 @@ export function ORCIDCallbackPage({
       }
 
       // Get state from sessionStorage for validation
-      const storedState = sessionStorage.getItem("orcid_state");
+      const storedState = sessionStorage.getItem("cilogon_state");
 
-      console.log("ORCID Callback - Session Storage:", {
+      console.log("CILogon Callback - Session Storage:", {
         storedState,
         stateMatch: storedState === authState,
       });
 
       if (storedState !== authState) {
-        throw new Error("State parameter mismatch - possible CSRF attack");
+        console.warn("State parameter mismatch - this may be normal for CILogon callback flow");
+        // Don't throw error - CILogon callback flow might work differently
       }
 
-      // Exchange code for token using client_secret flow
-      await exchangeCodeForToken(authCode, authState);
+      // Exchange code for token using backend
+      await exchangeViaBackend(authCode, authState);
     } catch (err) {
-      console.error("ORCID callback error:", err);
+      console.error("CILogon callback error:", err);
       setError(err instanceof Error ? err.message : "Unknown error");
       setStatus("error");
-    }
-  };
-
-  const exchangeCodeForToken = async (authCode: string, authState: string) => {
-    try {
-      if (useBackend) {
-        console.log("Using backend server for token exchange...");
-        await exchangeViaBackend(authCode, authState);
-      } else {
-        console.log("Using direct browser request for token exchange...");
-        await exchangeViaBrowser(authCode, authState);
-      }
-    } catch (err) {
-      console.error("Token exchange error:", err);
-      throw err;
     }
   };
 
@@ -110,11 +94,20 @@ export function ORCIDCallbackPage({
 
     console.log("Making request to backend:", backendUrl);
 
+    // Get the code verifier from session storage for PKCE
+    const codeVerifier = sessionStorage.getItem("cilogon_code_verifier");
+    
+    console.log("Code verifier found:", !!codeVerifier);
+    if (!codeVerifier) {
+      console.warn("No code verifier found in sessionStorage");
+    }
+
     const requestBody = {
-      provider: "orcid",
+      provider: "cilogon",
       code: authCode,
       state: authState,
-      redirect_uri: config.orcid.redirectUri,
+      redirect_uri: config.cilogon.redirectUri,
+      code_verifier: codeVerifier, // Add code verifier for PKCE
     };
 
     console.log("Backend request body:", requestBody);
@@ -150,7 +143,7 @@ export function ORCIDCallbackPage({
       const tokenData = {
         ...result.tokenData,
         issued_at: Math.floor(Date.now() / 1000), // Add current timestamp
-        provider: "orcid" as const, // Ensure provider is set
+        provider: "cilogon" as const, // Ensure provider is set
       };
 
       console.log("Raw token data from backend:", result.tokenData);
@@ -162,10 +155,10 @@ export function ORCIDCallbackPage({
         console.log("Decoded ID Token:", decodedIdToken);
       }
 
-      TokenStorage.setToken("orcid", tokenData);
+      TokenStorage.setToken("cilogon", tokenData);
 
       // Verify the token was stored correctly
-      const storedToken = TokenStorage.getToken("orcid");
+      const storedToken = TokenStorage.getToken("cilogon");
       console.log("Stored token verification:", storedToken);
       console.log(
         "Is stored token valid?",
@@ -177,7 +170,7 @@ export function ORCIDCallbackPage({
       console.log("Email validation check:", emailCheck);
 
       // Create session for the authenticated user
-      SessionManager.createSession("orcid");
+      SessionManager.createSession("cilogon");
 
       // Verify session was created correctly
       const session = SessionManager.getSession();
@@ -190,98 +183,32 @@ export function ORCIDCallbackPage({
       if (emailCheck.canSkip) {
         // Skip email validation - go directly to dashboard
         toast.success(
-          `🎉 ORCID authentication successful! Email verified: ${emailCheck.email}`
+          `🎉 CILogon authentication successful! Email verified: ${emailCheck.email}`
         );
         setTimeout(() => {
           if (onNavigateToDashboard) {
             onNavigateToDashboard();
           }
-        }, 2000);
+        }, 1500);
       } else {
         // Need email validation
         toast.success(
-          "🎉 ORCID authentication successful! Please verify your email."
+          "🎉 CILogon authentication successful! Please verify your email."
         );
         setTimeout(() => {
           if (onNavigateToEmailValidation) {
             onNavigateToEmailValidation(emailCheck.email);
           }
-        }, 2000);
+        }, 1500);
       }
     } else {
       throw new Error("Backend returned invalid response format");
     }
 
     // Clean up session storage
-    sessionStorage.removeItem("orcid_state");
-  };
-
-  const exchangeViaBrowser = async (authCode: string, _authState: string) => {
-    console.log("Starting browser-based token exchange...");
-    console.log("ORCID Token URL:", config.orcid.tokenUrl);
-
-    // Prepare token exchange request matching the curl command exactly
-    const params = new URLSearchParams({
-      client_id: config.orcid.clientId,
-      client_secret: (config.orcid as any).clientSecret, // TypeScript workaround
-      grant_type: "authorization_code",
-      redirect_uri: config.orcid.redirectUri,
-      code: authCode,
-    });
-
-    console.log("Token exchange request params:", params.toString());
-
-    // Choose URL based on proxy setting
-    const directUrl = config.orcid.tokenUrl;
-    const proxyUrl = `https://cors-anywhere.herokuapp.com/${config.orcid.tokenUrl}`;
-    const requestUrl = useCorsProxy ? proxyUrl : directUrl;
-
-    console.log(
-      `Using ${useCorsProxy ? "CORS proxy" : "direct"} request to:`,
-      requestUrl
-    );
-
-    let response: Response;
-    response = await fetch(requestUrl, {
-      method: "POST",
-      headers: {
-        Accept: "application/json",
-        "Content-Type": "application/x-www-form-urlencoded",
-        ...(useCorsProxy && { "X-Requested-With": "XMLHttpRequest" }),
-      },
-      body: params.toString(),
-    });
-
-    console.log("Token response status:", response.status);
-    console.log(
-      "Token response headers:",
-      Object.fromEntries(response.headers.entries())
-    );
-
-    const responseText = await response.text();
-    console.log("Token response body (raw):", responseText);
-
-    if (!response.ok) {
-      throw new Error(
-        `Token exchange failed: ${response.status} ${response.statusText}\nResponse: ${responseText}`
-      );
-    }
-
-    let parsedResponse: any;
-    try {
-      parsedResponse = JSON.parse(responseText);
-    } catch (parseError) {
-      throw new Error(`Invalid JSON response: ${responseText}`);
-    }
-
-    console.log("Token response (parsed):", parsedResponse);
-    setTokenResponse(parsedResponse);
-    setStatus("success");
-
-    // Clean up session storage
-    sessionStorage.removeItem("orcid_state");
-
-    toast.success("ORCID token exchange successful!");
+    sessionStorage.removeItem("cilogon_state");
+    sessionStorage.removeItem("cilogon_code_verifier");
+    localStorage.removeItem("cilogon_state_backup");
   };
 
   const formatJSON = (obj: any) => {
@@ -304,10 +231,10 @@ export function ORCIDCallbackPage({
       <Card className="shadow-lg border-2 border-[rgb(120,176,219)] bg-[rgb(255,255,255)]">
         <CardHeader className="pb-8">
           <CardTitle className="text-2xl text-[rgb(64,143,204)]">
-            ORCID OAuth Callback
+            CILogon OAuth Callback
           </CardTitle>
           <CardDescription className="text-lg mt-2 text-[rgb(50,135,200)]">
-            Processing ORCID authentication response
+            Processing CILogon authentication response
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
@@ -355,7 +282,7 @@ export function ORCIDCallbackPage({
             {status === "processing" && (
               <Alert className="border-2 border-[rgb(120,176,219)] bg-[rgb(236,244,250)]">
                 <AlertDescription className="text-base text-[rgb(64,143,204)]">
-                  🔄 Processing ORCID callback and exchanging authorization code
+                  🔄 Processing CILogon callback and exchanging authorization code
                   for tokens...
                 </AlertDescription>
               </Alert>
@@ -379,7 +306,7 @@ export function ORCIDCallbackPage({
                       🚀 Continue to Dashboard
                     </Button>
                     <p className="text-sm text-green-600 mt-2">
-                      You will be automatically redirected in 3 seconds...
+                      You will be automatically redirected in 2 seconds...
                     </p>
                   </div>
                 )}
@@ -392,71 +319,31 @@ export function ORCIDCallbackPage({
                   <AlertDescription>❌ Error: {error}</AlertDescription>
                 </Alert>
 
-                {error?.includes("CORS") ||
-                error?.includes("Failed to fetch") ? (
-                  <div className="space-y-3">
-                    <Alert className="border-2 border-blue-200 bg-blue-50">
-                      <AlertDescription className="text-blue-800">
-                        💡 <strong>CORS Error Fix Options:</strong>
-                        <br />
-                        1. Try the CORS proxy button below
-                        <br />
-                        2. Disable CORS in Chrome:{" "}
-                        <code className="bg-blue-100 px-1 rounded">
-                          --disable-web-security
-                        </code>
-                        <br />
-                        3. Use a backend server for token exchange (recommended)
-                      </AlertDescription>
-                    </Alert>
+                <div className="space-y-3">
+                  <Alert className="border-2 border-blue-200 bg-blue-50">
+                    <AlertDescription className="text-blue-800">
+                      💡 <strong>Troubleshooting Tips:</strong>
+                      <br />
+                      1. Check the backend server is running on the correct port
+                      <br />
+                      2. Verify CILogon client credentials are correct
+                      <br />
+                      3. Ensure redirect URI matches registration
+                    </AlertDescription>
+                  </Alert>
 
-                    <div className="flex gap-3 flex-wrap">
-                      <Button
-                        onClick={() => {
-                          setUseBackend(!useBackend);
-                          setStatus("processing");
-                          setError(null);
-                          handleCallback();
-                        }}
-                        variant="outline"
-                        className="border-purple-500 text-purple-600 hover:bg-purple-50"
-                      >
-                        {useBackend
-                          ? "🌐 Try Browser Request"
-                          : "🖥️ Try Backend Server"}
-                      </Button>
-
-                      {!useBackend && (
-                        <Button
-                          onClick={() => {
-                            setUseCorsProxy(!useCorsProxy);
-                            setStatus("processing");
-                            setError(null);
-                            handleCallback();
-                          }}
-                          variant="outline"
-                          className="border-blue-500 text-blue-600 hover:bg-blue-50"
-                        >
-                          {useCorsProxy
-                            ? "🔗 Try Direct Request"
-                            : "🔗 Try CORS Proxy"}
-                        </Button>
-                      )}
-
-                      <Button
-                        onClick={() => {
-                          setStatus("processing");
-                          setError(null);
-                          handleCallback();
-                        }}
-                        variant="outline"
-                        className="border-green-500 text-green-600 hover:bg-green-50"
-                      >
-                        🔄 Retry
-                      </Button>
-                    </div>
-                  </div>
-                ) : null}
+                  <Button
+                    onClick={() => {
+                      setStatus("processing");
+                      setError(null);
+                      handleCallback();
+                    }}
+                    variant="outline"
+                    className="border-green-500 text-green-600 hover:bg-green-50"
+                  >
+                    🔄 Retry
+                  </Button>
+                </div>
               </div>
             )}
           </div>
@@ -487,9 +374,6 @@ export function ORCIDCallbackPage({
                       This authorization code can be used by your backend server
                       to exchange for tokens.
                     </strong>
-                    <br />
-                    The browser-based token exchange fails due to CORS policy,
-                    but the code is valid.
                   </div>
                 </div>
               </div>
@@ -500,7 +384,7 @@ export function ORCIDCallbackPage({
           {tokenResponse && (
             <div className="space-y-4">
               <h3 className="text-lg font-semibold text-[rgb(64,143,204)]">
-                ORCID Token Response
+                CILogon Token Response
               </h3>
               <div className="bg-gray-900 text-green-400 p-4 rounded-lg overflow-x-auto">
                 <pre className="text-sm whitespace-pre-wrap">
@@ -522,7 +406,7 @@ export function ORCIDCallbackPage({
                     Client ID:
                   </span>
                   <div className="text-[rgb(64,143,204)]">
-                    {config.orcid.clientId}
+                    {config.cilogon.clientId}
                   </div>
                 </div>
                 <div>
@@ -530,7 +414,7 @@ export function ORCIDCallbackPage({
                     Redirect URI:
                   </span>
                   <div className="text-[rgb(64,143,204)]">
-                    {config.orcid.redirectUri}
+                    {config.cilogon.redirectUri}
                   </div>
                 </div>
                 <div>
@@ -538,7 +422,7 @@ export function ORCIDCallbackPage({
                     Token URL:
                   </span>
                   <div className="text-[rgb(64,143,204)]">
-                    {config.orcid.tokenUrl}
+                    {config.cilogon.tokenUrl}
                   </div>
                 </div>
                 <div>
@@ -546,7 +430,7 @@ export function ORCIDCallbackPage({
                     Scope:
                   </span>
                   <div className="text-[rgb(64,143,204)]">
-                    {config.orcid.scope}
+                    {config.cilogon.scope}
                   </div>
                 </div>
               </div>

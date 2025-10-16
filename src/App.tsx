@@ -8,6 +8,7 @@ import { EmailValidationPage } from "@/components/pages/EmailValidationPage";
 import { TokenPage } from "@/components/pages/TokenPage";
 import { Dashboard } from "@/components/pages/Dashboard";
 import { ORCIDCallbackPage } from "@/components/pages/ORCIDCallbackPage";
+import { CILogonCallbackPage } from "@/components/pages/CILogonCallbackPage";
 import { TokenExpiryNotification } from "@/components/TokenExpiryNotification";
 import { config } from "@/lib/config";
 import { Provider } from "@/lib/config";
@@ -15,7 +16,7 @@ import { TokenStorage } from "@/lib/token-storage";
 import { useTokenRefresh } from "@/hooks/useTokenRefresh";
 import { SessionManager } from "@/lib/session";
 
-type Page = "landing" | "login" | "email-validation" | "token" | "dashboard" | "orcid-callback";
+type Page = "landing" | "login" | "email-validation" | "token" | "dashboard" | "orcid-callback" | "cilogon-callback";
 
 function App() {
   const [currentPage, setCurrentPage] = useState<Page>("landing");
@@ -50,6 +51,10 @@ function App() {
       // Handle ORCID callback
       if (path === `${basePath}/auth/callback/orcid`) {
         setCurrentPage("orcid-callback");
+      }
+      // Handle CILogon callback
+      else if (path === `${basePath}/auth/callback/cilogon`) {
+        setCurrentPage("cilogon-callback");
       }
       // Handle login page
       else if (path === `${basePath}/login`) {
@@ -280,6 +285,14 @@ function App() {
 
       {currentPage === "orcid-callback" && (
         <ORCIDCallbackPage
+          onBack={handleBackToLanding}
+          onNavigateToDashboard={handleNavigateToDashboard}
+          onNavigateToEmailValidation={handleNavigateToEmailValidation}
+        />
+      )}
+
+      {currentPage === "cilogon-callback" && (
+        <CILogonCallbackPage
           onBack={handleBackToLanding}
           onNavigateToDashboard={handleNavigateToDashboard}
           onNavigateToEmailValidation={handleNavigateToEmailValidation}

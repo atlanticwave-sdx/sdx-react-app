@@ -40,254 +40,23 @@ export function LoginPage({ provider, onComplete, onBack }: LoginPageProps) {
     setDeviceFlow({ status: "pending" });
 
     try {
-      const token = await CILogonProvider.startAuthenticationPopup();
-      console.log("CILogon authentication successful:", token);
-
-      toast.success("✅ CILogon authentication successful!");
-      setDeviceFlow({ status: "success", token });
-
-      // Show success message briefly, then complete
-      setTimeout(() => {
-        onComplete();
-      }, 2000);
+      // Use same window authentication instead of popup
+      // This will redirect the browser to CILogon, so no code after this will execute
+      await CILogonProvider.startAuthentication();
     } catch (error: any) {
       console.error("CILogon authentication failed:", error);
       const errorMessage =
         error instanceof Error ? error.message : "Authentication failed";
-
-      // Check if this was actually a successful authentication (popup closed after success)
-      if (
-        errorMessage.includes("window was closed") &&
-        provider === "cilogon"
-      ) {
-        // Check localStorage one more time for successful authentication
-        try {
-          const authResult = localStorage.getItem("cilogon_auth_result");
-          if (authResult) {
-            const result = JSON.parse(authResult);
-            if (
-              result.type === "CILOGON_AUTH_SUCCESS" &&
-              Date.now() - result.timestamp < 300000
-            ) {
-              console.log(
-                "Found successful authentication after popup closed error, performing token exchange..."
-              );
-              localStorage.removeItem("cilogon_auth_result");
-
-              try {
-                // Get stored code verifier
-                let storedCodeVerifier = sessionStorage.getItem(
-                  "cilogon_code_verifier"
-                );
-
-                // Try to recover from backup if missing
-                if (!storedCodeVerifier) {
-                  const backup = localStorage.getItem("cilogon_state_backup");
-                  if (backup) {
-                    const parsed = JSON.parse(backup);
-                    if (Date.now() - parsed.timestamp < 600000) {
-                      storedCodeVerifier = parsed.codeVerifier;
-                      console.log(
-                        "Recovered code verifier from backup for popup closed handler"
-                      );
-                    }
-                  }
-                }
-
-                if (!storedCodeVerifier) {
-                  throw new Error("Code verifier not found");
-                }
-
-                // Perform token exchange
-                const cilogonProvider = new CILogonProvider();
-                const token = await cilogonProvider.exchangeCodeForToken(
-                  result.code,
-                  result.state,
-                  storedCodeVerifier
-                );
-
-                console.log(
-                  "Token exchange successful in popup closed handler:",
-                  token
-                );
-
-                toast.success("✅ CILogon authentication successful!");
-                setDeviceFlow({ status: "success", token });
-                setTimeout(() => {
-                  onComplete();
-                }, 1500);
-                setIsLoading(false);
-                return;
-              } catch (exchangeError) {
-                console.error(
-                  "Token exchange failed in popup closed handler:",
-                  exchangeError
-                );
-                toast.error(
-                  `Token exchange failed: ${
-                    exchangeError instanceof Error
-                      ? exchangeError.message
-                      : "Unknown error"
-                  }`
-                );
-                setDeviceFlow({
-                  status: "error",
-                  error: `Token exchange failed: ${
-                    exchangeError instanceof Error
-                      ? exchangeError.message
-                      : "Unknown error"
-                  }`,
-                });
-                setIsLoading(false);
-                return;
-              }
-            }
-          }
-        } catch (e) {
-          console.error("Error checking auth after popup close:", e);
-        }
-
-        // Set a special state for this case
-        setDeviceFlow({
-          status: "window_closed",
-          error: errorMessage,
-        });
-        toast.info(
-          "🔄 Authentication window was closed. If you completed the login, click the Continue button below."
-        );
-      } else {
-        toast.error(`❌ ${errorMessage}`);
-        setDeviceFlow({
-          status: "error",
-          error: errorMessage,
-        });
-      }
-    } finally {
+      
+      toast.error(`❌ ${errorMessage}`);
+      setDeviceFlow({
+        status: "error",
+        error: errorMessage,
+      });
       setIsLoading(false);
     }
   };
 
-  // Add effect to check for completed authentication when window regains focus
-  useEffect(() => {
-    let authCheckInterval: NodeJS.Timeout | null = null;
-
-    const handleVisibilityChange = () => {
-      if (!document.hidden && deviceFlow.status === "pending") {
-        console.log(
-          "Window regained focus, checking for completed authentication..."
-        );
-
-        // Set up periodic check for completed authentication
-        if (authCheckInterval) {
-          clearInterval(authCheckInterval);
-        }
-
-        authCheckInterval = setInterval(async () => {
-          try {
-            const authResult = localStorage.getItem("cilogon_auth_result");
-            if (authResult) {
-              const result = JSON.parse(authResult);
-              if (
-                result.type === "CILOGON_AUTH_SUCCESS" &&
-                Date.now() - result.timestamp < 120000
-              ) {
-                console.log(
-                  "Found completed authentication in localStorage, performing token exchange..."
-                );
-
-                // Clear the stored result immediately
-                localStorage.removeItem("cilogon_auth_result");
-
-                // Clear the interval
-                if (authCheckInterval) {
-                  clearInterval(authCheckInterval);
-                  authCheckInterval = null;
-                }
-
-                try {
-                  // Get stored code verifier
-                  let storedCodeVerifier = sessionStorage.getItem(
-                    "cilogon_code_verifier"
-                  );
-
-                  // Try to recover from backup if missing
-                  if (!storedCodeVerifier) {
-                    const backup = localStorage.getItem("cilogon_state_backup");
-                    if (backup) {
-                      const parsed = JSON.parse(backup);
-                      if (Date.now() - parsed.timestamp < 600000) {
-                        storedCodeVerifier = parsed.codeVerifier;
-                        console.log("Recovered code verifier from backup");
-                      }
-                    }
-                  }
-
-                  if (!storedCodeVerifier) {
-                    throw new Error("Code verifier not found");
-                  }
-
-                  // Perform token exchange
-                  const cilogonProvider = new CILogonProvider();
-                  const token = await cilogonProvider.exchangeCodeForToken(
-                    result.code,
-                    result.state,
-                    storedCodeVerifier
-                  );
-
-                  console.log("Token exchange successful:", token);
-
-                  // Trigger success state
-                  setDeviceFlow({ status: "success", token });
-                  toast.success("✅ CILogon authentication successful!");
-                  setTimeout(() => {
-                    onComplete();
-                  }, 1500);
-                } catch (exchangeError) {
-                  console.error("Token exchange failed:", exchangeError);
-                  toast.error(
-                    `Token exchange failed: ${
-                      exchangeError instanceof Error
-                        ? exchangeError.message
-                        : "Unknown error"
-                    }`
-                  );
-                  setDeviceFlow({
-                    status: "error",
-                    error: `Token exchange failed: ${
-                      exchangeError instanceof Error
-                        ? exchangeError.message
-                        : "Unknown error"
-                    }`,
-                  });
-                }
-              }
-            }
-          } catch (e) {
-            console.error("Error checking for completed auth:", e);
-          }
-        }, 1000);
-
-        // Stop checking after 10 seconds
-        setTimeout(() => {
-          if (authCheckInterval) {
-            clearInterval(authCheckInterval);
-            authCheckInterval = null;
-          }
-        }, 10000);
-      }
-    };
-
-    document.addEventListener("visibilitychange", handleVisibilityChange);
-    window.addEventListener("focus", handleVisibilityChange);
-
-    return () => {
-      document.removeEventListener("visibilitychange", handleVisibilityChange);
-      window.removeEventListener("focus", handleVisibilityChange);
-      if (authCheckInterval) {
-        clearInterval(authCheckInterval);
-      }
-    };
-  }, [deviceFlow.status, onComplete]);
 
   const startORCIDFlow = async () => {
     console.log("Starting ORCID authentication...");
@@ -318,102 +87,6 @@ export function LoginPage({ provider, onComplete, onBack }: LoginPageProps) {
     }
   };
 
-  const handleContinue = async () => {
-    // Manual check for completed authentication
-    try {
-      const authResult = localStorage.getItem("cilogon_auth_result");
-      if (authResult) {
-        const result = JSON.parse(authResult);
-        if (
-          result.type === "CILOGON_AUTH_SUCCESS" &&
-          Date.now() - result.timestamp < 300000
-        ) {
-          console.log(
-            "Manual check found completed authentication, performing token exchange..."
-          );
-          localStorage.removeItem("cilogon_auth_result");
-
-          try {
-            // Get stored code verifier
-            let storedCodeVerifier = sessionStorage.getItem(
-              "cilogon_code_verifier"
-            );
-
-            // Try to recover from backup if missing
-            if (!storedCodeVerifier) {
-              const backup = localStorage.getItem("cilogon_state_backup");
-              if (backup) {
-                const parsed = JSON.parse(backup);
-                if (Date.now() - parsed.timestamp < 600000) {
-                  storedCodeVerifier = parsed.codeVerifier;
-                  console.log(
-                    "Recovered code verifier from backup for manual continue"
-                  );
-                }
-              }
-            }
-
-            if (!storedCodeVerifier) {
-              throw new Error("Code verifier not found");
-            }
-
-            // Perform token exchange
-            const cilogonProvider = new CILogonProvider();
-            const token = await cilogonProvider.exchangeCodeForToken(
-              result.code,
-              result.state,
-              storedCodeVerifier
-            );
-
-            console.log("Token exchange successful in manual continue:", token);
-
-            setDeviceFlow({ status: "success", token });
-            toast.success("✅ CILogon authentication successful!");
-            setIsLoading(false);
-            setTimeout(() => {
-              onComplete();
-            }, 1500);
-          } catch (exchangeError) {
-            console.error(
-              "Token exchange failed in manual continue:",
-              exchangeError
-            );
-            toast.error(
-              `Token exchange failed: ${
-                exchangeError instanceof Error
-                  ? exchangeError.message
-                  : "Unknown error"
-              }`
-            );
-            setDeviceFlow({
-              status: "error",
-              error: `Token exchange failed: ${
-                exchangeError instanceof Error
-                  ? exchangeError.message
-                  : "Unknown error"
-              }`,
-            });
-          }
-        } else if (result.type === "CILOGON_AUTH_SUCCESS") {
-          toast.info(
-            "Found authentication data but it's too old. Please try again."
-          );
-          localStorage.removeItem("cilogon_auth_result");
-        } else {
-          toast.info(
-            "No successful authentication found. Please complete the login in the popup window."
-          );
-        }
-      } else {
-        toast.info(
-          "No authentication data found. Please complete the login in the popup window first."
-        );
-      }
-    } catch (e) {
-      console.error("Error checking for completed auth:", e);
-      toast.error("Error checking authentication status.");
-    }
-  };
 
   return (
     <div className="container mx-auto px-6 py-16 max-w-3xl bg-[rgb(255,255,255)] min-h-screen">
@@ -445,9 +118,8 @@ export function LoginPage({ provider, onComplete, onBack }: LoginPageProps) {
                   <Alert className="border-2 border-[rgb(120,176,219)] bg-[rgb(236,244,250)]">
                     <AlertDescription className="text-base text-[rgb(64,143,204)]">
                       <strong>CILogon Authentication:</strong> Click the button
-                      below to open CILogon in a popup window. After completing
-                      authentication, the popup will close automatically and
-                      return your token.
+                      below to authenticate with CILogon. You will be redirected
+                      to CILogon's login page and then back to this application.
                     </AlertDescription>
                   </Alert>
 
@@ -527,33 +199,12 @@ export function LoginPage({ provider, onComplete, onBack }: LoginPageProps) {
                 </div>
               )}
               {deviceFlow.status === "pending" && (
-                <div className="space-y-4">
-                  <Alert className="border-2 border-[rgb(120,176,219)] bg-[rgb(236,244,250)]">
-                    <Clock className="h-5 w-5 text-[rgb(50,135,200)]" />
-                    <AlertDescription className="text-base ml-2 text-[rgb(64,143,204)]">
-                      <strong>
-                        Please complete authentication in the popup window.
-                      </strong>{" "}
-                      If you don't see a popup, check if your browser blocked it
-                      and allow popups for this site.
-                      <br />
-                      <small className="text-xs mt-2 block opacity-75">
-                        If you've completed authentication and see
-                        "Authentication data saved locally" message, please
-                        click the button below to continue.
-                      </small>
-                    </AlertDescription>
-                  </Alert>
-
-                  <Button
-                    onClick={handleContinue}
-                    variant="default"
-                    size="lg"
-                    className="w-full bg-[rgb(50,135,200)] hover:bg-[rgb(64,143,204)] text-[rgb(255,255,255)]"
-                  >
-                    ✅ I've completed authentication - Continue
-                  </Button>
-                </div>
+                <Alert className="border-2 border-[rgb(120,176,219)] bg-[rgb(236,244,250)]">
+                  <Clock className="h-5 w-5 text-[rgb(50,135,200)]" />
+                  <AlertDescription className="text-base ml-2 text-[rgb(64,143,204)]">
+                    <strong>Redirecting to CILogon...</strong> You will be redirected momentarily.
+                  </AlertDescription>
+                </Alert>
               )}
 
               {deviceFlow.status === "success" && (
@@ -566,37 +217,6 @@ export function LoginPage({ provider, onComplete, onBack }: LoginPageProps) {
                 </Alert>
               )}
 
-              {deviceFlow.status === "window_closed" && (
-                <div className="space-y-4">
-                  <Alert className="border-2 border-[rgb(120,176,219)] bg-[rgb(236,244,250)]">
-                    <AlertDescription className="text-base text-[rgb(64,143,204)]">
-                      <strong>Authentication window was closed.</strong> If you
-                      completed the authentication process in the popup window,
-                      please click the button below to continue.
-                    </AlertDescription>
-                  </Alert>
-
-                  <Button
-                    onClick={handleContinue}
-                    variant="default"
-                    size="lg"
-                    className="w-full bg-[rgb(50,135,200)] hover:bg-[rgb(64,143,204)] text-[rgb(255,255,255)]"
-                  >
-                    ✅ I've completed authentication - Continue
-                  </Button>
-
-                  <Button
-                    onClick={() => {
-                      setDeviceFlow({ status: "idle" });
-                      setIsLoading(false);
-                    }}
-                    variant="outline"
-                    className="w-full border-2 border-[rgb(120,176,219)] text-[rgb(50,135,200)] hover:bg-[rgb(236,244,250)]"
-                  >
-                    Try Again
-                  </Button>
-                </div>
-              )}
 
               {deviceFlow.status === "error" && (
                 <div className="space-y-4">
@@ -615,10 +235,6 @@ export function LoginPage({ provider, onComplete, onBack }: LoginPageProps) {
                           <li>Ensure you have a valid CILogon account</li>
                           <li>
                             Try using a different browser or incognito mode
-                          </li>
-                          <li>
-                            Check if your browser is blocking pop-ups or
-                            redirects
                           </li>
                           <li>Clear your browser cache and cookies</li>
                           <li>

@@ -3,7 +3,7 @@ const cors = require('cors');
 const fetch = require('node-fetch');
 
 const app = express();
-const PORT = 3002;
+const PORT = 3003;
 
 // Enable CORS for frontend
 app.use(cors({
@@ -21,9 +21,16 @@ const ORCID_CONFIG = {
   tokenUrl: 'https://orcid.org/oauth/token'
 };
 
+// CILogon OAuth configuration
+const CILOGON_CONFIG = {
+  clientId: 'cilogon:/client_id/49ffba66ee294f1a9530301d2a281c74',
+  clientSecret: 'pKdqDGRvbmQOdRgA2e-Ceh05xyFNN9sIYtGZs3s4Ym6iygdyX-qKynS4cyMS1VGZmCqGsp9fEFMwEh4HS4PbIQ',
+  tokenUrl: 'https://cilogon.org/oauth2/token'
+};
+
 // SDX API configuration
 const SDX_API_CONFIG = {
-  baseUrl: 'http://localhost:6098',
+  baseUrl: 'https://sdxapi.atlanticwave-sdx.ai/production',
   endpoints: {
     topology: '/topology'
   }
@@ -34,7 +41,7 @@ app.post('/oauth/exchange', async (req, res) => {
   try {
     console.log('OAuth exchange request:', req.body);
     
-    const { provider, code, state, redirect_uri } = req.body;
+    const { provider, code, state, redirect_uri, code_verifier } = req.body;
     
     if (!provider || !code) {
       return res.status(400).json({
@@ -42,42 +49,81 @@ app.post('/oauth/exchange', async (req, res) => {
       });
     }
     
-    if (provider !== 'orcid') {
+    if (provider !== 'orcid' && provider !== 'cilogon') {
       return res.status(400).json({
-        error: 'Only ORCID provider is currently supported'
+        error: 'Only ORCID and CILogon providers are supported'
       });
     }
     
-    // Prepare token exchange request for ORCID
-    const params = new URLSearchParams({
-      client_id: ORCID_CONFIG.clientId,
-      client_secret: ORCID_CONFIG.clientSecret,
-      grant_type: 'authorization_code',
-      redirect_uri: redirect_uri,
-      code: code,
-    });
+    let response;
+    let providerName;
     
-    console.log('Making request to ORCID token endpoint...');
-    console.log('Request params:', params.toString());
+    if (provider === 'orcid') {
+      // Prepare token exchange request for ORCID
+      const params = new URLSearchParams({
+        client_id: ORCID_CONFIG.clientId,
+        client_secret: ORCID_CONFIG.clientSecret,
+        grant_type: 'authorization_code',
+        redirect_uri: redirect_uri,
+        code: code,
+      });
+      
+      console.log('Making request to ORCID token endpoint...');
+      console.log('Request params:', params.toString());
+      
+      // Exchange code for token with ORCID
+      response = await fetch(ORCID_CONFIG.tokenUrl, {
+        method: 'POST',
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: params.toString(),
+      });
+      
+      providerName = 'ORCID';
+    } else if (provider === 'cilogon') {
+      // CILogon requires PKCE flow - check for code_verifier
+      if (!code_verifier) {
+        return res.status(400).json({
+          error: 'Missing code_verifier for CILogon PKCE flow'
+        });
+      }
+      
+      // Prepare token exchange request for CILogon with PKCE
+      const params = new URLSearchParams({
+        client_id: CILOGON_CONFIG.clientId,
+        client_secret: CILOGON_CONFIG.clientSecret,
+        grant_type: 'authorization_code',
+        redirect_uri: redirect_uri,
+        code: code,
+        code_verifier: code_verifier, // Required for PKCE
+      });
+      
+      console.log('Making request to CILogon token endpoint...');
+      console.log('Request params:', params.toString());
+      
+      // Exchange code for token with CILogon
+      response = await fetch(CILOGON_CONFIG.tokenUrl, {
+        method: 'POST',
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: params.toString(),
+      });
+      
+      providerName = 'CILogon';
+    }
     
-    // Exchange code for token with ORCID
-    const response = await fetch(ORCID_CONFIG.tokenUrl, {
-      method: 'POST',
-      headers: {
-        'Accept': 'application/json',
-        'Content-Type': 'application/x-www-form-urlencoded',
-      },
-      body: params.toString(),
-    });
-    
-    console.log('ORCID response status:', response.status);
+    console.log(`${providerName} response status:`, response.status);
     
     const responseText = await response.text();
-    console.log('ORCID response body:', responseText);
+    console.log(`${providerName} response body:`, responseText);
     
     if (!response.ok) {
       return res.status(response.status).json({
-        error: 'ORCID token exchange failed',
+        error: `${providerName} token exchange failed`,
         details: responseText,
         status: response.status
       });
@@ -98,7 +144,7 @@ app.post('/oauth/exchange', async (req, res) => {
     // Return the token data to frontend
     res.json({
       success: true,
-      provider: 'orcid',
+      provider: provider,
       tokenData: tokenData,
       exchangedAt: new Date().toISOString()
     });
@@ -143,6 +189,7 @@ app.get('/api/topology', validateToken, async (req, res) => {
       headers: {
         'Accept': 'application/json',
         'Content-Type': 'application/json',
+        ...(req.token && { 'Authorization': `Bearer ${req.token}` }),
       },
     });
     
