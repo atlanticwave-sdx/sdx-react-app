@@ -1,8 +1,14 @@
 import { useState } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Provider } from "@/lib/config";
-import sdxLogo from "@/assets/images/sdx-logo.svg"; 
+import { FullSDXLogo } from "@/components/FullSDXLogo";
 
 interface LandingPageProps {
   selectedProvider?: Provider;
@@ -15,22 +21,24 @@ const providerInfo = {
   cilogon: {
     name: "CILogon",
     color: "bg-[rgb(50,135,200)]",
-    bgColor: "bg-[rgb(236,244,250)] hover:bg-[rgb(236,244,250)] border-[rgb(120,176,219)]",
-    selectedBgColor: "bg-[rgb(236,244,250)] border-[rgb(64,143,204)]"
+    bgColor:
+      "bg-[rgb(236,244,250)] hover:bg-[rgb(236,244,250)] border-[rgb(120,176,219)]",
+    selectedBgColor: "bg-[rgb(236,244,250)] border-[rgb(64,143,204)]",
   },
   orcid: {
     name: "ORCID",
     color: "bg-[rgb(50,135,200)]",
-    bgColor: "bg-[rgb(236,244,250)] hover:bg-[rgb(236,244,250)] border-[rgb(120,176,219)]",
-    selectedBgColor: "bg-[rgb(236,244,250)] border-[rgb(64,143,204)]"
-  }
+    bgColor:
+      "bg-[rgb(236,244,250)] hover:bg-[rgb(236,244,250)] border-[rgb(120,176,219)]",
+    selectedBgColor: "bg-[rgb(236,244,250)] border-[rgb(64,143,204)]",
+  },
 } as const;
 
 export function LandingPage({
   selectedProvider,
   onProviderSelect,
   onLogin,
-  onNavigateToDashboard
+  onNavigateToDashboard,
 }: LandingPageProps) {
   const canContinue = selectedProvider;
 
@@ -39,8 +47,8 @@ export function LandingPage({
       {/* Dashboard button in top right */}
       {onNavigateToDashboard && (
         <div className="fixed top-4 right-4 z-40">
-          <Button 
-            variant="outline" 
+          <Button
+            variant="outline"
             onClick={onNavigateToDashboard}
             className="border-[rgb(120,176,219)] text-[rgb(50,135,200)] hover:bg-[rgb(236,244,250)]"
           >
@@ -48,58 +56,10 @@ export function LandingPage({
           </Button>
         </div>
       )}
-      
+
       <div className="max-w-2xl mx-auto space-y-8">
         {/* Header */}
-        <div className="text-center space-y-4">
-          <div className="flex flex-col items-center space-y-6">
-            {/* Title and Logo in same line */}
-            <div className="flex items-center justify-center gap-4">
-              {/* SDX Logo */}
-              <div className="w-16 h-16 bg-white rounded-xl flex items-center justify-center shadow-lg flex-shrink-0">
-                <img src={sdxLogo} alt="SDX Logo" className="h-12 w-auto object-contain" />
-              </div>
-              {/* Title with custom colors and slightly increased size */}
-              <h1 className="text-2xl lg:text-3xl font-bold tracking-tight leading-tight flex items-center gap-3">
-                <span 
-                  className="px-2 py-1 rounded-md"
-                  style={{ 
-                    color: 'rgb(50, 135, 200)', 
-                    backgroundColor: 'rgb(255, 255, 255)' 
-                  }}
-                >
-                  AtlanticWave
-                </span>
-                <span 
-                  className="px-2 py-1 rounded-md"
-                  style={{ 
-                    color: 'rgb(255, 255, 255)', 
-                    backgroundColor: 'rgb(255, 255, 255)' 
-                  }}
-                >
-                  -
-                </span>
-                <span 
-                  className="px-3 py-1 rounded-md font-bold"
-                  style={{ 
-                    color: 'rgb(255, 255, 255)', 
-                    backgroundColor: 'rgb(120, 176, 219)' 
-                  }}
-                >
-                  SDX
-                </span>
-              </h1>
-            </div>
-            
-            {/* Subtitle with maximum size reduction and Deep Blue color */}
-            <h2 
-              className="text-[0.5rem] font-light uppercase tracking-wide opacity-70"
-              style={{ color: 'rgb(64, 143, 204)' }}
-            >
-              International Distributed Software-Defined Exchange
-            </h2>
-          </div>
-        </div>
+        <FullSDXLogo />
 
         {/* Provider Selection */}
         <Card className="bg-[rgb(236,244,250)] border-[rgb(120,176,219)] shadow-lg">
@@ -113,14 +73,14 @@ export function LandingPage({
               {Object.entries(providerInfo).map(([key, info]) => {
                 const provider = key as Provider;
                 const isSelected = selectedProvider === provider;
-                
+
                 return (
                   <Button
                     key={provider}
                     variant="ghost"
                     className={`w-full justify-center p-4 h-auto transition-all duration-200 border-2 rounded-xl ${
-                      isSelected 
-                        ? `${info.selectedBgColor} shadow-lg border-opacity-100 transform scale-[1.02]` 
+                      isSelected
+                        ? `${info.selectedBgColor} shadow-lg border-opacity-100 transform scale-[1.02]`
                         : `bg-[rgb(255,255,255)] hover:bg-[rgb(236,244,250)] hover:shadow-md border-[rgb(120,176,219)] hover:border-opacity-100`
                     }`}
                     onClick={() => onProviderSelect(provider)}
@@ -128,14 +88,15 @@ export function LandingPage({
                     <div className="text-center flex-1 space-y-2">
                       <div className="flex items-center justify-between">
                         <div className="flex-1">
-                          <div className="font-semibold text-base text-[rgb(64,143,204)]">{info.name}</div>
+                          <div className="font-semibold text-base text-[rgb(64,143,204)]">
+                            {info.name}
+                          </div>
                           <div className="text-sm text-[rgb(50,135,200)]">
-                            {info.name === "ORCID" 
-                              ? "Researcher identifiers" 
+                            {info.name === "ORCID"
+                              ? "Researcher identifiers"
                               : info.name === "CILogon"
                               ? "Academic federation"
-                              : "Identity provider"
-                            }
+                              : "Identity provider"}
                           </div>
                         </div>
                       </div>
@@ -154,12 +115,15 @@ export function LandingPage({
             disabled={!canContinue}
             onClick={() => canContinue && onLogin(selectedProvider)}
             className={`w-full max-w-md px-6 py-4 text-base font-semibold rounded-xl transition-all duration-200 ${
-              canContinue 
-                ? "bg-[rgb(50,135,200)] hover:bg-[rgb(64,143,204)] text-[rgb(255,255,255)] shadow-lg hover:shadow-xl transform hover:scale-[1.02] active:scale-[0.98]" 
+              canContinue
+                ? "bg-[rgb(50,135,200)] hover:bg-[rgb(64,143,204)] text-[rgb(255,255,255)] shadow-lg hover:shadow-xl transform hover:scale-[1.02] active:scale-[0.98]"
                 : "bg-[rgb(120,176,219)] text-[rgb(255,255,255)] opacity-50 cursor-not-allowed"
             }`}
           >
-            Continue with {selectedProvider ? providerInfo[selectedProvider].name : "Provider"}
+            Continue with{" "}
+            {selectedProvider
+              ? providerInfo[selectedProvider].name
+              : "Provider"}
           </Button>
         </div>
       </div>

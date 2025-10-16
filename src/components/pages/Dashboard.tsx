@@ -1,19 +1,33 @@
 import { useState, useEffect } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { toast } from "sonner";
-import { TokenData, TopologyResponse, TopologyNode, TopologyLink } from "@/lib/types";
+import {
+  TokenData,
+  TopologyResponse,
+  TopologyNode,
+  TopologyLink,
+} from "@/lib/types";
 import { TokenStorage } from "@/lib/token-storage";
 import { ApiService } from "@/lib/api";
-import { processTopologyData, convertToMapFormat, ProcessedTopology } from "@/lib/topology-processor";
+import {
+  processTopologyData,
+  convertToMapFormat,
+  ProcessedTopology,
+} from "@/lib/topology-processor";
 import { config } from "@/lib/config";
 import { NewL2VPNModal, L2VPNData } from "@/components/NewL2VPNModal";
 import { TopologyMap } from "@/components/TopologyMap";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import sdxLogo from "@/assets/images/sdx-logo.svg";
-
 
 interface DashboardProps {
   onBack: () => void;
@@ -21,15 +35,19 @@ interface DashboardProps {
   onLogout?: () => void;
 }
 
-
-export function Dashboard({ onBack, onNavigateToTokens, onLogout }: DashboardProps) {
+export function Dashboard({
+  onBack,
+  onNavigateToTokens,
+  onLogout,
+}: DashboardProps) {
   const [tokens, setTokens] = useState<{
     cilogon?: TokenData;
     orcid?: TokenData;
   }>({});
   const [showNewL2VPNModal, setShowNewL2VPNModal] = useState(false);
   const [topology, setTopology] = useState<TopologyResponse | null>(null);
-  const [processedTopology, setProcessedTopology] = useState<ProcessedTopology | null>(null);
+  const [processedTopology, setProcessedTopology] =
+    useState<ProcessedTopology | null>(null);
   const [isLoadingTopology, setIsLoadingTopology] = useState(false);
   const [topologyError, setTopologyError] = useState<string | null>(null);
   const [allowedDomains] = useState<string[]>(config.topology.allowedDomains);
@@ -50,11 +68,11 @@ export function Dashboard({ onBack, onNavigateToTokens, onLogout }: DashboardPro
     const orcid = TokenStorage.getToken("orcid");
 
     const validTokens: any = {};
-    
+
     if (cilogon && TokenStorage.isTokenValid(cilogon)) {
       validTokens.cilogon = cilogon;
     }
-    
+
     if (orcid && TokenStorage.isTokenValid(orcid)) {
       validTokens.orcid = orcid;
     }
@@ -65,34 +83,38 @@ export function Dashboard({ onBack, onNavigateToTokens, onLogout }: DashboardPro
   const loadTopology = async () => {
     setIsLoadingTopology(true);
     setTopologyError(null);
-    
+
     try {
-      console.log('Loading topology data from API...');
+      console.log("Loading topology data from API...");
       const topologyData = await ApiService.getTopology();
-      console.log('Raw topology data received:', topologyData);
-      
+      console.log("Raw topology data received:", topologyData);
+
       setTopology(topologyData);
-      
+
       // Process topology data using PHP-equivalent logic
-      console.log('Processing topology data with allowed domains:', allowedDomains);
+      console.log(
+        "Processing topology data with allowed domains:",
+        allowedDomains
+      );
       const processed = processTopologyData(topologyData, allowedDomains);
-      console.log('Processed topology data:', processed);
-      
+      console.log("Processed topology data:", processed);
+
       setProcessedTopology(processed);
-      
-      
+
       const nodeCount = Object.keys(processed.nodes_array).length;
       const linkCount = processed.latlng_array.length;
-      
-      toast.success(`Topology processed: ${nodeCount} location groups, ${linkCount} connections`);
-      
+
+      toast.success(
+        `Topology processed: ${nodeCount} location groups, ${linkCount} connections`
+      );
     } catch (error) {
-      console.error('Failed to load topology:', error);
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+      console.error("Failed to load topology:", error);
+      const errorMessage =
+        error instanceof Error ? error.message : "Unknown error occurred";
       setTopologyError(errorMessage);
-      
-      if (errorMessage.includes('authentication')) {
-        toast.error('Authentication failed. Please login again.');
+
+      if (errorMessage.includes("authentication")) {
+        toast.error("Authentication failed. Please login again.");
       } else {
         toast.error(`Failed to load topology: ${errorMessage}`);
       }
@@ -112,8 +134,10 @@ export function Dashboard({ onBack, onNavigateToTokens, onLogout }: DashboardPro
     // For now, just show a message that the L2VPN request has been received
     // Later this will integrate with backend to create actual L2VPN connections
     console.log("L2VPN Data:", l2vpnData);
-    toast.success(`L2VPN request "${l2vpnData.name}" received. Backend integration pending.`);
-    
+    toast.success(
+      `L2VPN request "${l2vpnData.name}" received. Backend integration pending.`
+    );
+
     // TODO: Integrate with backend API to create actual L2VPN connections
     // This will involve:
     // 1. Send L2VPN request to backend with endpoint details
@@ -122,9 +146,12 @@ export function Dashboard({ onBack, onNavigateToTokens, onLogout }: DashboardPro
     // 4. Show connection status updates
   };
 
-
-  const nodeCount = processedTopology ? Object.keys(processedTopology.nodes_array).length : 0;
-  const linkCount = processedTopology ? processedTopology.latlng_array.length : 0;
+  const nodeCount = processedTopology
+    ? Object.keys(processedTopology.nodes_array).length
+    : 0;
+  const linkCount = processedTopology
+    ? processedTopology.latlng_array.length
+    : 0;
   const availableTokens = Object.entries(tokens);
   const hasValidTokens = availableTokens.length > 0;
 
@@ -136,16 +163,26 @@ export function Dashboard({ onBack, onNavigateToTokens, onLogout }: DashboardPro
           {/* Top Row - Logo, Title & Status */}
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center gap-6">
-              {/* Logo */}
-              <div className="w-14 h-14 bg-white border-2 border-[rgb(120,176,219)] rounded-2xl flex items-center justify-center shadow-lg hover:shadow-xl transition-shadow duration-200">
-                <img src={sdxLogo} alt="SDX Logo" className="h-9 w-auto object-contain" />
-              </div>
-              
               {/* Title Section */}
               <div>
-                <h1 className="text-2xl font-bold text-[rgb(64,143,204)] mb-1">
-                  AtlanticWave-SDX Dashboard
-                </h1>
+                {/* Logo Start*/}
+                <div className="flex items-center justify-center gap-4">
+                  <div className="text-left">
+                    <h1 className="text-4xl tracking-tight leading-tight font-serif">
+                      <span className="text-sky-500 font-extrabold">
+                        Atlantic
+                      </span>
+                      <span className="text-blue-800">Wave </span>
+                      <span className="inline-block bg-sky-400 text-white rounded-md pl-[4px] pr-[10px] pt-[8px] text-xl font-serif tracking-wide text-superbold">
+                        SDX
+                      </span>
+                    </h1>
+                    <h2 className="text-xs uppercase tracking-tight leading-tight text-blue-800 mt-[-6px]">
+                      International Distributed Software-Defined Exchange
+                    </h2>
+                  </div>
+                </div>
+                {/* Logo End*/}
                 <p className="text-[rgb(50,135,200)] font-medium">
                   Network Topology & Connection Management
                 </p>
@@ -156,13 +193,23 @@ export function Dashboard({ onBack, onNavigateToTokens, onLogout }: DashboardPro
             <div className="flex items-center gap-6">
               <div className="text-right">
                 <div className="flex items-center gap-2 mb-1">
-                  <div className={`w-2 h-2 rounded-full ${hasValidTokens ? 'bg-green-500' : 'bg-gray-400'}`}></div>
+                  <div
+                    className={`w-2 h-2 rounded-full ${
+                      hasValidTokens ? "bg-green-500" : "bg-gray-400"
+                    }`}
+                  ></div>
                   <span className="text-sm font-semibold text-[rgb(64,143,204)]">
-                    {hasValidTokens ? `Authenticated via ${Object.keys(tokens).map(k => k.toUpperCase()).join(', ')}` : 'Not authenticated'}
+                    {hasValidTokens
+                      ? `Authenticated via ${Object.keys(tokens)
+                          .map((k) => k.toUpperCase())
+                          .join(", ")}`
+                      : "Not authenticated"}
                   </span>
                 </div>
                 <div className="text-xs text-[rgb(50,135,200)] opacity-80">
-                  {nodeCount === 0 ? 'Ready for topology data' : `${nodeCount} locations • ${linkCount} connections`}
+                  {nodeCount === 0
+                    ? "Ready for topology data"
+                    : `${nodeCount} locations • ${linkCount} connections`}
                 </div>
               </div>
               <ThemeToggle />
@@ -180,7 +227,7 @@ export function Dashboard({ onBack, onNavigateToTokens, onLogout }: DashboardPro
               >
                 🔐 Manage Tokens
               </Button>
-              
+
               <Button
                 onClick={onBack}
                 variant="ghost"
@@ -189,7 +236,7 @@ export function Dashboard({ onBack, onNavigateToTokens, onLogout }: DashboardPro
               >
                 ← Back to Main
               </Button>
-              
+
               {onLogout && (
                 <Button
                   onClick={onLogout}
@@ -217,7 +264,7 @@ export function Dashboard({ onBack, onNavigateToTokens, onLogout }: DashboardPro
                   <>🔄 Refresh Topology</>
                 )}
               </Button>
-              
+
               <Button
                 onClick={() => {
                   console.log("New Connection button clicked");
@@ -230,7 +277,7 @@ export function Dashboard({ onBack, onNavigateToTokens, onLogout }: DashboardPro
                 <span className="mr-2 text-lg">🔗</span>
                 New L2VPN
               </Button>
-              
+
               <Button
                 onClick={handleLogout}
                 variant="outline"
@@ -251,8 +298,9 @@ export function Dashboard({ onBack, onNavigateToTokens, onLogout }: DashboardPro
           <div className="max-w-7xl mx-auto">
             <Alert className="border-2 border-yellow-200 bg-yellow-50">
               <AlertDescription className="text-yellow-800">
-                <span className="font-semibold">Authentication required.</span> Please{" "}
-                <button 
+                <span className="font-semibold">Authentication required.</span>{" "}
+                Please{" "}
+                <button
                   onClick={onNavigateToTokens}
                   className="underline hover:no-underline font-medium"
                 >
@@ -271,13 +319,14 @@ export function Dashboard({ onBack, onNavigateToTokens, onLogout }: DashboardPro
           <div className="max-w-7xl mx-auto">
             <Alert className="border-2 border-red-200 bg-red-50">
               <AlertDescription className="text-red-800">
-                <span className="font-semibold">Failed to load topology:</span> {topologyError}{" "}
-                <button 
+                <span className="font-semibold">Failed to load topology:</span>{" "}
+                {topologyError}{" "}
+                <button
                   onClick={loadTopology}
                   disabled={isLoadingTopology}
                   className="underline hover:no-underline font-medium disabled:opacity-50"
                 >
-                  {isLoadingTopology ? 'Loading...' : 'Retry'}
+                  {isLoadingTopology ? "Loading..." : "Retry"}
                 </button>
               </AlertDescription>
             </Alert>
@@ -291,27 +340,29 @@ export function Dashboard({ onBack, onNavigateToTokens, onLogout }: DashboardPro
           {/* Map - Full Width */}
           <Card className="shadow-lg border-2 border-[rgb(120,176,219)] h-[700px]">
             <CardHeader className="pb-4">
-              <CardTitle className="text-xl text-[rgb(64,143,204)]">Network Topology</CardTitle>
+              <CardTitle className="text-xl text-[rgb(64,143,204)]">
+                Network Topology
+              </CardTitle>
               <CardDescription className="text-[rgb(50,135,200)]">
-                {isLoadingTopology ? (
-                  "Loading topology data from API..."
-                ) : topology ? (
-                  `Showing ${topology.nodes.length} nodes and ${topology.links.length} links from SDX API`
-                ) : (
-                  "Interactive map view - click 'Refresh Topology' to load data"
-                )}
+                {isLoadingTopology
+                  ? "Loading topology data from API..."
+                  : topology
+                  ? `Showing ${topology.nodes.length} nodes and ${topology.links.length} links from SDX API`
+                  : "Interactive map view - click 'Refresh Topology' to load data"}
               </CardDescription>
             </CardHeader>
             <CardContent className="p-4 h-[600px]">
               <div className="h-full rounded-lg overflow-hidden border border-[rgb(120,176,219)]">
                 {processedTopology ? (
-                  <TopologyMap 
-                    processedData={processedTopology} 
+                  <TopologyMap
+                    processedData={processedTopology}
                     linksArray={processedTopology.links_array}
                   />
                 ) : (
                   <div className="h-full flex items-center justify-center text-gray-500">
-                    {isLoadingTopology ? "Loading topology map..." : "Click 'Refresh Topology' to load the map"}
+                    {isLoadingTopology
+                      ? "Loading topology map..."
+                      : "Click 'Refresh Topology' to load the map"}
                   </div>
                 )}
               </div>
