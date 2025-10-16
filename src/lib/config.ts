@@ -1,13 +1,21 @@
 // Application configuration
 export const config = {
-  // Backend URL
+  // Backend configuration
   backend: {
-    baseUrl: "https://sdxapi.atlanticwave-sdx.ai/"
+    port: 3003, // Centralized port configuration
+    get baseUrl() {
+      return `http://localhost:${config.backend.port}`;
+    },
+    get oauthExchangeUrl() {
+      return `${config.backend.baseUrl}/oauth/exchange`;
+    }
   },
   
   // Topology API configuration
   api: {
-    baseUrl: "http://localhost:3002/api", // Use backend server
+    get baseUrl() {
+      return `${config.backend.baseUrl}/api`;
+    },
     endpoints: {
       topology: "/topology"
     }
@@ -35,18 +43,15 @@ export const config = {
   
   // CILogon - Updated with correct OIDC settings
   cilogon: {
-    clientId: "cilogon:/client_id/e33e29a20f84e0edd144d1e9a6e2b0",
+    clientId: "cilogon:/client_id/49ffba66ee294f1a9530301d2a281c74",
+    clientSecret: "pKdqDGRvbmQOdRgA2e-Ceh05xyFNN9sIYtGZs3s4Ym6iygdyX-qKynS4cyMS1VGZmCqGsp9fEFMwEh4HS4PbIQ",
     scope: "openid", // Strict scopes - only openid works
     authUrl: "https://cilogon.org/authorize",
     tokenUrl: "https://cilogon.org/oauth2/token",
     jwksUrl: "https://cilogon.org/oauth2/certs",
     issuerUrl: "https://cilogon.org",
-    get redirectUri() {
-      const baseUrl = config.getBaseUrl();
-      const appPath = config.getAppPath();
-      return `${baseUrl}${appPath}/auth/callback/cilogon`;
-    },
-    usePkce: true // PKCE is required with S256
+    redirectUri: "http://127.0.0.1:5000/auth/callback/cilogon",
+    usePkce: false // Switch to client_secret flow instead of PKCE
   },
   
   // ORCID - Using sandbox environment for testing
