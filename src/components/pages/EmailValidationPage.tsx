@@ -1,3 +1,4 @@
+// src/components/pages/emailValidationPage.tsx
 import { useState, useEffect } from "react";
 import {
   Card,
