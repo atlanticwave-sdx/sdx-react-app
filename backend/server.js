@@ -1,4 +1,5 @@
 // backend/server.js
+require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
 const fetch = require("node-fetch");
@@ -163,6 +164,101 @@ app.post("/oauth/exchange", async (req, res) => {
     console.error("OAuth exchange error:", error);
     res.status(500).json({
       error: "Internal server error during token exchange",
+      message: error.message,
+    });
+  }
+});
+
+// =============================================================================
+// reCAPTCHA verification endpoint
+// =============================================================================
+
+app.post("/api/verify-recaptcha", async (req, res) => {
+  try {
+    const { recaptchaToken, action } = req.body;
+
+    console.log("=== reCAPTCHA Verification ===");
+    console.log(
+      "Token received:",
+      recaptchaToken ? "YES (length: " + recaptchaToken.length + ")" : "NO"
+    );
+    console.log("Action:", action);
+    console.log(
+      "Secret loaded:",
+      process.env.RECAPTCHA_SECRET ? "YES" : "❌ NO - CHECK .env FILE!"
+    );
+
+    if (!recaptchaToken) {
+      return res.status(400).json({
+        success: false,
+        error: "Missing reCAPTCHA token",
+      });
+    }
+
+    if (!process.env.RECAPTCHA_SECRET) {
+      console.error("❌ RECAPTCHA_SECRET is not set in environment variables!");
+      return res.status(500).json({
+        success: false,
+        error: "Server configuration error - secret key not configured",
+      });
+    }
+
+    // Verify token with Google
+    const verifyUrl = "https://www.google.com/recaptcha/api/siteverify";
+    const params = new URLSearchParams({
+      secret: process.env.RECAPTCHA_SECRET,
+      response: recaptchaToken,
+    });
+
+    console.log("Sending verification to Google...");
+
+    const response = await fetch(verifyUrl, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+      body: params.toString(),
+    });
+
+    const data = await response.json();
+    console.log("Google response:", JSON.stringify(data, null, 2));
+
+    // Check if verification failed
+    if (!data.success) {
+      console.error("❌ Verification failed:", data["error-codes"]);
+      return res.json({
+        success: false,
+        error: "reCAPTCHA verification failed",
+        errorCodes: data["error-codes"],
+        score: 0,
+      });
+    }
+
+    // Verify the action matches (only if action is present in response)
+    if (data.action && data.action !== action) {
+      console.warn("⚠️ Action mismatch:", data.action, "vs", action);
+      return res.status(400).json({
+        success: false,
+        error: "Action mismatch",
+        score: data.score,
+      });
+    }
+
+    console.log("✅ Verification successful! Score:", data.score);
+
+    // Return score and success status
+    res.json({
+      success: data.success,
+      score: data.score,
+      action: data.action,
+      timestamp: data.challenge_ts,
+      hostname: data.hostname,
+    });
+  } catch (error) {
+    console.error("❌ reCAPTCHA verification error:", error);
+    res.status(500).json({
+      success: false,
+      error: "Internal server error during reCAPTCHA verification",
       message: error.message,
     });
   }
