@@ -1,4 +1,6 @@
+// src/components/pages/emailValidationPage.tsx
 import { useState, useEffect } from "react";
+import { useGoogleReCaptcha } from "react-google-recaptcha-v3";
 import {
   Card,
   CardContent,
@@ -24,6 +26,7 @@ export function EmailValidationPage({
   onComplete,
   onBack,
 }: EmailValidationPageProps) {
+  const { executeRecaptcha } = useGoogleReCaptcha();
   const [email, setEmail] = useState("");
   const [isVerifying, setIsVerifying] = useState(false);
   const [verificationStep, setVerificationStep] = useState<
@@ -83,12 +86,43 @@ export function EmailValidationPage({
       return;
     }
 
+    // Get reCAPTCHA token before sending verification
+    if (!executeRecaptcha) {
+      toast.error("reCAPTCHA not ready. Please try again.");
+      return;
+    }
+
     setIsVerifying(true);
 
     try {
-      // Simulate sending verification email
-      await new Promise((resolve) => setTimeout(resolve, 1500));
+      // Execute reCAPTCHA v3 with action name
+      const recaptchaToken = await executeRecaptcha("send_verification");
 
+      // Send to your backend for verification
+      const response = await fetch(
+        "http://localhost:3003/api/verify-recaptcha",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            recaptchaToken,
+            email,
+            action: "send_verification",
+          }),
+        }
+      );
+
+      const data = await response.json();
+
+      if (!data.success || data.score < 0.5) {
+        toast.error("Security verification failed. Please try again.");
+        return;
+      }
+
+      // Proceed with sending verification email
+      await new Promise((resolve) => setTimeout(resolve, 1500));
       setVerificationStep("verify");
       toast.success("📧 Verification code sent to your email!");
     } catch (error) {
@@ -110,18 +144,45 @@ export function EmailValidationPage({
       return;
     }
 
+    // Get reCAPTCHA token for code verification
+    if (!executeRecaptcha) {
+      toast.error("reCAPTCHA not ready. Please try again.");
+      return;
+    }
+
     setIsVerifying(true);
 
     try {
-      // Simulate code verification
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+      // Execute reCAPTCHA v3 with different action
+      const recaptchaToken = await executeRecaptcha("verify_code");
 
-      // For demo purposes, accept any 6-digit code
+      const response = await fetch(
+        "http://localhost:3003/api/verify-recaptcha",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            recaptchaToken,
+            email,
+            code: verificationCode,
+            action: "verify_code",
+          }),
+        }
+      );
+
+      const data = await response.json();
+
+      if (!data.success || data.score < 0.5) {
+        toast.error("Security verification failed. Please try again.");
+        return;
+      }
+
+      // Verify the code
       if (verificationCode.match(/^\d{6}$/)) {
         setVerificationStep("success");
         toast.success("✅ Email verified successfully!");
-
-        // Wait a moment then complete
         setTimeout(() => {
           onComplete();
         }, 2000);
