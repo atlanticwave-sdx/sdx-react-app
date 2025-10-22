@@ -9,12 +9,12 @@
     "dev": "nodemon server.js"
   },
   "dependencies": {
-    "express": "^4.18.2",
     "cors": "^2.8.5",
-    "node-fetch": "^2.7.0",
     "dotenv": "^16.4.5",
-    "nodemailer": "^6.9.13",
-    "express-rate-limit": "^7.2.0"
+    "express": "^4.18.2",
+    "express-rate-limit": "^7.2.0",
+    "node-fetch": "^2.7.0",
+    "nodemailer": "^6.9.13"
   },
   "devDependencies": {
     "nodemon": "^3.0.1"
@@ -22,9 +22,11 @@
   "keywords": [
     "oauth",
     "orcid",
+    "cilogon",
     "token-exchange",
     "sdx",
-    "email-verification"
+    "email-verification",
+    "recaptcha"
   ],
   "author": "SDX Team",
   "license": "MIT"

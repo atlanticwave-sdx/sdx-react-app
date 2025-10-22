@@ -44,7 +44,7 @@ const ORCID_CONFIG = {
 
 // SDX API configuration
 const SDX_API_CONFIG = {
-  baseUrl: process.env.SDX_API_BASE_URL || "http://localhost:6098",
+  baseUrl: "https://sdxapi.atlanticwave-sdx.ai/production",
   endpoints: {
     topology: "/topology",
   },
@@ -61,75 +61,123 @@ app.post("/oauth/exchange", async (req, res) => {
         provider: req.body.provider,
         hasCode: !!req.body.code,
         hasRedirectUri: !!req.body.redirect_uri,
+        hasCodeVerifier: !!req.body.code_verifier,
       });
     }
 
-    const { provider, code, state, redirect_uri } = req.body;
+    const { provider, code, state, redirect_uri, code_verifier } = req.body;
 
     if (!provider || !code) {
       return res.status(400).json({
         error: "Missing required parameters: provider and code",
       });
     }
-
-    if (provider !== "orcid") {
+    if (provider !== "orcid" && provider !== "cilogon") {
       return res.status(400).json({
-        error: "Only ORCID provider is currently supported",
+        error: "Only ORCID and CILogon providers are supported",
       });
     }
 
-    const params = new URLSearchParams({
-      client_id: ORCID_CONFIG.clientId,
-      client_secret: ORCID_CONFIG.clientSecret,
-      grant_type: "authorization_code",
-      redirect_uri: redirect_uri,
-      code: code,
-    });
+    let response;
+    let providerName;
 
-    if (!isProduction) {
-      console.log("Making request to ORCID token endpoint...");
+    if (provider === "orcid") {
+      // Prepare token exchange request for ORCID
+      const params = new URLSearchParams({
+        client_id: ORCID_CONFIG.clientId,
+        client_secret: ORCID_CONFIG.clientSecret,
+        grant_type: "authorization_code",
+        redirect_uri: redirect_uri,
+        code: code,
+      });
+
+      if (!isProduction) {
+        console.log("Making request to ORCID token endpoint...");
+        console.log("Request params:", params.toString());
+      }
+
+      // Exchange code for token with ORCID
+      response = await fetch(ORCID_CONFIG.tokenUrl, {
+        method: "POST",
+        headers: {
+          Accept: "application/json",
+          "Content-Type": "application/x-www-form-urlencoded",
+        },
+        body: params.toString(),
+      });
+
+      providerName = "ORCID";
+    } else if (provider === "cilogon") {
+      // CILogon requires PKCE flow - check for code_verifier
+      if (!code_verifier) {
+        return res.status(400).json({
+          error: "Missing code_verifier for CILogon PKCE flow",
+        });
+      }
+
+      // Prepare token exchange request for CILogon with PKCE
+      const params = new URLSearchParams({
+        client_id: CILOGON_CONFIG.clientId,
+        client_secret: CILOGON_CONFIG.clientSecret,
+        grant_type: "authorization_code",
+        redirect_uri: redirect_uri,
+        code: code,
+        code_verifier: code_verifier, // Required for PKCE
+      });
+
+      if (!isProduction) {
+        console.log("Making request to CILogon token endpoint...");
+        console.log("Request params:", params.toString());
+      }
+
+      // Exchange code for token with CILogon
+      response = await fetch(CILOGON_CONFIG.tokenUrl, {
+        method: "POST",
+        headers: {
+          Accept: "application/json",
+          "Content-Type": "application/x-www-form-urlencoded",
+        },
+        body: params.toString(),
+      });
+
+      providerName = "CILogon";
     }
-
-    const response = await fetch(ORCID_CONFIG.tokenUrl, {
-      method: "POST",
-      headers: {
-        Accept: "application/json",
-        "Content-Type": "application/x-www-form-urlencoded",
-      },
-      body: params.toString(),
-    });
 
     const responseText = await response.text();
 
     if (!isProduction) {
-      console.log("ORCID response status:", response.status);
+      console.log(`${providerName} response status:`, response.status);
+      console.log(`${providerName} response body:`, responseText);
     }
 
     if (!response.ok) {
-      console.error("ORCID token exchange failed:", response.status);
+      console.error(`${providerName} token exchange failed:`, response.status);
       return res.status(response.status).json({
-        error: "ORCID token exchange failed",
+        error: `${providerName} token exchange failed`,
         status: response.status,
         ...(!isProduction && { details: responseText }),
       });
     }
+
 
     let tokenData;
     try {
       tokenData = JSON.parse(responseText);
     } catch (parseError) {
       return res.status(500).json({
-        error: "Invalid JSON response from ORCID",
+        error: `Invalid JSON response from ${providerName}`,
+        ...(!isProduction && { details: responseText }),
       });
     }
 
     if (!isProduction) {
-      console.log("Token exchange successful");
+      console.log(`${providerName} token exchange successful`);
     }
 
+    // Return the token data to frontend
     res.json({
       success: true,
-      provider: "orcid",
+      provider: provider,
       tokenData: tokenData,
       exchangedAt: new Date().toISOString(),
     });
@@ -140,6 +188,102 @@ app.post("/oauth/exchange", async (req, res) => {
     );
     res.status(500).json({
       error: "Internal server error during token exchange",
+      ...(!isProduction && { message: error.message }),
+    });
+  }
+});
+
+// =============================================================================
+// reCAPTCHA verification endpoint
+// =============================================================================
+
+app.post("/api/verify-recaptcha", async (req, res) => {
+  try {
+    const { recaptchaToken, action } = req.body;
+
+    if (!isProduction) {
+      console.log("=== reCAPTCHA Verification ===");
+      console.log(
+        "Token received:",
+        recaptchaToken ? "YES (length: " + recaptchaToken.length + ")" : "NO"
+      );
+      console.log("Action:", action);
+    }
+
+    if (!recaptchaToken) {
+      return res.status(400).json({
+        success: false,
+        error: "Missing reCAPTCHA token",
+      });
+    }
+
+    if (!process.env.RECAPTCHA_SECRET) {
+      console.error("❌ RECAPTCHA_SECRET is not set in environment variables!");
+      return res.status(500).json({
+        success: false,
+        error: "Server configuration error - secret key not configured",
+      });
+    }
+
+    const verifyUrl = "https://www.google.com/recaptcha/api/siteverify";
+    const params = new URLSearchParams({
+      secret: process.env.RECAPTCHA_SECRET,
+      response: recaptchaToken,
+    });
+
+    if (!isProduction) {
+      console.log("Sending verification to Google...");
+    }
+
+    const response = await fetch(verifyUrl, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+      body: params.toString(),
+    });
+
+    const data = await response.json();
+    
+    if (!isProduction) {
+      console.log("Google response:", JSON.stringify(data, null, 2));
+    }
+
+    if (!data.success) {
+      console.error("❌ Verification failed:", data["error-codes"]);
+      return res.json({
+        success: false,
+        error: "reCAPTCHA verification failed",
+        errorCodes: data["error-codes"],
+        score: 0,
+      });
+    }
+
+    if (data.action && data.action !== action) {
+      console.warn("⚠️ Action mismatch:", data.action, "vs", action);
+      return res.status(400).json({
+        success: false,
+        error: "Action mismatch",
+        score: data.score,
+      });
+    }
+
+    if (!isProduction) {
+      console.log("✅ Verification successful! Score:", data.score);
+    }
+
+    res.json({
+      success: data.success,
+      score: data.score,
+      action: data.action,
+      timestamp: data.challenge_ts,
+      hostname: data.hostname,
+    });
+  } catch (error) {
+    console.error("❌ reCAPTCHA verification error:", error.message);
+    res.status(500).json({
+      success: false,
+      error: "Internal server error during reCAPTCHA verification",
       ...(!isProduction && { message: error.message }),
     });
   }
@@ -349,7 +493,7 @@ const validateToken = (req, res, next) => {
     const token = authHeader.substring(7);
     req.token = token;
     if (!isProduction) {
-      console.log("Request authenticated with token");
+      console.log("Request authenticated with token:", token.substring(0, 20) + "...");
     }
   } else {
     if (!isProduction) {
@@ -359,11 +503,13 @@ const validateToken = (req, res, next) => {
   next();
 };
 
+// Topology endpoint
 app.get("/api/topology", validateToken, async (req, res) => {
   try {
     const topologyUrl = `${SDX_API_CONFIG.baseUrl}${SDX_API_CONFIG.endpoints.topology}`;
 
     if (!isProduction) {
+      console.log("Topology request received");
       console.log("Fetching topology from:", topologyUrl);
     }
 
@@ -372,6 +518,7 @@ app.get("/api/topology", validateToken, async (req, res) => {
       headers: {
         Accept: "application/json",
         "Content-Type": "application/json",
+        ...(req.token && { Authorization: `Bearer ${req.token}` }),
       },
     });
 
@@ -380,10 +527,11 @@ app.get("/api/topology", validateToken, async (req, res) => {
     }
 
     if (!response.ok) {
-      console.error("Topology API error:", response.status);
+      console.error("Topology API error:", response.status, response.statusText);
       return res.status(response.status).json({
         error: "Failed to fetch topology data",
         status: response.status,
+        ...(!isProduction && { details: response.statusText }),
       });
     }
 
@@ -407,10 +555,12 @@ app.get("/api/topology", validateToken, async (req, res) => {
     console.error("Topology endpoint error:", error.message);
     res.status(500).json({
       error: "Internal server error while fetching topology",
+      ...(!isProduction && { message: error.message }),
     });
   }
 });
 
+// General SDX API proxy endpoint
 app.all("/api/sdx/*", validateToken, async (req, res) => {
   try {
     const sdxPath = req.path.replace("/api/sdx", "");
@@ -441,6 +591,7 @@ app.all("/api/sdx/*", validateToken, async (req, res) => {
     console.error("SDX API proxy error:", error.message);
     res.status(500).json({
       error: "Internal server error while proxying SDX API request",
+      ...(!isProduction && { message: error.message }),
     });
   }
 });
@@ -463,7 +614,8 @@ app.get("/", (req, res) => {
     version: "1.0.0",
     environment: process.env.NODE_ENV || "development",
     endpoints: {
-      "POST /oauth/exchange": "Exchange OAuth authorization code for tokens",
+      "POST /oauth/exchange": "Exchange OAuth authorization code for tokens (ORCID & CILogon)",
+      "POST /api/verify-recaptcha": "Verify reCAPTCHA token",
       "POST /api/send-verification": "Send email verification code",
       "POST /api/verify-code": "Verify email code",
       "GET /api/topology": "Get network topology",
@@ -504,6 +656,7 @@ app.listen(PORT, () => {
   if (!isProduction) {
     console.log(`📝 Available endpoints:`);
     console.log(`   POST http://localhost:${PORT}/oauth/exchange`);
+    console.log(`   POST http://localhost:${PORT}/api/verify-recaptcha`);
     console.log(`   POST http://localhost:${PORT}/api/send-verification`);
     console.log(`   POST http://localhost:${PORT}/api/verify-code`);
     console.log(`   GET  http://localhost:${PORT}/api/topology`);

@@ -1,5 +1,6 @@
 // src/components/pages/emailValidationPage.tsx
 import { useState, useEffect, useRef } from "react";
+import { useGoogleReCaptcha } from "react-google-recaptcha-v3";
 import {
   Card,
   CardContent,
@@ -13,8 +14,8 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { toast } from "sonner";
 import { TokenData, TokenClaims } from "@/lib/types";
 import { TokenStorage, decodeJWT } from "@/lib/token-storage";
-import { CheckCircle, Envelope } from "@phosphor-icons/react";
-import sdxLogo from "@/assets/images/sdx-logo.svg";
+import { CheckCircle, XCircle, Envelope } from "@phosphor-icons/react";
+import { FullSDXLogo } from "@/components/FullSDXLogo";
 
 interface EmailValidationPageProps {
   onComplete: () => void;
@@ -34,6 +35,7 @@ export function EmailValidationPage({
   const [resendCooldown, setResendCooldown] = useState(0);
   const RESEND_COOLDOWN_SECONDS = 60;
 
+  const { executeRecaptcha } = useGoogleReCaptcha();
   const [email, setEmail] = useState("");
   const [isVerifying, setIsVerifying] = useState(false);
   const [verificationStep, setVerificationStep] = useState<
@@ -45,8 +47,10 @@ export function EmailValidationPage({
 
   // load tokens / pre-validated email
   useEffect(() => {
+    // Check if there's a pre-validated email from the callback
     const preValidatedEmail = sessionStorage.getItem("pre_validated_email");
 
+    // Load the most recent valid token to get user info
     const cilogon = TokenStorage.getToken("cilogon");
     const orcid = TokenStorage.getToken("orcid");
 
@@ -73,6 +77,7 @@ export function EmailValidationPage({
       }
     }
 
+    // Clean up the pre-validated email from session storage
     if (preValidatedEmail) {
       sessionStorage.removeItem("pre_validated_email");
     }
@@ -112,8 +117,51 @@ export function EmailValidationPage({
       return;
     }
 
+    // Get reCAPTCHA token before sending verification
+    if (!executeRecaptcha) {
+      toast.error("reCAPTCHA not ready. Please try again.");
+      return;
+    }
+
     setIsVerifying(true);
     try {
+      // Execute reCAPTCHA v3 with action name
+      if (executeRecaptcha) {
+        const recaptchaToken = await executeRecaptcha("send_verification");
+
+        // Verify reCAPTCHA with backend
+        const recaptchaResponse = await fetch(
+          `${
+            import.meta.env.VITE_API_BASE || "http://localhost:3002"
+          }/api/verify-recaptcha`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              recaptchaToken,
+              action: "send_verification",
+            }),
+          }
+        );
+
+        const recaptchaData = await recaptchaResponse.json();
+
+        if (!recaptchaData.success || recaptchaData.score < 0.5) {
+          toast.error("Security verification failed. Please try again.");
+          return;
+        }
+
+        if (isDevelopment) {
+          console.log(
+            "reCAPTCHA verification passed, score:",
+            recaptchaData.score
+          );
+        }
+      }
+
+      // Send verification email
       const { ok, status, data } = await postJson("/api/send-verification", {
         email: normalized,
       });
@@ -170,8 +218,53 @@ export function EmailValidationPage({
       return;
     }
 
+    // Get reCAPTCHA token for code verification
+    if (!executeRecaptcha) {
+      toast.error("reCAPTCHA not ready. Please try again.");
+      return;
+    }
+
     setIsVerifying(true);
     try {
+      // Execute reCAPTCHA v3 with action name
+      if (executeRecaptcha) {
+        const recaptchaToken = await executeRecaptcha("verify_code");
+
+        // Verify reCAPTCHA with backend
+        const recaptchaResponse = await fetch(
+          `${
+            import.meta.env.VITE_API_BASE || "http://localhost:3002"
+          }/api/verify-recaptcha`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              recaptchaToken,
+              action: "verify_code",
+            }),
+          }
+        );
+
+        const recaptchaData = await recaptchaResponse.json();
+
+        if (!recaptchaData.success || recaptchaData.score < 0.5) {
+          toast.error("Security verification failed. Please try again.");
+          setVerificationCode("");
+          hasAutoSubmittedRef.current = "";
+          return;
+        }
+
+        if (isDevelopment) {
+          console.log(
+            "reCAPTCHA verification passed, score:",
+            recaptchaData.score
+          );
+        }
+      }
+
+      // Verify the actual code with backend
       const { ok, status, data } = await postJson("/api/verify-code", {
         email: String(email).trim().toLowerCase(),
         code: verificationCode,
@@ -289,37 +382,7 @@ export function EmailValidationPage({
   return (
     <div className="container mx-auto px-6 py-16 max-w-3xl bg-[rgb(255,255,255)] min-h-screen">
       {/* Header */}
-      <div className="text-center space-y-4 mb-12">
-        <div className="flex flex-col items-center space-y-6">
-          <div className="flex items-center justify-center gap-4">
-            <img
-              src={sdxLogo}
-              alt="SDX Logo"
-              className="w-12 h-12 object-contain"
-            />
-            <h1 className="text-4xl font-bold tracking-tight leading-tight">
-              <span style={{ color: "rgb(50, 135, 200)" }}>AtlanticWave</span>
-              <span style={{ color: "rgb(64, 143, 204)" }}>-</span>
-              <span
-                className="px-3 py-1 rounded-md font-bold"
-                style={{
-                  color: "rgb(255, 255, 255)",
-                  backgroundColor: "rgb(120, 176, 219)",
-                }}
-              >
-                SDX
-              </span>
-            </h1>
-          </div>
-
-          <h2
-            className="text-xs font-light uppercase tracking-wide opacity-70"
-            style={{ color: "rgb(64, 143, 204)" }}
-          >
-            International Distributed Software-Defined Exchange
-          </h2>
-        </div>
-      </div>
+      <FullSDXLogo />
 
       <Button
         variant="ghost"
@@ -427,81 +490,20 @@ export function EmailValidationPage({
                 >
                   Verification Code
                 </label>
-
-                <div className="flex gap-2">
-                  <Input
-                    id="code"
-                    ref={codeInputRef as any}
-                    type="text"
-                    value={verificationCode}
-                    onChange={(e) =>
-                      setVerificationCode(
-                        e.target.value.replace(/\D/g, "").slice(0, 6)
-                      )
-                    }
-                    placeholder="Enter 6-digit code"
-                    className="text-black flex-1 py-4 text-lg text-center tracking-widest font-mono border-2 border-[rgb(120,176,219)] focus:border-[rgb(50,135,200)]"
-                    disabled={isVerifying}
-                    maxLength={6}
-                  />
-
-                  <div className="flex flex-col gap-2">
-                    <Button
-                      onClick={async () => {
-                        try {
-                          const text = await navigator.clipboard.readText();
-                          const digits = (text || "")
-                            .replace(/\D/g, "")
-                            .slice(0, 6);
-                          if (!digits) {
-                            toast.error("No valid code found in clipboard");
-                            return;
-                          }
-                          setVerificationCode(digits);
-                          if (digits.length === 6) {
-                            setTimeout(() => handleVerifyCode(), 150);
-                          } else {
-                            toast.info(
-                              `Pasted ${digits.length} digits. Need 6 digits.`
-                            );
-                          }
-                        } catch (err) {
-                          if (isDevelopment) {
-                            console.error("clipboard read error:", err);
-                          }
-                          toast.error(
-                            "Unable to access clipboard. Please paste manually."
-                          );
-                        }
-                      }}
-                      variant="ghost"
-                      className="text-[rgb(50,135,200)] whitespace-nowrap"
-                    >
-                      Paste code
-                    </Button>
-
-                    <Button
-                      onClick={async () => {
-                        if (resendCooldown > 0) {
-                          toast.info(
-                            `Please wait ${resendCooldown}s before resending`
-                          );
-                          return;
-                        }
-                        await handleSendVerification();
-                      }}
-                      variant="outline"
-                      className="border-2 border-[rgb(120,176,219)] text-[rgb(50,135,200)] hover:bg-[rgb(236,244,250)]"
-                      disabled={isVerifying || resendCooldown > 0}
-                      size="sm"
-                    >
-                      {resendCooldown > 0
-                        ? `Resend (${resendCooldown}s)`
-                        : "Resend"}
-                    </Button>
-                  </div>
-                </div>
-
+                <Input
+                  id="code"
+                  type="text"
+                  value={verificationCode}
+                  onChange={(e) =>
+                    setVerificationCode(
+                      e.target.value.replace(/\D/g, "").slice(0, 6)
+                    )
+                  }
+                  placeholder="Enter 6-digit code"
+                  className="w-full py-4 text-lg text-center tracking-widest font-mono border-2 border-[rgb(120,176,219)] focus:border-[rgb(50,135,200)]"
+                  disabled={isVerifying}
+                  maxLength={6}
+                />
                 <p className="text-sm text-[rgb(50,135,200)] opacity-70">
                   Didn't receive the code? Check your spam folder.
                 </p>
