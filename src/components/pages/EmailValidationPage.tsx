@@ -1,5 +1,5 @@
 // src/components/pages/emailValidationPage.tsx
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useGoogleReCaptcha } from "react-google-recaptcha-v3";
 import {
   Card,
@@ -26,6 +26,15 @@ export function EmailValidationPage({
   onComplete,
   onBack,
 }: EmailValidationPageProps) {
+  // Environment detection
+  const isDevelopment = import.meta.env.DEV;
+
+  // refs & local state
+  const codeInputRef = useRef<HTMLInputElement | null>(null);
+  const hasAutoSubmittedRef = useRef<string>("");
+  const [resendCooldown, setResendCooldown] = useState(0);
+  const RESEND_COOLDOWN_SECONDS = 60;
+
   const { executeRecaptcha } = useGoogleReCaptcha();
   const [email, setEmail] = useState("");
   const [isVerifying, setIsVerifying] = useState(false);
@@ -36,6 +45,7 @@ export function EmailValidationPage({
   const [userToken, setUserToken] = useState<TokenData | null>(null);
   const [userClaims, setUserClaims] = useState<TokenClaims | null>(null);
 
+  // load tokens / pre-validated email
   useEffect(() => {
     // Check if there's a pre-validated email from the callback
     const preValidatedEmail = sessionStorage.getItem("pre_validated_email");
@@ -48,21 +58,21 @@ export function EmailValidationPage({
       (token) => token && TokenStorage.isTokenValid(token)
     ) as TokenData[];
 
-    // Get the most recent token
     const mostRecentToken = tokens.sort((a, b) => b.issued_at - a.issued_at)[0];
 
     if (mostRecentToken) {
       setUserToken(mostRecentToken);
-      const claims = decodeJWT(mostRecentToken.id_token);
-      setUserClaims(claims);
 
-      // Check if we have a pre-validated email or email from claims
-      const emailToUse = preValidatedEmail || claims?.email;
-      if (emailToUse) {
-        setEmail(emailToUse);
-        // If we have both eppn and email from claims, skip to confirmation
-        if (claims?.eppn && claims?.email && !preValidatedEmail) {
-          setVerificationStep("confirm");
+      if (mostRecentToken.id_token) {
+        const claims = decodeJWT(mostRecentToken.id_token);
+        setUserClaims(claims);
+
+        const emailToUse = preValidatedEmail || claims?.email;
+        if (emailToUse) {
+          setEmail(emailToUse);
+          if (claims?.eppn && claims?.email && !preValidatedEmail) {
+            setVerificationStep("confirm");
+          }
         }
       }
     }
@@ -73,16 +83,37 @@ export function EmailValidationPage({
     }
   }, []);
 
-  const handleSendVerification = async () => {
-    if (!email) {
-      toast.error("Please enter your email address");
-      return;
+  async function postJson(path: string, body: any) {
+    const base = import.meta.env.VITE_API_BASE || "http://localhost:3002";
+    const url = `${base}${path.startsWith("/") ? path : `/${path}`}`;
+
+    const resp = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+      credentials: "include",
+    });
+
+    let data: any = null;
+    try {
+      data = await resp.json();
+    } catch (err) {
+      data = null;
     }
 
-    // Basic email validation
+    return { ok: resp.ok, status: resp.status, data };
+  }
+
+  // handlers
+  const handleSendVerification = async () => {
+    if (!email) {
+      toast.error("Please enter your email");
+      return;
+    }
+    const normalized = String(email).trim().toLowerCase();
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
-      toast.error("Please enter a valid email address");
+    if (!emailRegex.test(normalized)) {
+      toast.error("Enter a valid email");
       return;
     }
 
@@ -93,41 +124,85 @@ export function EmailValidationPage({
     }
 
     setIsVerifying(true);
-
     try {
       // Execute reCAPTCHA v3 with action name
-      const recaptchaToken = await executeRecaptcha("send_verification");
+      if (executeRecaptcha) {
+        const recaptchaToken = await executeRecaptcha("send_verification");
 
-      // Send to your backend for verification
-      const response = await fetch(
-        "http://localhost:3003/api/verify-recaptcha",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            recaptchaToken,
-            email,
-            action: "send_verification",
-          }),
+        // Verify reCAPTCHA with backend
+        const recaptchaResponse = await fetch(
+          `${
+            import.meta.env.VITE_API_BASE || "http://localhost:3002"
+          }/api/verify-recaptcha`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              recaptchaToken,
+              action: "send_verification",
+            }),
+          }
+        );
+
+        const recaptchaData = await recaptchaResponse.json();
+
+        if (!recaptchaData.success || recaptchaData.score < 0.5) {
+          toast.error("Security verification failed. Please try again.");
+          return;
         }
-      );
 
-      const data = await response.json();
+        if (isDevelopment) {
+          console.log(
+            "reCAPTCHA verification passed, score:",
+            recaptchaData.score
+          );
+        }
+      }
 
-      if (!data.success || data.score < 0.5) {
-        toast.error("Security verification failed. Please try again.");
+      // Send verification email
+      const { ok, status, data } = await postJson("/api/send-verification", {
+        email: normalized,
+      });
+
+      if (!ok) {
+        if (isDevelopment) {
+          console.error("send failed", status, data);
+        }
+
+        if (status === 429) {
+          toast.error("Too many requests. Please wait a moment and try again.");
+        } else {
+          toast.error(data?.error || "Failed to send verification code");
+        }
         return;
       }
 
-      // Proceed with sending verification email
-      await new Promise((resolve) => setTimeout(resolve, 1500));
+      setEmail(normalized);
       setVerificationStep("verify");
+      setVerificationCode("");
       toast.success("📧 Verification code sent to your email!");
-    } catch (error) {
-      console.error("Failed to send verification:", error);
-      toast.error("Failed to send verification email. Please try again.");
+
+      setResendCooldown(RESEND_COOLDOWN_SECONDS);
+
+      setTimeout(() => {
+        if (codeInputRef.current) {
+          codeInputRef.current.focus();
+          codeInputRef.current.select?.();
+        } else {
+          const el = document.getElementById("code") as HTMLInputElement | null;
+          if (el) {
+            el.focus();
+            el.select();
+          }
+        }
+      }, 150);
+    } catch (err) {
+      if (isDevelopment) {
+        console.error("Send verification error:", err);
+      }
+      toast.error("Network error. Please check your connection.");
     } finally {
       setIsVerifying(false);
     }
@@ -135,12 +210,11 @@ export function EmailValidationPage({
 
   const handleVerifyCode = async () => {
     if (!verificationCode) {
-      toast.error("Please enter the verification code");
+      toast.error("Please enter the code");
       return;
     }
-
-    if (verificationCode.length !== 6) {
-      toast.error("Verification code must be 6 digits");
+    if (!/^\d{6}$/.test(verificationCode)) {
+      toast.error("Code must be 6 digits");
       return;
     }
 
@@ -151,47 +225,87 @@ export function EmailValidationPage({
     }
 
     setIsVerifying(true);
-
     try {
-      // Execute reCAPTCHA v3 with different action
-      const recaptchaToken = await executeRecaptcha("verify_code");
+      // Execute reCAPTCHA v3 with action name
+      if (executeRecaptcha) {
+        const recaptchaToken = await executeRecaptcha("verify_code");
 
-      const response = await fetch(
-        "http://localhost:3003/api/verify-recaptcha",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            recaptchaToken,
-            email,
-            code: verificationCode,
-            action: "verify_code",
-          }),
+        // Verify reCAPTCHA with backend
+        const recaptchaResponse = await fetch(
+          `${
+            import.meta.env.VITE_API_BASE || "http://localhost:3002"
+          }/api/verify-recaptcha`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              recaptchaToken,
+              action: "verify_code",
+            }),
+          }
+        );
+
+        const recaptchaData = await recaptchaResponse.json();
+
+        if (!recaptchaData.success || recaptchaData.score < 0.5) {
+          toast.error("Security verification failed. Please try again.");
+          setVerificationCode("");
+          hasAutoSubmittedRef.current = "";
+          return;
         }
-      );
 
-      const data = await response.json();
+        if (isDevelopment) {
+          console.log(
+            "reCAPTCHA verification passed, score:",
+            recaptchaData.score
+          );
+        }
+      }
 
-      if (!data.success || data.score < 0.5) {
-        toast.error("Security verification failed. Please try again.");
+      // Verify the actual code with backend
+      const { ok, status, data } = await postJson("/api/verify-code", {
+        email: String(email).trim().toLowerCase(),
+        code: verificationCode,
+      });
+
+      if (!ok) {
+        if (isDevelopment) {
+          console.error("verify failed", status, data);
+        }
+
+        if (status === 429) {
+          toast.error("Too many attempts. Please try again later.");
+        } else if (status === 400) {
+          toast.error("Invalid or expired code. Please try again.");
+        } else {
+          toast.error(data?.error || "Verification failed");
+        }
+
+        setVerificationCode("");
+        hasAutoSubmittedRef.current = "";
+
+        setTimeout(() => {
+          if (codeInputRef.current) {
+            codeInputRef.current.focus();
+          }
+        }, 100);
+
         return;
       }
 
-      // Verify the code
-      if (verificationCode.match(/^\d{6}$/)) {
-        setVerificationStep("success");
-        toast.success("✅ Email verified successfully!");
-        setTimeout(() => {
-          onComplete();
-        }, 2000);
-      } else {
-        toast.error("Invalid verification code. Please check and try again.");
+      setVerificationStep("success");
+      toast.success("✅ Email verified successfully!");
+      setTimeout(() => onComplete(), 1200);
+    } catch (err) {
+      if (isDevelopment) {
+        console.error("Verify code error:", err);
       }
-    } catch (error) {
-      console.error("Failed to verify code:", error);
-      toast.error("Verification failed. Please try again.");
+      toast.error("Network error. Please check your connection.");
+
+      setVerificationCode("");
+      hasAutoSubmittedRef.current = "";
     } finally {
       setIsVerifying(false);
     }
@@ -214,6 +328,57 @@ export function EmailValidationPage({
     setVerificationStep("input");
   };
 
+  // Auto-submit when 6 digits entered (but only once per code)
+  useEffect(() => {
+    if (
+      verificationStep === "verify" &&
+      verificationCode.length === 6 &&
+      !isVerifying &&
+      hasAutoSubmittedRef.current !== verificationCode
+    ) {
+      hasAutoSubmittedRef.current = verificationCode;
+      const t = setTimeout(() => handleVerifyCode(), 200);
+      return () => clearTimeout(t);
+    }
+  }, [verificationCode, verificationStep, isVerifying]);
+
+  // Reset the auto-submit tracker when code changes
+  useEffect(() => {
+    if (verificationCode.length < 6) {
+      hasAutoSubmittedRef.current = "";
+    }
+  }, [verificationCode]);
+
+  // autofocus when entering verify step
+  useEffect(() => {
+    if (verificationStep === "verify") {
+      const t = setTimeout(() => {
+        if (codeInputRef.current) codeInputRef.current.focus();
+        else {
+          const el = document.getElementById("code") as HTMLInputElement | null;
+          if (el) el.focus();
+        }
+      }, 120);
+      return () => clearTimeout(t);
+    }
+  }, [verificationStep]);
+
+  // resend cooldown timer
+  useEffect(() => {
+    if (!resendCooldown) return;
+    const interval = setInterval(() => {
+      setResendCooldown((s) => {
+        if (s <= 1) {
+          clearInterval(interval);
+          return 0;
+        }
+        return s - 1;
+      });
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [resendCooldown]);
+
+  // render
   return (
     <div className="container mx-auto px-6 py-16 max-w-3xl bg-[rgb(255,255,255)] min-h-screen">
       {/* Header */}
@@ -256,7 +421,7 @@ export function EmailValidationPage({
                   </div>
                   <div>
                     <strong>Provider:</strong>{" "}
-                    {userToken?.provider?.toUpperCase()}
+                    {userToken?.provider?.toUpperCase?.() || "UNKNOWN"}
                   </div>
                   {userClaims.email && (
                     <div>
@@ -283,7 +448,7 @@ export function EmailValidationPage({
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="Enter your email address"
-                  className="w-full py-4 text-lg border-2 border-[rgb(120,176,219)] focus:border-[rgb(50,135,200)]"
+                  className="text-black w-full py-4 text-lg border-2 border-[rgb(120,176,219)] focus:border-[rgb(50,135,200)]"
                   disabled={isVerifying}
                 />
                 <p className="text-sm text-[rgb(50,135,200)] opacity-70">
@@ -340,7 +505,7 @@ export function EmailValidationPage({
                   maxLength={6}
                 />
                 <p className="text-sm text-[rgb(50,135,200)] opacity-70">
-                  Didn't receive the code? Check your spam folder or try again.
+                  Didn't receive the code? Check your spam folder.
                 </p>
               </div>
 
@@ -367,15 +532,6 @@ export function EmailValidationPage({
                   Back
                 </Button>
               </div>
-
-              <Button
-                onClick={handleSendVerification}
-                variant="ghost"
-                className="w-full text-[rgb(50,135,200)] hover:bg-[rgb(236,244,250)]"
-                disabled={isVerifying}
-              >
-                Resend Code
-              </Button>
             </div>
           )}
 

@@ -1,7 +1,7 @@
 {
   "name": "sdx-oauth-backend",
   "version": "1.0.0",
-  "description": "Simple OAuth token exchange backend for SDX React App",
+  "description": "SDX OAuth Backend Server with email verification",
   "main": "server.js",
   "type": "commonjs",
   "scripts": {
@@ -10,9 +10,11 @@
   },
   "dependencies": {
     "cors": "^2.8.5",
-    "dotenv": "^17.2.3",
+    "dotenv": "^16.4.5",
     "express": "^4.18.2",
-    "node-fetch": "^2.7.0"
+    "express-rate-limit": "^7.2.0",
+    "node-fetch": "^2.7.0",
+    "nodemailer": "^6.9.13"
   },
   "devDependencies": {
     "nodemon": "^3.0.1"
@@ -20,8 +22,11 @@
   "keywords": [
     "oauth",
     "orcid",
+    "cilogon",
     "token-exchange",
-    "sdx"
+    "sdx",
+    "email-verification",
+    "recaptcha"
   ],
   "author": "SDX Team",
   "license": "MIT"

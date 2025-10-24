@@ -16,7 +16,11 @@ import {
   decodeJWT,
   canSkipEmailValidation,
 } from "@/lib/token-storage";
+<<<<<<< HEAD
+import sdxLogo from "@/assets/images/sdx-logo.svg";
+=======
 import { FullSDXLogo } from "@/components/FullSDXLogo";
+>>>>>>> origin/main
 
 interface ORCIDCallbackPageProps {
   onBack: () => void;
@@ -106,7 +110,11 @@ export function ORCIDCallbackPage({
   };
 
   const exchangeViaBackend = async (authCode: string, authState: string) => {
+<<<<<<< HEAD
+    const backendUrl = "http://localhost:3002/oauth/exchange";
+=======
     const backendUrl = config.backend.oauthExchangeUrl;
+>>>>>>> origin/main
 
     console.log("Making request to backend:", backendUrl);
 
@@ -291,7 +299,59 @@ export function ORCIDCallbackPage({
   return (
     <div className="container mx-auto px-6 py-16 max-w-4xl bg-[rgb(255,255,255)] min-h-screen">
       {/* Header */}
+<<<<<<< HEAD
+      <div className="text-center space-y-4 mb-12">
+        <div className="flex flex-col items-center space-y-6">
+          <div className="flex items-center justify-center gap-6">
+            <div className="w-16 h-16 bg-white border border-[rgb(120,176,219)] rounded-xl flex items-center justify-center shadow-lg flex-shrink-0">
+              <img
+                src={sdxLogo}
+                alt="SDX Logo"
+                className="h-12 w-auto object-contain"
+              />
+            </div>
+            <h1 className="text-2xl lg:text-3xl font-bold tracking-tight leading-tight flex items-center gap-3">
+              <span
+                className="px-2 py-1 rounded-md"
+                style={{
+                  color: "rgb(50, 135, 200)",
+                  backgroundColor: "rgb(255, 255, 255)",
+                }}
+              >
+                AtlanticWave
+              </span>
+              <span
+                className="px-2 py-1 rounded-md"
+                style={{
+                  color: "rgb(255, 255, 255)",
+                  backgroundColor: "rgb(255, 255, 255)",
+                }}
+              >
+                -
+              </span>
+              <span
+                className="px-3 py-1 rounded-md font-bold"
+                style={{
+                  color: "rgb(255, 255, 255)",
+                  backgroundColor: "rgb(120, 176, 219)",
+                }}
+              >
+                SDX
+              </span>
+            </h1>
+          </div>
+
+          <h2
+            className="text-[0.5rem] font-light uppercase tracking-wide opacity-70"
+            style={{ color: "rgb(64, 143, 204)" }}
+          >
+            International Distributed Software-Defined Exchange
+          </h2>
+        </div>
+      </div>
+=======
       <FullSDXLogo />
+>>>>>>> origin/main
 
       <Button
         variant="ghost"
