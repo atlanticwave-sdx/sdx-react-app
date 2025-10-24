@@ -11,7 +11,7 @@ const cors = require("cors");
 const fetch = require("node-fetch");
 
 const app = express();
-const PORT = process.env.PORT || 3002;
+const PORT = process.env.PORT || 3004;
 const isProduction = process.env.NODE_ENV === "production";
 
 // Enable CORS for frontend
@@ -40,6 +40,13 @@ const ORCID_CONFIG = {
   clientSecret:
     process.env.ORCID_CLIENT_SECRET || "c839f6ee-8991-4b4e-9ae3-aab528adc22c",
   tokenUrl: process.env.ORCID_TOKEN_URL || "https://orcid.org/oauth/token",
+};
+
+// CILogon OAuth configuration
+const CILOGON_CONFIG = {
+  clientId: 'cilogon:/client_id/49ffba66ee294f1a9530301d2a281c74',
+  clientSecret: 'pKdqDGRvbmQOdRgA2e-Ceh05xyFNN9sIYtGZs3s4Ym6iygdyX-qKynS4cyMS1VGZmCqGsp9fEFMwEh4HS4PbIQ',
+  tokenUrl: 'https://cilogon.org/oauth2/token'
 };
 
 // SDX API configuration

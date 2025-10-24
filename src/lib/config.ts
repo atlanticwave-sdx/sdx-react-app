@@ -2,7 +2,7 @@
 export const config = {
   // Backend configuration
   backend: {
-    port: 3003, // Centralized port configuration
+    port: 3004, // Centralized port configuration
     get baseUrl() {
       return `http://localhost:${config.backend.port}`;
     },
