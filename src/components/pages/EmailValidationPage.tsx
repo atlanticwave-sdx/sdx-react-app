@@ -500,7 +500,7 @@ export function EmailValidationPage({
                     )
                   }
                   placeholder="Enter 6-digit code"
-                  className="w-full py-4 text-lg text-center tracking-widest font-mono border-2 border-[rgb(120,176,219)] focus:border-[rgb(50,135,200)]"
+                  className="text-black w-full py-4 text-lg text-center tracking-widest font-mono border-2 border-[rgb(120,176,219)] focus:border-[rgb(50,135,200)]"
                   disabled={isVerifying}
                   maxLength={6}
                 />
