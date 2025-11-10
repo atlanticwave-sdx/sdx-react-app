@@ -16,7 +16,7 @@ import {
   TopologyNode,
   TopologyLink,
 } from "@/lib/types";
-import { TokenStorage } from "@/lib/token-storage";
+import { TokenStorage, calculateOwnership, decodeJWT } from "@/lib/token-storage";
 import { ApiService } from "@/lib/api";
 import {
   processTopologyData,
@@ -130,20 +130,117 @@ export function Dashboard({
     onBack();
   };
 
-  const handleNewL2VPN = (l2vpnData: L2VPNData) => {
-    // For now, just show a message that the L2VPN request has been received
-    // Later this will integrate with backend to create actual L2VPN connections
-    console.log("L2VPN Data:", l2vpnData);
-    toast.success(
-      `L2VPN request "${l2vpnData.name}" received. Backend integration pending.`
-    );
+  // Extract all ports from topology for the L2VPN modal
+  const extractAllPorts = () => {
+    if (!processedTopology) return [];
 
-    // TODO: Integrate with backend API to create actual L2VPN connections
-    // This will involve:
-    // 1. Send L2VPN request to backend with endpoint details
-    // 2. Backend processes topology and creates L2VPN circuit
-    // 3. Update map with new L2VPN connection data
-    // 4. Show connection status updates
+    const allPorts: Array<{ id: string; entities: string[]; vlan_range?: number[] }> = [];
+
+    Object.values(processedTopology.nodes_array).forEach(location => {
+      location.sub_nodes.forEach(subNode => {
+        subNode.ports.forEach((port: any) => {
+          allPorts.push({
+            id: port.id,
+            entities: port.entities || [],
+            vlan_range: port.services?.l2vpn_ptp?.vlan_range || []
+          });
+        });
+      });
+    });
+
+    return allPorts;
+  };
+
+  const handleNewL2VPN = async (l2vpnData: L2VPNData) => {
+    let loadingToast: any = null;
+
+    try {
+      console.log("L2VPN Data received from form:", l2vpnData);
+
+      // Get the most recent token to extract sub field
+      const orcidToken = TokenStorage.getToken("orcid");
+      const cilogonToken = TokenStorage.getToken("cilogon");
+      const validTokens = [orcidToken, cilogonToken].filter(token =>
+        token && TokenStorage.isTokenValid(token)
+      );
+
+      if (validTokens.length === 0) {
+        toast.error("No valid authentication token found. Please login again.");
+        return;
+      }
+
+      const mostRecentToken = validTokens.sort((a, b) => b!.issued_at - a!.issued_at)[0];
+
+      if (!mostRecentToken?.id_token) {
+        toast.error("No ID token found. Please login again.");
+        return;
+      }
+
+      // Decode JWT to get sub field
+      const claims = decodeJWT(mostRecentToken.id_token);
+      if (!claims?.sub) {
+        toast.error("Could not extract user information from token.");
+        return;
+      }
+
+      console.log("Extracted sub from JWT:", claims.sub);
+
+      // Calculate ownership hash from sub
+      const ownership = await calculateOwnership(claims.sub);
+      console.log("Calculated ownership:", ownership);
+
+      // Build request payload matching PHP format
+      const requestPayload = {
+        name: l2vpnData.name,
+        endpoints: l2vpnData.endpoints,
+        ownership: ownership
+      };
+
+      console.log("Final L2VPN request payload:", requestPayload);
+
+      // Show loading toast
+      loadingToast = toast.loading("Creating L2VPN connection...");
+
+      console.log("About to call API with payload:", requestPayload);
+
+      // Make API call
+      const response = await ApiService.createL2VPN(requestPayload);
+
+      console.log("L2VPN API Response received:", response);
+
+      // Show response in alert - SUCCESS
+      alert(`✅ L2VPN Created Successfully!\n\nResponse:\n${JSON.stringify(response, null, 2)}`);
+
+      // Dismiss loading toast
+      if (loadingToast) toast.dismiss(loadingToast);
+
+      toast.success(`L2VPN "${l2vpnData.name}" created successfully!`);
+
+      // Optionally reload topology to show new connection
+      // await loadTopology();
+
+    } catch (error: any) {
+      console.error("Failed to create L2VPN:", error);
+      console.log("Error object:", error);
+      console.log("Error responseData:", error.responseData);
+
+      // Dismiss loading toast first
+      if (loadingToast) toast.dismiss(loadingToast);
+
+      // Show error in alert with full response data
+      const errorMessage = error instanceof Error ? error.message : "Unknown error";
+      const errorData = error.responseData ? JSON.stringify(error.responseData, null, 2) : errorMessage;
+
+      console.log("About to show alert with data:", errorData);
+      alert(`❌ L2VPN Creation Failed!\n\nFull Response:\n${errorData}`);
+      console.log("Alert was shown");
+
+      toast.error(
+        error instanceof Error
+          ? `Failed to create L2VPN: ${error.message}`
+          : "Failed to create L2VPN connection"
+      );
+    }
   };
 
   const nodeCount = processedTopology
@@ -379,6 +476,7 @@ export function Dashboard({
           setShowNewL2VPNModal(false);
         }}
         onConfirm={handleNewL2VPN}
+        availablePorts={extractAllPorts()}
       />
     </div>
   );

@@ -143,3 +143,38 @@ export function canSkipEmailValidation(token: TokenData): { canSkip: boolean; em
   
   return { canSkip: false, email, eppn };
 }
+
+/**
+ * Calculate ownership hash from JWT sub field
+ * PHP equivalent:
+ * $sub = $response_arr['sub'];
+ * $subExtract = str_replace('http://cilogon.org', '', $sub);
+ * $subExtract = preg_replace('/server[A-Z]/', 'serverX', $subExtract);
+ * $hashedString = hash('sha256', $subExtract);
+ * $base64Encoded = base64_encode($hashedString);
+ * $trimmedOutput = substr($base64Encoded, 0, 16);
+ */
+export async function calculateOwnership(sub: string): Promise<string> {
+  // Remove 'http://cilogon.org' from sub
+  let subExtract = sub.replace('http://cilogon.org', '');
+
+  // Replace serverA, serverB, etc. with serverX
+  subExtract = subExtract.replace(/server[A-Z]/g, 'serverX');
+
+  // Hash with SHA-256
+  const encoder = new TextEncoder();
+  const data = encoder.encode(subExtract);
+  const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+
+  // Convert hash to hex string
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  const hashedString = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+
+  // Base64 encode the hex hash
+  const base64Encoded = btoa(hashedString);
+
+  // Get first 16 characters
+  const trimmedOutput = base64Encoded.substring(0, 16);
+
+  return trimmedOutput;
+}

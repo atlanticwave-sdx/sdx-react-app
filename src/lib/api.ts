@@ -129,19 +129,80 @@ export class ApiService {
   static getAuthProvider(): string | null {
     const orcidToken = TokenStorage.getToken("orcid");
     const cilogonToken = TokenStorage.getToken("cilogon");
-    
+
     const tokens = [
       { token: orcidToken, provider: 'orcid' },
       { token: cilogonToken, provider: 'cilogon' }
     ].filter(({ token }) => token && TokenStorage.isTokenValid(token));
-    
+
     if (tokens.length === 0) return null;
-    
+
     // Return the most recent provider
-    const mostRecent = tokens.sort((a, b) => 
+    const mostRecent = tokens.sort((a, b) =>
       b.token!.issued_at - a.token!.issued_at
     )[0];
-    
+
     return mostRecent.provider;
+  }
+
+  /**
+   * Create a new L2VPN connection
+   */
+  static async createL2VPN(requestData: any): Promise<any> {
+    const token = this.getAuthToken();
+
+    if (!token) {
+      throw new Error('No authentication token available. Please login first.');
+    }
+
+    const url = `${config.api.baseUrl}/l2vpn/1.0`;
+
+    console.log('Creating L2VPN with request:', requestData);
+    console.log('POST URL:', url);
+
+    try {
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify(requestData),
+      });
+
+      console.log(`L2VPN API response status: ${response.status}`);
+
+      // Read response text first
+      const responseText = await response.text();
+      console.log('L2VPN response text:', responseText);
+
+      let data;
+      try {
+        data = JSON.parse(responseText);
+      } catch (parseError) {
+        throw new Error(`Invalid JSON response: ${responseText}`);
+      }
+
+      // Check if response is not OK OR if the data contains an error field
+      if (!response.ok || data.error || data.status === 'error') {
+        const errorMessage = data.error || data.reason || data.message || `HTTP ${response.status}: ${response.statusText}`;
+        console.log('Error response data:', data);
+
+        // Throw error with full response data
+        const error = new Error(errorMessage) as any;
+        error.responseData = data;
+        throw error;
+      }
+
+      console.log('L2VPN created successfully:', data);
+      return data;
+
+    } catch (error) {
+      console.error('L2VPN creation failed with error:', error);
+      if (error instanceof TypeError) {
+        console.error('This might be a CORS or network connectivity issue');
+      }
+      throw error;
+    }
   }
 }

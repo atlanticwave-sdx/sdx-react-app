@@ -567,6 +567,91 @@ app.get("/api/topology", validateToken, async (req, res) => {
   }
 });
 
+// L2VPN creation endpoint
+app.post("/api/l2vpn/1.0", validateToken, async (req, res) => {
+  try {
+    const l2vpnUrl = `${SDX_API_CONFIG.baseUrl}/l2vpn/1.0`;
+
+    if (!isProduction) {
+      console.log("L2VPN creation request received");
+      console.log("Request body:", JSON.stringify(req.body, null, 2));
+      console.log("Posting to:", l2vpnUrl);
+    }
+
+    // Validate required fields
+    const { name, endpoints, ownership } = req.body;
+    if (!name || !endpoints || !ownership) {
+      return res.status(400).json({
+        error: "Missing required fields: name, endpoints, or ownership",
+      });
+    }
+
+    if (!Array.isArray(endpoints) || endpoints.length < 2) {
+      return res.status(400).json({
+        error: "At least 2 endpoints are required",
+      });
+    }
+
+    // Validate endpoints structure
+    for (const ep of endpoints) {
+      if (!ep.port_id || !ep.vlan) {
+        return res.status(400).json({
+          error: "Each endpoint must have port_id and vlan",
+        });
+      }
+    }
+
+    // Forward request to SDX API
+    const response = await fetch(l2vpnUrl, {
+      method: "POST",
+      headers: {
+        Accept: "application/json",
+        "Content-Type": "application/json",
+        ...(req.token && { Authorization: `Bearer ${req.token}` }),
+      },
+      body: JSON.stringify(req.body),
+    });
+
+    if (!isProduction) {
+      console.log("SDX L2VPN API response status:", response.status);
+    }
+
+    const responseText = await response.text();
+    let responseData;
+
+    try {
+      responseData = JSON.parse(responseText);
+    } catch (parseError) {
+      console.error("Failed to parse L2VPN response:", responseText);
+      return res.status(response.status).json({
+        error: "Invalid response from SDX API",
+        ...(!isProduction && { details: responseText }),
+      });
+    }
+
+    if (!response.ok) {
+      console.error("L2VPN creation failed:", response.status, responseData);
+      return res.status(response.status).json({
+        error: "Failed to create L2VPN",
+        status: response.status,
+        ...responseData,
+      });
+    }
+
+    if (!isProduction) {
+      console.log("L2VPN created successfully:", responseData);
+    }
+
+    res.status(response.status).json(responseData);
+  } catch (error) {
+    console.error("L2VPN endpoint error:", error.message);
+    res.status(500).json({
+      error: "Internal server error while creating L2VPN",
+      ...(!isProduction && { message: error.message }),
+    });
+  }
+});
+
 // General SDX API proxy endpoint
 app.all("/api/sdx/*", validateToken, async (req, res) => {
   try {
@@ -626,6 +711,7 @@ app.get("/", (req, res) => {
       "POST /api/send-verification": "Send email verification code",
       "POST /api/verify-code": "Verify email code",
       "GET /api/topology": "Get network topology",
+      "POST /api/l2vpn/1.0": "Create L2VPN connection",
       "GET /health": "Health check",
       ...(!isProduction && {
         "GET /api/test-email": "Test email sending (dev only)",
@@ -667,6 +753,7 @@ app.listen(PORT, () => {
     console.log(`   POST http://localhost:${PORT}/api/send-verification`);
     console.log(`   POST http://localhost:${PORT}/api/verify-code`);
     console.log(`   GET  http://localhost:${PORT}/api/topology`);
+    console.log(`   POST http://localhost:${PORT}/api/l2vpn/1.0`);
     console.log(`   GET  http://localhost:${PORT}/api/test-email`);
     console.log(`   GET  http://localhost:${PORT}/health`);
   }
