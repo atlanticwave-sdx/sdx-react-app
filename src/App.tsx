@@ -198,6 +198,7 @@ function App() {
     if (email) {
       sessionStorage.setItem("pre_validated_email", email);
     }
+    sessionStorage.setItem("trigger_refresh", "true");
     navigateTo("email-validation");
   };
 
