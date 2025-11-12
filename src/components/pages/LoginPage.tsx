@@ -47,7 +47,7 @@ export function LoginPage({ provider, onComplete, onBack }: LoginPageProps) {
       console.error("CILogon authentication failed:", error);
       const errorMessage =
         error instanceof Error ? error.message : "Authentication failed";
-      
+
       toast.error(`❌ ${errorMessage}`);
       setDeviceFlow({
         status: "error",
@@ -56,7 +56,6 @@ export function LoginPage({ provider, onComplete, onBack }: LoginPageProps) {
       setIsLoading(false);
     }
   };
-
 
   const startORCIDFlow = async () => {
     console.log("Starting ORCID authentication...");
@@ -86,7 +85,6 @@ export function LoginPage({ provider, onComplete, onBack }: LoginPageProps) {
       setIsLoading(false);
     }
   };
-
 
   return (
     <div className="container mx-auto px-6 py-16 max-w-3xl bg-[rgb(255,255,255)] min-h-screen">
@@ -202,7 +200,8 @@ export function LoginPage({ provider, onComplete, onBack }: LoginPageProps) {
                 <Alert className="border-2 border-[rgb(120,176,219)] bg-[rgb(236,244,250)]">
                   <Clock className="h-5 w-5 text-[rgb(50,135,200)]" />
                   <AlertDescription className="text-base ml-2 text-[rgb(64,143,204)]">
-                    <strong>Redirecting to CILogon...</strong> You will be redirected momentarily.
+                    <strong>Redirecting to CILogon...</strong> You will be
+                    redirected momentarily.
                   </AlertDescription>
                 </Alert>
               )}
@@ -216,7 +215,6 @@ export function LoginPage({ provider, onComplete, onBack }: LoginPageProps) {
                   </AlertDescription>
                 </Alert>
               )}
-
 
               {deviceFlow.status === "error" && (
                 <div className="space-y-4">

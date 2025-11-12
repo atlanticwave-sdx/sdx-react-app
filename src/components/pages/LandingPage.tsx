@@ -11,8 +11,6 @@ import { Provider } from "@/lib/config";
 import { FullSDXLogo } from "@/components/FullSDXLogo";
 
 interface LandingPageProps {
-  selectedProvider?: Provider;
-  onProviderSelect: (provider: Provider) => void;
   onLogin: (provider: Provider) => void;
   onNavigateToDashboard?: () => void;
 }
@@ -20,28 +18,20 @@ interface LandingPageProps {
 const providerInfo = {
   cilogon: {
     name: "CILogon",
-    color: "bg-[rgb(50,135,200)]",
-    bgColor:
-      "bg-[rgb(236,244,250)] hover:bg-[rgb(236,244,250)] border-[rgb(120,176,219)]",
-    selectedBgColor: "bg-[rgb(236,244,250)] border-[rgb(64,143,204)]",
+    iconPath: "src/assets/images/CILogon-icon.png",
+    description: "Academic federation",
   },
   orcid: {
     name: "ORCID",
-    color: "bg-[rgb(50,135,200)]",
-    bgColor:
-      "bg-[rgb(236,244,250)] hover:bg-[rgb(236,244,250)] border-[rgb(120,176,219)]",
-    selectedBgColor: "bg-[rgb(236,244,250)] border-[rgb(64,143,204)]",
+    iconPath: "src/assets/images/ORCID-ICON.png",
+    description: "Researcher identifiers",
   },
 } as const;
 
 export function LandingPage({
-  selectedProvider,
-  onProviderSelect,
   onLogin,
   onNavigateToDashboard,
 }: LandingPageProps) {
-  const canContinue = selectedProvider;
-
   return (
     <div className="min-h-screen bg-white p-3 pt-8">
       {/* Dashboard button in top right */}
@@ -62,42 +52,50 @@ export function LandingPage({
         <FullSDXLogo />
 
         {/* Provider Selection */}
-        <Card className="bg-[rgb(236,244,250)] border-[rgb(120,176,219)] shadow-lg">
-          <CardHeader className="pb-3 pt-4 px-4 bg-[rgb(50,135,200)] text-white rounded-t-lg text-center">
-            <CardDescription className="text-[rgb(236,244,250)] mt-1">
+        <Card className="bg-white border-[rgb(200,200,200)] shadow-lg">
+          <CardHeader
+            className="text-center border-b"
+            style={{ paddingTop: "10px", paddingBottom: "10px" }}
+          >
+            <CardTitle className="text-2xl font-semibold text-[rgb(50,135,200)]">
               Select an Identity Provider
-            </CardDescription>
+            </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-3 p-4 flex flex-col items-center justify-center">
-            <div className="w-full max-w-md space-y-3 mx-auto">
-              {Object.entries(providerInfo).map(([key, info]) => {
+          <CardContent style={{ paddingTop: "10px", paddingBottom: "50px" }}>
+            <div className="w-full max-w-md mx-auto">
+              {Object.entries(providerInfo).map(([key, info], index) => {
                 const provider = key as Provider;
-                const isSelected = selectedProvider === provider;
+                const isLastButton =
+                  index === Object.entries(providerInfo).length - 1;
 
                 return (
                   <Button
                     key={provider}
-                    variant="ghost"
-                    className={`w-full justify-center p-4 h-auto transition-all duration-200 border-2 rounded-xl ${
-                      isSelected
-                        ? `${info.selectedBgColor} shadow-lg border-opacity-100 transform scale-[1.02]`
-                        : `bg-[rgb(255,255,255)] hover:bg-[rgb(236,244,250)] hover:shadow-md border-[rgb(120,176,219)] hover:border-opacity-100`
-                    }`}
-                    onClick={() => onProviderSelect(provider)}
+                    variant="outline"
+                    className="w-full justify-start p-6 h-auto transition-all duration-200 rounded-lg bg-white hover:bg-[rgb(245,245,245)] !border-[rgb(200,200,200)] hover:!border-[rgb(180,180,180)] hover:shadow-md active:scale-[0.98]"
+                    style={{ marginBottom: isLastButton ? "0" : "10px" }}
+                    onClick={() => onLogin(provider)}
                   >
-                    <div className="text-center flex-1 space-y-2">
-                      <div className="flex items-center justify-between">
-                        <div className="flex-1">
-                          <div className="font-semibold text-base text-[rgb(64,143,204)]">
-                            {info.name}
-                          </div>
-                          <div className="text-sm text-[rgb(50,135,200)]">
-                            {info.name === "ORCID"
-                              ? "Researcher identifiers"
-                              : info.name === "CILogon"
-                              ? "Academic federation"
-                              : "Identity provider"}
-                          </div>
+                    <div className="flex items-center gap-4 w-full">
+                      <div className="flex-shrink-0">
+                        <img
+                          src={info.iconPath}
+                          alt={`${info.name} icon`}
+                          className="w-10 h-10 object-cover rounded"
+                          style={{
+                            minWidth: "40px",
+                            minHeight: "40px",
+                            maxWidth: "40px",
+                            maxHeight: "40px",
+                          }}
+                        />
+                      </div>
+                      <div className="text-left flex-1">
+                        <div className="font-semibold text-lg text-[rgb(50,135,200)]">
+                          {info.name}
+                        </div>
+                        <div className="text-sm text-[rgb(50,135,200)]">
+                          {info.description}
                         </div>
                       </div>
                     </div>
@@ -107,25 +105,6 @@ export function LandingPage({
             </div>
           </CardContent>
         </Card>
-
-        {/* Continue Button */}
-        <div className="flex justify-center pt-4">
-          <Button
-            size="lg"
-            disabled={!canContinue}
-            onClick={() => canContinue && onLogin(selectedProvider)}
-            className={`w-full max-w-md px-6 py-4 text-base font-semibold rounded-xl transition-all duration-200 ${
-              canContinue
-                ? "bg-[rgb(50,135,200)] hover:bg-[rgb(64,143,204)] text-[rgb(255,255,255)] shadow-lg hover:shadow-xl transform hover:scale-[1.02] active:scale-[0.98]"
-                : "bg-[rgb(120,176,219)] text-[rgb(255,255,255)] opacity-50 cursor-not-allowed"
-            }`}
-          >
-            Continue with{" "}
-            {selectedProvider
-              ? providerInfo[selectedProvider].name
-              : "Provider"}
-          </Button>
-        </div>
       </div>
     </div>
   );
