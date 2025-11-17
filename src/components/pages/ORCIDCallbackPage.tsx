@@ -205,6 +205,7 @@ export function ORCIDCallbackPage({
         setTimeout(() => {
           if (onNavigateToEmailValidation) {
             onNavigateToEmailValidation(emailCheck.email);
+            setTimeout(() => window.location.reload(), 100);
           }
         }, 2000);
       }

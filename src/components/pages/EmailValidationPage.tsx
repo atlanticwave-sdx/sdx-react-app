@@ -1,4 +1,5 @@
 // src/components/pages/emailValidationPage.tsx
+import { SessionManager } from "@/lib/session";
 import { useState, useEffect, useRef } from "react";
 import { useGoogleReCaptcha } from "react-google-recaptcha-v3";
 import {
@@ -294,7 +295,7 @@ export function EmailValidationPage({
 
         return;
       }
-
+      SessionManager.setEmailVerified(String(email).trim().toLowerCase());
       setVerificationStep("success");
       toast.success("✅ Email verified successfully!");
       setTimeout(() => onComplete(), 1200);
@@ -317,6 +318,7 @@ export function EmailValidationPage({
   };
 
   const handleConfirmEmail = () => {
+    SessionManager.setEmailVerified(email);
     toast.success("✅ Email confirmed!");
     setVerificationStep("success");
     setTimeout(() => {

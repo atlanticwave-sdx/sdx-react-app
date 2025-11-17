@@ -4,15 +4,15 @@ import { defineConfig, PluginOption } from "vite";
 
 import sparkPlugin from "@github/spark/spark-vite-plugin";
 import createIconImportProxy from "@github/spark/vitePhosphorIconProxyPlugin";
-import { resolve } from 'path'
+import { resolve } from "path";
 
-const projectRoot = process.env.PROJECT_ROOT || import.meta.dirname
+const projectRoot = process.env.PROJECT_ROOT || import.meta.dirname;
 
 // https://vite.dev/config/
 export default defineConfig({
-  base: process.env.NODE_ENV === 'production' ? "/multi-provider-authe/" : "/",
+  base: process.env.NODE_ENV === "production" ? "/multi-provider-authe/" : "/",
   server: {
-    host: '127.0.0.1'
+    host: "127.0.0.1",
   },
   plugins: [
     react(),
@@ -23,7 +23,7 @@ export default defineConfig({
   ],
   resolve: {
     alias: {
-      '@': resolve(projectRoot, 'src')
-    }
+      "@": resolve(projectRoot, "src"),
+    },
   },
 });

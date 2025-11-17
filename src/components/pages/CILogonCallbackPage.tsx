@@ -76,7 +76,9 @@ export function CILogonCallbackPage({
       });
 
       if (storedState !== authState) {
-        console.warn("State parameter mismatch - this may be normal for CILogon callback flow");
+        console.warn(
+          "State parameter mismatch - this may be normal for CILogon callback flow"
+        );
         // Don't throw error - CILogon callback flow might work differently
       }
 
@@ -96,7 +98,7 @@ export function CILogonCallbackPage({
 
     // Get the code verifier from session storage for PKCE
     const codeVerifier = sessionStorage.getItem("cilogon_code_verifier");
-    
+
     console.log("Code verifier found:", !!codeVerifier);
     if (!codeVerifier) {
       console.warn("No code verifier found in sessionStorage");
@@ -198,6 +200,7 @@ export function CILogonCallbackPage({
         setTimeout(() => {
           if (onNavigateToEmailValidation) {
             onNavigateToEmailValidation(emailCheck.email);
+            setTimeout(() => window.location.reload(), 100);
           }
         }, 1500);
       }
@@ -282,8 +285,8 @@ export function CILogonCallbackPage({
             {status === "processing" && (
               <Alert className="border-2 border-[rgb(120,176,219)] bg-[rgb(236,244,250)]">
                 <AlertDescription className="text-base text-[rgb(64,143,204)]">
-                  🔄 Processing CILogon callback and exchanging authorization code
-                  for tokens...
+                  🔄 Processing CILogon callback and exchanging authorization
+                  code for tokens...
                 </AlertDescription>
               </Alert>
             )}
