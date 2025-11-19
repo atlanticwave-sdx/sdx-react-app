@@ -9,6 +9,11 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { toast } from "sonner";
 import {
   TokenData,
@@ -48,6 +53,7 @@ export function Dashboard({
     cilogon?: TokenData;
     orcid?: TokenData;
   }>({});
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [showNewL2VPNModal, setShowNewL2VPNModal] = useState(false);
   const [showTopologyInfo, setShowTopologyInfo] = useState(false);
   const [showAuthInfo, setShowAuthInfo] = useState(false);
@@ -275,138 +281,315 @@ export function Dashboard({
   return (
     <div className="min-h-screen bg-background text-foreground flex">
       {/* Left Sidebar */}
-      <div className="w-80 bg-gradient-to-b from-background via-background to-muted/30 border-r border-border/50 shadow-xl flex flex-col backdrop-blur-sm">
+      <div
+        className={`${
+          isSidebarCollapsed ? "w-20" : "w-80"
+        } bg-gradient-to-b from-background via-background to-muted/30 border-r border-border/50 shadow-xl flex flex-col backdrop-blur-sm transition-all duration-300`}
+      >
         {/* Sidebar Header - Logo & Title */}
-        <div className="p-6 border-b border-border/50 bg-gradient-to-br from-background to-muted/20">
-          <div className="text-left">
-            <h1 className="text-3xl tracking-tight leading-tight font-serif mb-2">
-              <span className="text-sky-500 font-extrabold">Atlantic</span>
-              <span className="text-blue-800 dark:text-blue-300">Wave </span>
-              <span className="inline-block bg-sky-400 text-white rounded-md pl-[4px] pr-[10px] pt-[6px] text-lg font-serif tracking-wide shadow-sm">
-                SDX
-              </span>
-            </h1>
-            <h2 className="text-xs uppercase tracking-[0.05em] leading-tight text-blue-800 dark:text-blue-300/80 mt-[-4px] mb-3 font-medium">
-              International Distributed Software-Defined Exchange
-            </h2>
-            <div className="space-y-2 pt-2 border-t border-border/30">
-              <p className="text-sm text-[rgb(50,135,200)] dark:text-blue-400 font-semibold">
-                Network Topology & Connection Management
-              </p>
+        <div className="p-6 border-b border-border/50 bg-gradient-to-br from-background to-muted/20 relative">
+          {!isSidebarCollapsed && (
+            <div className="text-left">
+              <h1 className="text-3xl tracking-tight leading-tight font-serif mb-2">
+                <span className="text-sky-500 font-extrabold">Atlantic</span>
+                <span className="text-blue-800 dark:text-blue-300">Wave </span>
+                <span className="inline-block bg-sky-400 text-white rounded-md pl-[4px] pr-[10px] pt-[6px] text-lg font-serif tracking-wide shadow-sm">
+                  SDX
+                </span>
+              </h1>
+              <h2 className="text-xs uppercase tracking-[0.05em] leading-tight text-blue-800 dark:text-blue-300/80 mt-[-4px] mb-3 font-medium">
+                International Distributed Software-Defined Exchange
+              </h2>
+              <div className="space-y-2 pt-2 border-t border-border/30">
+                <p className="text-sm text-[rgb(50,135,200)] dark:text-blue-400 font-semibold">
+                  Network Topology & Connection Management
+                </p>
+              </div>
             </div>
-          </div>
+          )}
+          {isSidebarCollapsed && (
+            <div className="flex items-center justify-center">
+              <div className="text-2xl font-serif">
+                <span className="text-sky-500 font-extrabold">A</span>
+                <span className="text-blue-800 dark:text-blue-300">W</span>
+                <span className="inline-block bg-sky-400 text-white rounded-md px-1.5 py-0.5 text-sm">
+                  S
+                </span>
+              </div>
+            </div>
+          )}
+          {/* Toggle Button */}
+          <Button
+            onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
+            variant="ghost"
+            size="sm"
+            className="absolute top-2 right-2 h-8 w-8 p-0"
+          >
+            {isSidebarCollapsed ? "→" : "←"}
+          </Button>
         </div>
 
         {/* Sidebar Navigation */}
-        <div className="flex-1 p-5 space-y-3 overflow-y-auto scrollbar-thin scrollbar-thumb-border scrollbar-track-transparent">
+        <div
+          className={`flex-1 ${
+            isSidebarCollapsed ? "p-2" : "p-5"
+          } space-y-3 overflow-y-auto scrollbar-thin scrollbar-thumb-border scrollbar-track-transparent`}
+        >
           {/* Navigation Section Label */}
-          <div className="px-2 pt-2">
-            <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground/70">
-              Navigation
-            </h3>
-          </div>
+          {!isSidebarCollapsed && (
+            <div className="px-2 pt-2">
+              <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground/70">
+                Navigation
+              </h3>
+            </div>
+          )}
 
           {/* Navigation Buttons */}
           <div className="space-y-2">
-            <Button
-              onClick={onNavigateToTokens}
-              variant="outline"
-              size="sm"
-              className="w-full justify-start border-border/50 text-[rgb(50,135,200)] dark:text-blue-400 hover:bg-[rgb(236,244,250)] dark:hover:bg-blue-500/10 hover:border-[rgb(64,143,204)] dark:hover:border-blue-400/50 transition-all duration-200 hover:shadow-sm hover:translate-x-0.5"
-            >
-              <span className="mr-2.5 text-base">🔐</span>
-              Manage Tokens
-            </Button>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  onClick={onNavigateToTokens}
+                  variant="outline"
+                  size="sm"
+                  className={`w-full ${
+                    isSidebarCollapsed ? "justify-center px-0" : "justify-start"
+                  } border-border/50 text-[rgb(50,135,200)] dark:text-blue-400 hover:bg-[rgb(236,244,250)] dark:hover:bg-blue-500/10 hover:border-[rgb(64,143,204)] dark:hover:border-blue-400/50 transition-all duration-200 hover:shadow-sm hover:translate-x-0.5`}
+                >
+                  <span
+                    className={`text-base ${
+                      !isSidebarCollapsed ? "mr-2.5" : ""
+                    }`}
+                  >
+                    🔐
+                  </span>
+                  {!isSidebarCollapsed && "Manage Tokens"}
+                </Button>
+              </TooltipTrigger>
+              {isSidebarCollapsed && (
+                <TooltipContent side="right">
+                  <p>Manage Tokens</p>
+                </TooltipContent>
+              )}
+            </Tooltip>
 
-            <Button
-              onClick={loadTopology}
-              disabled={!hasValidTokens || isLoadingTopology}
-              variant="outline"
-              size="sm"
-              className="w-full justify-start border-border/50 text-[rgb(50,135,200)] dark:text-blue-400 hover:bg-[rgb(236,244,250)] dark:hover:bg-blue-500/10 hover:border-[rgb(64,143,204)] dark:hover:border-blue-400/50 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 hover:shadow-sm hover:translate-x-0.5 disabled:hover:translate-x-0"
-            >
-              <span className="mr-2.5 text-base">
-                {isLoadingTopology ? "⏳" : "🔄"}
-              </span>
-              {isLoadingTopology ? "Loading..." : "Refresh Topology"}
-            </Button>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  onClick={loadTopology}
+                  disabled={!hasValidTokens || isLoadingTopology}
+                  variant="outline"
+                  size="sm"
+                  className={`w-full ${
+                    isSidebarCollapsed ? "justify-center px-0" : "justify-start"
+                  } border-border/50 text-[rgb(50,135,200)] dark:text-blue-400 hover:bg-[rgb(236,244,250)] dark:hover:bg-blue-500/10 hover:border-[rgb(64,143,204)] dark:hover:border-blue-400/50 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 hover:shadow-sm hover:translate-x-0.5 disabled:hover:translate-x-0`}
+                >
+                  <span
+                    className={`text-base ${
+                      !isSidebarCollapsed ? "mr-2.5" : ""
+                    }`}
+                  >
+                    {isLoadingTopology ? "⏳" : "🔄"}
+                  </span>
+                  {!isSidebarCollapsed &&
+                    (isLoadingTopology ? "Loading..." : "Refresh Topology")}
+                </Button>
+              </TooltipTrigger>
+              {isSidebarCollapsed && (
+                <TooltipContent side="right">
+                  <p>{isLoadingTopology ? "Loading..." : "Refresh Topology"}</p>
+                </TooltipContent>
+              )}
+            </Tooltip>
 
             <div className="pt-2">
-              <Button
-                onClick={() => {
-                  console.log("New Connection button clicked");
-                  setShowNewL2VPNModal(true);
-                }}
-                disabled={!hasValidTokens}
-                size="sm"
-                className="w-full justify-start bg-[rgb(50,135,200)] dark:bg-blue-600 hover:bg-[rgb(40,120,185)] dark:hover:bg-blue-700 text-white shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] font-semibold"
-              >
-                <span className="mr-2.5 text-base">🔗</span>
-                New L2VPN
-              </Button>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    onClick={() => {
+                      console.log("New Connection button clicked");
+                      setShowNewL2VPNModal(true);
+                    }}
+                    disabled={!hasValidTokens}
+                    size="sm"
+                    className={`w-full ${
+                      isSidebarCollapsed
+                        ? "justify-center px-0"
+                        : "justify-start"
+                    } bg-[rgb(50,135,200)] dark:bg-blue-600 hover:bg-[rgb(40,120,185)] dark:hover:bg-blue-700 text-white shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] font-semibold`}
+                  >
+                    <span
+                      className={`text-base ${
+                        !isSidebarCollapsed ? "mr-2.5" : ""
+                      }`}
+                    >
+                      🔗
+                    </span>
+                    {!isSidebarCollapsed && "New L2VPN"}
+                  </Button>
+                </TooltipTrigger>
+                {isSidebarCollapsed && (
+                  <TooltipContent side="right">
+                    <p>New L2VPN</p>
+                  </TooltipContent>
+                )}
+              </Tooltip>
             </div>
           </div>
 
           {/* Status Section */}
           <div className="pt-4 mt-4 border-t border-border/50">
-            <div className="px-2 pt-2 pb-2">
-              <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground/70">
-                Status
-              </h3>
-            </div>
+            {!isSidebarCollapsed && (
+              <div className="px-2 pt-2 pb-2">
+                <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground/70">
+                  Status
+                </h3>
+              </div>
+            )}
             <div className="space-y-2">
-              <Button
-                onClick={() => setShowAuthInfo(true)}
-                variant="outline"
-                size="sm"
-                className="w-full justify-start border-border/50 text-[rgb(50,135,200)] dark:text-blue-400 hover:bg-[rgb(236,244,250)] dark:hover:bg-blue-500/10 hover:border-[rgb(64,143,204)] dark:hover:border-blue-400/50 transition-all duration-200 hover:shadow-sm hover:translate-x-0.5 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-x-0"
-                disabled={!hasValidTokens}
-              >
-                <span className="mr-2.5 text-base">🌐</span>
-                Connection Status
-              </Button>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    onClick={() => setShowAuthInfo(true)}
+                    variant="outline"
+                    size="sm"
+                    className={`w-full ${
+                      isSidebarCollapsed
+                        ? "justify-center px-0"
+                        : "justify-start"
+                    } border-border/50 text-[rgb(50,135,200)] dark:text-blue-400 hover:bg-[rgb(236,244,250)] dark:hover:bg-blue-500/10 hover:border-[rgb(64,143,204)] dark:hover:border-blue-400/50 transition-all duration-200 hover:shadow-sm hover:translate-x-0.5 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-x-0`}
+                    disabled={!hasValidTokens}
+                  >
+                    <span
+                      className={`text-base ${
+                        !isSidebarCollapsed ? "mr-2.5" : ""
+                      }`}
+                    >
+                      🌐
+                    </span>
+                    {!isSidebarCollapsed && "Connection Status"}
+                  </Button>
+                </TooltipTrigger>
+                {isSidebarCollapsed && (
+                  <TooltipContent side="right">
+                    <p>Connection Status</p>
+                  </TooltipContent>
+                )}
+              </Tooltip>
 
-              <Button
-                onClick={() => setShowTopologyInfo(true)}
-                variant="outline"
-                size="sm"
-                className="w-full justify-start border-border/50 text-[rgb(50,135,200)] dark:text-blue-400 hover:bg-[rgb(236,244,250)] dark:hover:bg-blue-500/10 hover:border-[rgb(64,143,204)] dark:hover:border-blue-400/50 transition-all duration-200 hover:shadow-sm hover:translate-x-0.5 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-x-0"
-                disabled={!topology && !isLoadingTopology}
-              >
-                <span className="mr-2.5 text-base">📊</span>
-                Topology Stats
-              </Button>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    onClick={() => setShowTopologyInfo(true)}
+                    variant="outline"
+                    size="sm"
+                    className={`w-full ${
+                      isSidebarCollapsed
+                        ? "justify-center px-0"
+                        : "justify-start"
+                    } border-border/50 text-[rgb(50,135,200)] dark:text-blue-400 hover:bg-[rgb(236,244,250)] dark:hover:bg-blue-500/10 hover:border-[rgb(64,143,204)] dark:hover:border-blue-400/50 transition-all duration-200 hover:shadow-sm hover:translate-x-0.5 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-x-0`}
+                    disabled={!topology && !isLoadingTopology}
+                  >
+                    <span
+                      className={`text-base ${
+                        !isSidebarCollapsed ? "mr-2.5" : ""
+                      }`}
+                    >
+                      📊
+                    </span>
+                    {!isSidebarCollapsed && "Topology Stats"}
+                  </Button>
+                </TooltipTrigger>
+                {isSidebarCollapsed && (
+                  <TooltipContent side="right">
+                    <p>Topology Stats</p>
+                  </TooltipContent>
+                )}
+              </Tooltip>
             </div>
           </div>
-        </div>
 
-        {/* Sidebar Footer */}
-        <div className="p-5 border-t border-border/50 bg-gradient-to-t from-muted/20 to-transparent space-y-3">
-          <div className="flex items-center justify-between px-1">
-            <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-              Appearance
-            </span>
-            <ThemeToggle />
-          </div>
-          <div className="flex gap-2">
-            <Button
-              onClick={onBack}
-              variant="ghost"
-              size="sm"
-              className="flex-1 justify-start text-[rgb(50,135,200)] dark:text-blue-400 hover:bg-[rgb(236,244,250)] dark:hover:bg-blue-500/10 transition-all duration-200 hover:shadow-sm hover:translate-x-0.5 font-medium"
+          {/* Sidebar Footer */}
+          <div
+            className={`${
+              isSidebarCollapsed ? "p-2" : "p-5"
+            } border-t border-border/50 bg-gradient-to-t from-muted/20 to-transparent space-y-3`}
+          >
+            {!isSidebarCollapsed && (
+              <div className="flex items-center justify-between px-1">
+                <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                  Appearance
+                </span>
+                <ThemeToggle />
+              </div>
+            )}
+            {isSidebarCollapsed && (
+              <div className="flex justify-center">
+                <ThemeToggle />
+              </div>
+            )}
+            <div
+              className={`flex ${
+                isSidebarCollapsed ? "flex-col gap-2" : "gap-2"
+              }`}
             >
-              <span className="mr-2.5 text-base">🏠</span>
-              Back to Main
-            </Button>
-            <Button
-              onClick={handleLogout}
-              variant="outline"
-              size="sm"
-              className="flex-1 justify-start text-red-600 dark:text-red-400 border-red-300 dark:border-red-800/50 hover:bg-red-50 dark:hover:bg-red-950/30 hover:border-red-400 dark:hover:border-red-700/50 transition-all duration-200 hover:shadow-sm hover:translate-x-0.5 font-medium"
-            >
-              <span className="mr-2.5 text-base">🚪</span>
-              Logout
-            </Button>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    onClick={onBack}
+                    variant="ghost"
+                    size="sm"
+                    className={`${
+                      isSidebarCollapsed
+                        ? "w-full justify-center px-0"
+                        : "flex-1 justify-start"
+                    } text-[rgb(50,135,200)] dark:text-blue-400 hover:bg-[rgb(236,244,250)] dark:hover:bg-blue-500/10 transition-all duration-200 hover:shadow-sm hover:translate-x-0.5 font-medium`}
+                  >
+                    <span
+                      className={`text-base ${
+                        !isSidebarCollapsed ? "mr-2.5" : ""
+                      }`}
+                    >
+                      🏠
+                    </span>
+                    {!isSidebarCollapsed && "Back to Main"}
+                  </Button>
+                </TooltipTrigger>
+                {isSidebarCollapsed && (
+                  <TooltipContent side="right">
+                    <p>Back to Main</p>
+                  </TooltipContent>
+                )}
+              </Tooltip>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    onClick={handleLogout}
+                    variant="outline"
+                    size="sm"
+                    className={`${
+                      isSidebarCollapsed
+                        ? "w-full justify-center px-0"
+                        : "flex-1 justify-start"
+                    } text-red-600 dark:text-red-400 border-red-300 dark:border-red-800/50 hover:bg-red-50 dark:hover:bg-red-950/30 hover:border-red-400 dark:hover:border-red-700/50 transition-all duration-200 hover:shadow-sm hover:translate-x-0.5 font-medium`}
+                  >
+                    <span
+                      className={`text-base ${
+                        !isSidebarCollapsed ? "mr-2.5" : ""
+                      }`}
+                    >
+                      🚪
+                    </span>
+                    {!isSidebarCollapsed && "Logout"}
+                  </Button>
+                </TooltipTrigger>
+                {isSidebarCollapsed && (
+                  <TooltipContent side="right">
+                    <p>Logout</p>
+                  </TooltipContent>
+                )}
+              </Tooltip>
+            </div>
           </div>
         </div>
       </div>
