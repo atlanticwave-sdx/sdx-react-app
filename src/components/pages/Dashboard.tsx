@@ -1,14 +1,14 @@
 import { useState, useEffect } from "react";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { toast } from "sonner";
 import {
   TokenData,
@@ -16,7 +16,11 @@ import {
   TopologyNode,
   TopologyLink,
 } from "@/lib/types";
-import { TokenStorage, calculateOwnership, decodeJWT } from "@/lib/token-storage";
+import {
+  TokenStorage,
+  calculateOwnership,
+  decodeJWT,
+} from "@/lib/token-storage";
 import { ApiService } from "@/lib/api";
 import {
   processTopologyData,
@@ -45,6 +49,8 @@ export function Dashboard({
     orcid?: TokenData;
   }>({});
   const [showNewL2VPNModal, setShowNewL2VPNModal] = useState(false);
+  const [showTopologyInfo, setShowTopologyInfo] = useState(false);
+  const [showAuthInfo, setShowAuthInfo] = useState(false);
   const [topology, setTopology] = useState<TopologyResponse | null>(null);
   const [processedTopology, setProcessedTopology] =
     useState<ProcessedTopology | null>(null);
@@ -134,15 +140,19 @@ export function Dashboard({
   const extractAllPorts = () => {
     if (!processedTopology) return [];
 
-    const allPorts: Array<{ id: string; entities: string[]; vlan_range?: number[] }> = [];
+    const allPorts: Array<{
+      id: string;
+      entities: string[];
+      vlan_range?: number[];
+    }> = [];
 
-    Object.values(processedTopology.nodes_array).forEach(location => {
-      location.sub_nodes.forEach(subNode => {
+    Object.values(processedTopology.nodes_array).forEach((location) => {
+      location.sub_nodes.forEach((subNode) => {
         subNode.ports.forEach((port: any) => {
           allPorts.push({
             id: port.id,
             entities: port.entities || [],
-            vlan_range: port.services?.l2vpn_ptp?.vlan_range || []
+            vlan_range: port.services?.l2vpn_ptp?.vlan_range || [],
           });
         });
       });
@@ -160,8 +170,8 @@ export function Dashboard({
       // Get the most recent token to extract sub field
       const orcidToken = TokenStorage.getToken("orcid");
       const cilogonToken = TokenStorage.getToken("cilogon");
-      const validTokens = [orcidToken, cilogonToken].filter(token =>
-        token && TokenStorage.isTokenValid(token)
+      const validTokens = [orcidToken, cilogonToken].filter(
+        (token) => token && TokenStorage.isTokenValid(token)
       );
 
       if (validTokens.length === 0) {
@@ -169,7 +179,9 @@ export function Dashboard({
         return;
       }
 
-      const mostRecentToken = validTokens.sort((a, b) => b!.issued_at - a!.issued_at)[0];
+      const mostRecentToken = validTokens.sort(
+        (a, b) => b!.issued_at - a!.issued_at
+      )[0];
 
       if (!mostRecentToken?.id_token) {
         toast.error("No ID token found. Please login again.");
@@ -193,7 +205,7 @@ export function Dashboard({
       const requestPayload = {
         name: l2vpnData.name,
         endpoints: l2vpnData.endpoints,
-        ownership: ownership
+        ownership: ownership,
       };
 
       console.log("Final L2VPN request payload:", requestPayload);
@@ -209,7 +221,13 @@ export function Dashboard({
       console.log("L2VPN API Response received:", response);
 
       // Show response in alert - SUCCESS
-      alert(`✅ L2VPN Created Successfully!\n\nResponse:\n${JSON.stringify(response, null, 2)}`);
+      alert(
+        `✅ L2VPN Created Successfully!\n\nResponse:\n${JSON.stringify(
+          response,
+          null,
+          2
+        )}`
+      );
 
       // Dismiss loading toast
       if (loadingToast) toast.dismiss(loadingToast);
@@ -218,7 +236,6 @@ export function Dashboard({
 
       // Optionally reload topology to show new connection
       // await loadTopology();
-
     } catch (error: any) {
       console.error("Failed to create L2VPN:", error);
       console.log("Error object:", error);
@@ -228,8 +245,11 @@ export function Dashboard({
       if (loadingToast) toast.dismiss(loadingToast);
 
       // Show error in alert with full response data
-      const errorMessage = error instanceof Error ? error.message : "Unknown error";
-      const errorData = error.responseData ? JSON.stringify(error.responseData, null, 2) : errorMessage;
+      const errorMessage =
+        error instanceof Error ? error.message : "Unknown error";
+      const errorData = error.responseData
+        ? JSON.stringify(error.responseData, null, 2)
+        : errorMessage;
 
       console.log("About to show alert with data:", errorData);
       alert(`❌ L2VPN Creation Failed!\n\nFull Response:\n${errorData}`);
@@ -253,146 +273,149 @@ export function Dashboard({
   const hasValidTokens = availableTokens.length > 0;
 
   return (
-    <div className="min-h-screen bg-background text-foreground">
-      {/* Beautiful Clean Header */}
-      <div className="bg-gradient-to-r from-background to-muted border-b border-border shadow-sm">
-        <div className="max-w-7xl mx-auto px-8 py-6">
-          {/* Top Row - Logo, Title & Status */}
-          <div className="flex items-center justify-between mb-6">
-            <div className="flex items-center gap-6">
-              {/* Title Section */}
-              <div>
-                {/* Logo Start*/}
-                <div className="flex items-center justify-center gap-4">
-                  <div className="text-left">
-                    <h1 className="text-4xl tracking-tight leading-tight font-serif">
-                      <span className="text-sky-500 font-extrabold">
-                        Atlantic
-                      </span>
-                      <span className="text-blue-800">Wave </span>
-                      <span className="inline-block bg-sky-400 text-white rounded-md pl-[4px] pr-[10px] pt-[8px] text-xl font-serif tracking-wide text-superbold">
-                        SDX
-                      </span>
-                    </h1>
-                    <h2 className="text-xs uppercase tracking-tight leading-tight text-blue-800 mt-[-6px]">
-                      International Distributed Software-Defined Exchange
-                    </h2>
-                  </div>
-                </div>
-                {/* Logo End*/}
-                <p className="text-[rgb(50,135,200)] font-medium">
-                  Network Topology & Connection Management
-                </p>
-              </div>
-            </div>
-
-            {/* Status Info & Theme Toggle */}
-            <div className="flex items-center gap-6">
-              <div className="text-right">
-                <div className="flex items-center gap-2 mb-1">
-                  <div
-                    className={`w-2 h-2 rounded-full ${
-                      hasValidTokens ? "bg-green-500" : "bg-gray-400"
-                    }`}
-                  ></div>
-                  <span className="text-sm font-semibold text-[rgb(64,143,204)]">
-                    {hasValidTokens
-                      ? `Authenticated via ${Object.keys(tokens)
-                          .map((k) => k.toUpperCase())
-                          .join(", ")}`
-                      : "Not authenticated"}
-                  </span>
-                </div>
-                <div className="text-xs text-[rgb(50,135,200)] opacity-80">
-                  {nodeCount === 0
-                    ? "Ready for topology data"
-                    : `${nodeCount} locations • ${linkCount} connections`}
-                </div>
-              </div>
-              <ThemeToggle />
+    <div className="min-h-screen bg-background text-foreground flex">
+      {/* Left Sidebar */}
+      <div className="w-80 bg-gradient-to-b from-background via-background to-muted/30 border-r border-border/50 shadow-xl flex flex-col backdrop-blur-sm">
+        {/* Sidebar Header - Logo & Title */}
+        <div className="p-6 border-b border-border/50 bg-gradient-to-br from-background to-muted/20">
+          <div className="text-left">
+            <h1 className="text-3xl tracking-tight leading-tight font-serif mb-2">
+              <span className="text-sky-500 font-extrabold">Atlantic</span>
+              <span className="text-blue-800 dark:text-blue-300">Wave </span>
+              <span className="inline-block bg-sky-400 text-white rounded-md pl-[4px] pr-[10px] pt-[6px] text-lg font-serif tracking-wide shadow-sm">
+                SDX
+              </span>
+            </h1>
+            <h2 className="text-xs uppercase tracking-[0.05em] leading-tight text-blue-800 dark:text-blue-300/80 mt-[-4px] mb-3 font-medium">
+              International Distributed Software-Defined Exchange
+            </h2>
+            <div className="space-y-2 pt-2 border-t border-border/30">
+              <p className="text-sm text-[rgb(50,135,200)] dark:text-blue-400 font-semibold">
+                Network Topology & Connection Management
+              </p>
             </div>
           </div>
+        </div>
 
-          {/* Bottom Row - Action Buttons */}
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <Button
-                onClick={onNavigateToTokens}
-                variant="outline"
-                size="sm"
-                className="border-[rgb(120,176,219)] text-[rgb(50,135,200)] hover:bg-[rgb(236,244,250)] hover:border-[rgb(64,143,204)] transition-all duration-200"
-              >
-                🔐 Manage Tokens
-              </Button>
+        {/* Sidebar Navigation */}
+        <div className="flex-1 p-5 space-y-3 overflow-y-auto scrollbar-thin scrollbar-thumb-border scrollbar-track-transparent">
+          {/* Navigation Section Label */}
+          <div className="px-2 pt-2">
+            <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground/70">
+              Navigation
+            </h3>
+          </div>
 
-              <Button
-                onClick={onBack}
-                variant="ghost"
-                size="sm"
-                className="text-[rgb(50,135,200)] hover:bg-[rgb(236,244,250)] transition-all duration-200"
-              >
-                ← Back to Main
-              </Button>
+          {/* Navigation Buttons */}
+          <div className="space-y-2">
+            <Button
+              onClick={onNavigateToTokens}
+              variant="outline"
+              size="sm"
+              className="w-full justify-start border-border/50 text-[rgb(50,135,200)] dark:text-blue-400 hover:bg-[rgb(236,244,250)] dark:hover:bg-blue-500/10 hover:border-[rgb(64,143,204)] dark:hover:border-blue-400/50 transition-all duration-200 hover:shadow-sm hover:translate-x-0.5"
+            >
+              <span className="mr-2.5 text-base">🔐</span>
+              Manage Tokens
+            </Button>
 
-              {onLogout && (
-                <Button
-                  onClick={onLogout}
-                  variant="outline"
-                  size="sm"
-                  className="text-red-600 border-red-300 hover:bg-red-50 transition-all duration-200"
-                >
-                  🚪 Logout
-                </Button>
-              )}
-            </div>
+            <Button
+              onClick={loadTopology}
+              disabled={!hasValidTokens || isLoadingTopology}
+              variant="outline"
+              size="sm"
+              className="w-full justify-start border-border/50 text-[rgb(50,135,200)] dark:text-blue-400 hover:bg-[rgb(236,244,250)] dark:hover:bg-blue-500/10 hover:border-[rgb(64,143,204)] dark:hover:border-blue-400/50 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 hover:shadow-sm hover:translate-x-0.5 disabled:hover:translate-x-0"
+            >
+              <span className="mr-2.5 text-base">
+                {isLoadingTopology ? "⏳" : "🔄"}
+              </span>
+              {isLoadingTopology ? "Loading..." : "Refresh Topology"}
+            </Button>
 
-            {/* Primary Action Buttons */}
-            <div className="flex items-center gap-4">
-              <Button
-                onClick={loadTopology}
-                disabled={!hasValidTokens || isLoadingTopology}
-                variant="outline"
-                size="sm"
-                className="border-[rgb(120,176,219)] text-[rgb(50,135,200)] hover:bg-[rgb(236,244,250)] disabled:opacity-50"
-              >
-                {isLoadingTopology ? (
-                  <>🔄 Loading...</>
-                ) : (
-                  <>🔄 Refresh Topology</>
-                )}
-              </Button>
-
+            <div className="pt-2">
               <Button
                 onClick={() => {
                   console.log("New Connection button clicked");
                   setShowNewL2VPNModal(true);
                 }}
                 disabled={!hasValidTokens}
-                size="lg"
-                className="bg-[rgb(50,135,200)] hover:bg-[rgb(40,120,185)] text-white shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed px-6 py-3 text-base font-semibold rounded-xl transition-all duration-200 transform hover:scale-105 active:scale-95"
+                size="sm"
+                className="w-full justify-start bg-[rgb(50,135,200)] dark:bg-blue-600 hover:bg-[rgb(40,120,185)] dark:hover:bg-blue-700 text-white shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] font-semibold"
               >
-                <span className="mr-2 text-lg">🔗</span>
+                <span className="mr-2.5 text-base">🔗</span>
                 New L2VPN
+              </Button>
+            </div>
+          </div>
+
+          {/* Status Section */}
+          <div className="pt-4 mt-4 border-t border-border/50">
+            <div className="px-2 pt-2 pb-2">
+              <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground/70">
+                Status
+              </h3>
+            </div>
+            <div className="space-y-2">
+              <Button
+                onClick={() => setShowAuthInfo(true)}
+                variant="outline"
+                size="sm"
+                className="w-full justify-start border-border/50 text-[rgb(50,135,200)] dark:text-blue-400 hover:bg-[rgb(236,244,250)] dark:hover:bg-blue-500/10 hover:border-[rgb(64,143,204)] dark:hover:border-blue-400/50 transition-all duration-200 hover:shadow-sm hover:translate-x-0.5 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-x-0"
+                disabled={!hasValidTokens}
+              >
+                <span className="mr-2.5 text-base">🌐</span>
+                Connection Status
               </Button>
 
               <Button
-                onClick={handleLogout}
+                onClick={() => setShowTopologyInfo(true)}
                 variant="outline"
-                size="lg"
-                className="border-2 border-red-200 text-red-600 hover:bg-red-50 hover:border-red-300 hover:text-red-700 px-5 py-3 text-base font-medium rounded-xl transition-all duration-200 hover:shadow-lg"
+                size="sm"
+                className="w-full justify-start border-border/50 text-[rgb(50,135,200)] dark:text-blue-400 hover:bg-[rgb(236,244,250)] dark:hover:bg-blue-500/10 hover:border-[rgb(64,143,204)] dark:hover:border-blue-400/50 transition-all duration-200 hover:shadow-sm hover:translate-x-0.5 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-x-0"
+                disabled={!topology && !isLoadingTopology}
               >
-                <span className="mr-2">🚪</span>
-                Logout
+                <span className="mr-2.5 text-base">📊</span>
+                Topology Stats
               </Button>
             </div>
           </div>
         </div>
+
+        {/* Sidebar Footer */}
+        <div className="p-5 border-t border-border/50 bg-gradient-to-t from-muted/20 to-transparent space-y-3">
+          <div className="flex items-center justify-between px-1">
+            <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+              Appearance
+            </span>
+            <ThemeToggle />
+          </div>
+          <div className="flex gap-2">
+            <Button
+              onClick={onBack}
+              variant="ghost"
+              size="sm"
+              className="flex-1 justify-start text-[rgb(50,135,200)] dark:text-blue-400 hover:bg-[rgb(236,244,250)] dark:hover:bg-blue-500/10 transition-all duration-200 hover:shadow-sm hover:translate-x-0.5 font-medium"
+            >
+              <span className="mr-2.5 text-base">🏠</span>
+              Back to Main
+            </Button>
+            <Button
+              onClick={handleLogout}
+              variant="outline"
+              size="sm"
+              className="flex-1 justify-start text-red-600 dark:text-red-400 border-red-300 dark:border-red-800/50 hover:bg-red-50 dark:hover:bg-red-950/30 hover:border-red-400 dark:hover:border-red-700/50 transition-all duration-200 hover:shadow-sm hover:translate-x-0.5 font-medium"
+            >
+              <span className="mr-2.5 text-base">🚪</span>
+              Logout
+            </Button>
+          </div>
+        </div>
       </div>
 
-      {/* Authentication Warning */}
-      {!hasValidTokens && (
-        <div className="px-6 py-4">
-          <div className="max-w-7xl mx-auto">
+      {/* Main Content Area - Full Screen Map */}
+      <div className="flex-1 flex flex-col overflow-hidden">
+        {/* Authentication Warning */}
+        {!hasValidTokens && (
+          <div className="px-6 py-4 border-b border-border">
             <Alert className="border-2 border-yellow-200 bg-yellow-50">
               <AlertDescription className="text-yellow-800">
                 <span className="font-semibold">Authentication required.</span>{" "}
@@ -407,13 +430,11 @@ export function Dashboard({
               </AlertDescription>
             </Alert>
           </div>
-        </div>
-      )}
+        )}
 
-      {/* Topology Error */}
-      {topologyError && (
-        <div className="px-6 py-4">
-          <div className="max-w-7xl mx-auto">
+        {/* Topology Error */}
+        {topologyError && (
+          <div className="px-6 py-4 border-b border-border">
             <Alert className="border-2 border-red-200 bg-red-50">
               <AlertDescription className="text-red-800">
                 <span className="font-semibold">Failed to load topology:</span>{" "}
@@ -428,43 +449,22 @@ export function Dashboard({
               </AlertDescription>
             </Alert>
           </div>
-        </div>
-      )}
+        )}
 
-      {/* Main Content - Full Width Map */}
-      <div className="px-6 py-6">
-        <div className="max-w-7xl mx-auto">
-          {/* Map - Full Width */}
-          <Card className="shadow-lg border-2 border-[rgb(120,176,219)] h-[700px]">
-            <CardHeader className="pb-4">
-              <CardTitle className="text-xl text-[rgb(64,143,204)]">
-                Network Topology
-              </CardTitle>
-              <CardDescription className="text-[rgb(50,135,200)]">
-                {isLoadingTopology
-                  ? "Loading topology data from API..."
-                  : topology
-                  ? `Showing ${topology.nodes.length} nodes and ${topology.links.length} links from SDX API`
-                  : "Interactive map view - click 'Refresh Topology' to load data"}
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="p-4 h-[600px]">
-              <div className="h-full rounded-lg overflow-hidden border border-[rgb(120,176,219)]">
-                {processedTopology ? (
-                  <TopologyMap
-                    processedData={processedTopology}
-                    linksArray={processedTopology.links_array}
-                  />
-                ) : (
-                  <div className="h-full flex items-center justify-center text-gray-500">
-                    {isLoadingTopology
-                      ? "Loading topology map..."
-                      : "Click 'Refresh Topology' to load the map"}
-                  </div>
-                )}
-              </div>
-            </CardContent>
-          </Card>
+        {/* Full Screen Map */}
+        <div className="flex-1 relative overflow-hidden">
+          {processedTopology ? (
+            <TopologyMap
+              processedData={processedTopology}
+              linksArray={processedTopology.links_array}
+            />
+          ) : (
+            <div className="h-full flex items-center justify-center text-gray-500 bg-muted/30">
+              {isLoadingTopology
+                ? "Loading topology map..."
+                : "Click 'Refresh Topology' to load the map"}
+            </div>
+          )}
         </div>
       </div>
 
@@ -478,6 +478,122 @@ export function Dashboard({
         onConfirm={handleNewL2VPN}
         availablePorts={extractAllPorts()}
       />
+
+      {/* Topology Info Dialog */}
+      <Dialog open={showTopologyInfo} onOpenChange={setShowTopologyInfo}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <span className="text-xl">ℹ️</span>
+              Topology Information
+            </DialogTitle>
+            <DialogDescription>
+              Network topology data from SDX API
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            {isLoadingTopology ? (
+              <p className="text-sm text-muted-foreground">
+                Loading topology data from API...
+              </p>
+            ) : topology ? (
+              <div className="space-y-3">
+                <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
+                  <span className="text-sm font-medium">Nodes</span>
+                  <span className="text-lg font-bold text-primary">
+                    {topology.nodes.length}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
+                  <span className="text-sm font-medium">Links</span>
+                  <span className="text-lg font-bold text-primary">
+                    {topology.links.length}
+                  </span>
+                </div>
+                <div className="pt-2 border-t">
+                  <p className="text-xs text-muted-foreground">
+                    Showing {topology.nodes.length} nodes and{" "}
+                    {topology.links.length} links from SDX API
+                  </p>
+                </div>
+              </div>
+            ) : (
+              <p className="text-sm text-muted-foreground">
+                Interactive map view - click 'Refresh Topology' to load data
+              </p>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Authentication Info Dialog */}
+      <Dialog open={showAuthInfo} onOpenChange={setShowAuthInfo}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <span className="text-xl">🌐</span>
+              Authentication Status
+            </DialogTitle>
+            <DialogDescription>
+              Current authentication and connection information
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            {hasValidTokens ? (
+              <>
+                <div className="flex items-center gap-3 p-3 bg-muted rounded-lg">
+                  <div className="relative">
+                    <div className="w-3 h-3 rounded-full bg-green-500 shadow-sm"></div>
+                    {hasValidTokens && (
+                      <div className="absolute inset-0 w-3 h-3 rounded-full bg-green-500 animate-ping opacity-75"></div>
+                    )}
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-sm font-medium">Authenticated via</p>
+                    <p className="text-lg font-bold text-primary">
+                      {Object.keys(tokens)
+                        .map((k) => k.toUpperCase())
+                        .join(", ")}
+                    </p>
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="p-3 bg-muted rounded-lg">
+                    <p className="text-xs text-muted-foreground mb-1">
+                      Locations
+                    </p>
+                    <p className="text-2xl font-bold text-primary">
+                      {nodeCount}
+                    </p>
+                  </div>
+                  <div className="p-3 bg-muted rounded-lg">
+                    <p className="text-xs text-muted-foreground mb-1">
+                      Connections
+                    </p>
+                    <p className="text-2xl font-bold text-primary">
+                      {linkCount}
+                    </p>
+                  </div>
+                </div>
+                <div className="pt-2 border-t">
+                  <p className="text-xs text-muted-foreground">
+                    {nodeCount === 0
+                      ? "Ready for topology data"
+                      : `${nodeCount} locations • ${linkCount} connections`}
+                  </p>
+                </div>
+              </>
+            ) : (
+              <div className="p-3 bg-muted rounded-lg">
+                <p className="text-sm text-muted-foreground">
+                  Not authenticated. Please authenticate with an identity
+                  provider to access full functionality.
+                </p>
+              </div>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
