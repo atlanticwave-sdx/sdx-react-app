@@ -199,7 +199,10 @@ export function Dashboard({
     cilogon?: TokenData;
     orcid?: TokenData;
   }>({});
-  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(true);
+  const [selectedSection, setSelectedSection] = useState<
+    "newL2VPN" | "connectionStatus" | "topologyStats" | null
+  >(null);
   const [showNewL2VPNModal, setShowNewL2VPNModal] = useState(false);
   const [showTopologyInfo, setShowTopologyInfo] = useState(false);
   const [showAuthInfo, setShowAuthInfo] = useState(false);
@@ -429,18 +432,21 @@ export function Dashboard({
       {/* Left Sidebar */}
       <div
         className={`${
-          isSidebarCollapsed ? "w-20" : "w-80"
+          selectedSection || !isSidebarCollapsed ? "w-80" : "w-20"
         } bg-gradient-to-b from-background via-background to-muted/30 border-r border-border/50 shadow-xl flex flex-col backdrop-blur-sm transition-all duration-300`}
       >
         {/* Sidebar Header - Logo & Title */}
         <div className="p-6 border-b border-border/50 bg-gradient-to-br from-background to-muted/20 relative">
-          {!isSidebarCollapsed && (
-            <div className="text-left flex items-center gap-3 mb-4">
+          {(selectedSection || !isSidebarCollapsed) && (
+            <div
+              className="text-left flex items-center gap-3 mb-4"
+              style={{ marginLeft: "8px" }}
+            >
               <img
                 src={logoImage}
                 alt="AtlanticWave SDX Logo"
                 className="w-12 h-12 max-w-12 max-h-12 object-contain flex-shrink-0"
-                style={{ width: "45px", height: "45px" }}
+                style={{ width: "64px", height: "64px" }}
               />
               <h1 className="text-3xl tracking-tight leading-tight font-serif">
                 <span className="text-sky-500 font-extrabold">Atlantic</span>
@@ -451,289 +457,341 @@ export function Dashboard({
               </h1>
             </div>
           )}
-          {isSidebarCollapsed && (
+          {!selectedSection && isSidebarCollapsed && (
             <div className="flex items-center justify-center">
               <img
                 src={logoImage}
                 alt="AtlanticWave SDX Logo"
-                className="w-6 h-6 max-w-6 max-h-6 object-contain flex-shrink-0"
+                className="w-12 h-12 max-w-12 max-h-12 object-contain flex-shrink-0"
                 style={{ width: "64px", height: "64px" }}
               />
             </div>
           )}
-          {/* Toggle Button */}
-          <Button
-            onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
-            variant="ghost"
-            size="sm"
-            className="absolute top-2 right-2 h-8 w-8 p-0"
-          >
-            {isSidebarCollapsed ? "→" : "←"}
-          </Button>
         </div>
 
         {/* Sidebar Navigation */}
-        <div
-          className={`flex-1 ${
-            isSidebarCollapsed ? "p-2" : "p-5"
-          } space-y-3 overflow-y-auto scrollbar-thin scrollbar-thumb-border scrollbar-track-transparent`}
-        >
-          {/* Navigation Buttons */}
-          <div className={isSidebarCollapsed ? "space-y-4" : "space-y-2"}>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  onClick={onBack}
-                  variant={isSidebarCollapsed ? "ghost" : "outline"}
-                  size="sm"
-                  className={`w-full ${
-                    isSidebarCollapsed ? "justify-center px-0" : "justify-start"
-                  } ${
-                    !isSidebarCollapsed
-                      ? "border-border/50 hover:border-[rgb(64,143,204)] dark:hover:border-blue-400/50"
-                      : ""
-                  } text-[rgb(50,135,200)] dark:text-blue-400 hover:bg-[rgb(236,244,250)] dark:hover:bg-blue-500/10 transition-all duration-200 hover:shadow-sm hover:translate-x-0.5 font-medium`}
-                >
-                  <HomeIcon
-                    className={`w-6 h-6 ${!isSidebarCollapsed ? "mr-2.5" : ""}`}
-                  />
-                  {!isSidebarCollapsed && "Back to Main"}
-                </Button>
-              </TooltipTrigger>
-              {isSidebarCollapsed && (
+        <div className="flex flex-1 overflow-hidden">
+          {/* Icons Column */}
+          <div
+            className={`${
+              selectedSection || !isSidebarCollapsed ? "p-2" : "p-2"
+            } space-y-3 overflow-y-auto scrollbar-thin scrollbar-thumb-border scrollbar-track-transparent border-r border-border/50`}
+            style={{ width: "80px", minWidth: "80px" }}
+          >
+            {/* All Buttons */}
+            <div className="space-y-4">
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    onClick={onBack}
+                    variant="ghost"
+                    size="sm"
+                    className="w-full justify-center px-0 text-[rgb(50,135,200)] dark:text-blue-400 hover:bg-[rgb(236,244,250)] dark:hover:bg-blue-500/10 transition-all duration-200 hover:shadow-sm hover:translate-x-0.5 font-medium"
+                  >
+                    <HomeIcon className="w-6 h-6" />
+                  </Button>
+                </TooltipTrigger>
                 <TooltipContent side="right">
                   <p>Back to Main</p>
                 </TooltipContent>
-              )}
-            </Tooltip>
+              </Tooltip>
 
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  onClick={onNavigateToTokens}
-                  variant={isSidebarCollapsed ? "ghost" : "outline"}
-                  size="sm"
-                  className={`w-full ${
-                    isSidebarCollapsed ? "justify-center px-0" : "justify-start"
-                  } ${
-                    !isSidebarCollapsed
-                      ? "border-border/50 hover:border-[rgb(64,143,204)] dark:hover:border-blue-400/50"
-                      : ""
-                  } text-[rgb(50,135,200)] dark:text-blue-400 hover:bg-[rgb(236,244,250)] dark:hover:bg-blue-500/10 transition-all duration-200 hover:shadow-sm hover:translate-x-0.5`}
-                >
-                  <KeyIcon
-                    className={`w-6 h-6 ${!isSidebarCollapsed ? "mr-2.5" : ""}`}
-                  />
-                  {!isSidebarCollapsed && "Manage Tokens"}
-                </Button>
-              </TooltipTrigger>
-              {isSidebarCollapsed && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    onClick={onNavigateToTokens}
+                    variant="ghost"
+                    size="sm"
+                    className="w-full justify-center px-0 text-[rgb(50,135,200)] dark:text-blue-400 hover:bg-[rgb(236,244,250)] dark:hover:bg-blue-500/10 transition-all duration-200 hover:shadow-sm hover:translate-x-0.5"
+                  >
+                    <KeyIcon className="w-6 h-6" />
+                  </Button>
+                </TooltipTrigger>
                 <TooltipContent side="right">
                   <p>Manage Tokens</p>
                 </TooltipContent>
-              )}
-            </Tooltip>
+              </Tooltip>
 
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  onClick={loadTopology}
-                  disabled={!hasValidTokens || isLoadingTopology}
-                  variant={isSidebarCollapsed ? "ghost" : "outline"}
-                  size="sm"
-                  className={`w-full ${
-                    isSidebarCollapsed ? "justify-center px-0" : "justify-start"
-                  } ${
-                    !isSidebarCollapsed
-                      ? "border-border/50 hover:border-[rgb(64,143,204)] dark:hover:border-blue-400/50"
-                      : ""
-                  } text-[rgb(50,135,200)] dark:text-blue-400 hover:bg-[rgb(236,244,250)] dark:hover:bg-blue-500/10 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 hover:shadow-sm hover:translate-x-0.5 disabled:hover:translate-x-0`}
-                >
-                  {isLoadingTopology ? (
-                    <span
-                      className={`text-base ${
-                        !isSidebarCollapsed ? "mr-2.5" : ""
-                      }`}
-                    >
-                      ⏳
-                    </span>
-                  ) : (
-                    <RefreshIcon
-                      className={`w-5 h-5 ${
-                        !isSidebarCollapsed ? "mr-2.5" : ""
-                      }`}
-                    />
-                  )}
-                  {!isSidebarCollapsed &&
-                    (isLoadingTopology ? "Loading..." : "Refresh Topology")}
-                </Button>
-              </TooltipTrigger>
-              {isSidebarCollapsed && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    onClick={loadTopology}
+                    disabled={!hasValidTokens || isLoadingTopology}
+                    variant="ghost"
+                    size="sm"
+                    className="w-full justify-center px-0 text-[rgb(50,135,200)] dark:text-blue-400 hover:bg-[rgb(236,244,250)] dark:hover:bg-blue-500/10 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 hover:shadow-sm hover:translate-x-0.5 disabled:hover:translate-x-0"
+                  >
+                    {isLoadingTopology ? (
+                      <span className="text-base">⏳</span>
+                    ) : (
+                      <RefreshIcon className="w-5 h-5" />
+                    )}
+                  </Button>
+                </TooltipTrigger>
                 <TooltipContent side="right">
                   <p>{isLoadingTopology ? "Loading..." : "Refresh Topology"}</p>
                 </TooltipContent>
-              )}
-            </Tooltip>
+              </Tooltip>
 
-            <div className="pt-2">
+              <div className="pt-2">
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      onClick={() => {
+                        console.log("New Connection button clicked");
+                        if (selectedSection === "newL2VPN") {
+                          setSelectedSection(null);
+                        } else {
+                          setSelectedSection("newL2VPN");
+                        }
+                      }}
+                      disabled={!hasValidTokens}
+                      variant="ghost"
+                      size="sm"
+                      className={`w-full justify-center px-0 ${
+                        selectedSection === "newL2VPN"
+                          ? "bg-[rgb(236,244,250)] dark:bg-blue-500/20 border border-[rgb(64,143,204)] dark:border-blue-400/50"
+                          : ""
+                      } text-[rgb(50,135,200)] dark:text-blue-400 hover:bg-[rgb(236,244,250)] dark:hover:bg-blue-500/10 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 hover:shadow-sm hover:translate-x-0.5 disabled:hover:translate-x-0`}
+                    >
+                      <PlusIcon className="w-5 h-5" />
+                    </Button>
+                  </TooltipTrigger>
+                  {isSidebarCollapsed && (
+                    <TooltipContent side="right">
+                      <p>New L2VPN</p>
+                    </TooltipContent>
+                  )}
+                </Tooltip>
+              </div>
+
+              {/* Status Section Buttons */}
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button
                     onClick={() => {
-                      console.log("New Connection button clicked");
-                      setShowNewL2VPNModal(true);
+                      if (selectedSection === "connectionStatus") {
+                        setSelectedSection(null);
+                      } else {
+                        setSelectedSection("connectionStatus");
+                      }
                     }}
-                    disabled={!hasValidTokens}
-                    variant={isSidebarCollapsed ? "ghost" : "outline"}
+                    variant="ghost"
                     size="sm"
-                    className={`w-full ${
-                      isSidebarCollapsed
-                        ? "justify-center px-0"
-                        : "justify-start"
-                    } ${
-                      !isSidebarCollapsed
-                        ? "border-border/50 hover:border-[rgb(64,143,204)] dark:hover:border-blue-400/50"
+                    className={`w-full justify-center px-0 ${
+                      selectedSection === "connectionStatus"
+                        ? "bg-[rgb(236,244,250)] dark:bg-blue-500/20 border border-[rgb(64,143,204)] dark:border-blue-400/50"
                         : ""
                     } text-[rgb(50,135,200)] dark:text-blue-400 hover:bg-[rgb(236,244,250)] dark:hover:bg-blue-500/10 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 hover:shadow-sm hover:translate-x-0.5 disabled:hover:translate-x-0`}
-                  >
-                    <PlusIcon
-                      className={`w-5 h-5 ${
-                        !isSidebarCollapsed ? "mr-2.5" : ""
-                      }`}
-                    />
-                    {!isSidebarCollapsed && "New L2VPN"}
-                  </Button>
-                </TooltipTrigger>
-                {isSidebarCollapsed && (
-                  <TooltipContent side="right">
-                    <p>New L2VPN</p>
-                  </TooltipContent>
-                )}
-              </Tooltip>
-            </div>
-          </div>
-
-          {/* Status Section */}
-          <div className="pt-4 mt-4 border-t border-border/50">
-            <div className={isSidebarCollapsed ? "space-y-4" : "space-y-2"}>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    onClick={() => setShowAuthInfo(true)}
-                    variant={isSidebarCollapsed ? "ghost" : "outline"}
-                    size="sm"
-                    className={`w-full ${
-                      isSidebarCollapsed
-                        ? "justify-center px-0"
-                        : "justify-start"
-                    } ${
-                      !isSidebarCollapsed
-                        ? "border-border/50 hover:border-[rgb(64,143,204)] dark:hover:border-blue-400/50"
-                        : ""
-                    } text-[rgb(50,135,200)] dark:text-blue-400 hover:bg-[rgb(236,244,250)] dark:hover:bg-blue-500/10 transition-all duration-200 hover:shadow-sm hover:translate-x-0.5 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-x-0`}
                     disabled={!hasValidTokens}
                   >
-                    <GlobeIcon
-                      className={`w-5 h-5 ${
-                        !isSidebarCollapsed ? "mr-2.5" : ""
-                      }`}
-                    />
-                    {!isSidebarCollapsed && "Connection Status"}
+                    <GlobeIcon className="w-5 h-5" />
                   </Button>
                 </TooltipTrigger>
-                {isSidebarCollapsed && (
-                  <TooltipContent side="right">
-                    <p>Connection Status</p>
-                  </TooltipContent>
-                )}
+                <TooltipContent side="right">
+                  <p>Connection Status</p>
+                </TooltipContent>
               </Tooltip>
 
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button
-                    onClick={() => setShowTopologyInfo(true)}
-                    variant={isSidebarCollapsed ? "ghost" : "outline"}
+                    onClick={() => {
+                      if (selectedSection === "topologyStats") {
+                        setSelectedSection(null);
+                      } else {
+                        setSelectedSection("topologyStats");
+                      }
+                    }}
+                    variant="ghost"
                     size="sm"
-                    className={`w-full ${
-                      isSidebarCollapsed
-                        ? "justify-center px-0"
-                        : "justify-start"
-                    } ${
-                      !isSidebarCollapsed
-                        ? "border-border/50 hover:border-[rgb(64,143,204)] dark:hover:border-blue-400/50"
+                    className={`w-full justify-center px-0 ${
+                      selectedSection === "topologyStats"
+                        ? "bg-[rgb(236,244,250)] dark:bg-blue-500/20 border border-[rgb(64,143,204)] dark:border-blue-400/50"
                         : ""
-                    } text-[rgb(50,135,200)] dark:text-blue-400 hover:bg-[rgb(236,244,250)] dark:hover:bg-blue-500/10 transition-all duration-200 hover:shadow-sm hover:translate-x-0.5 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-x-0`}
+                    } text-[rgb(50,135,200)] dark:text-blue-400 hover:bg-[rgb(236,244,250)] dark:hover:bg-blue-500/10 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 hover:shadow-sm hover:translate-x-0.5 disabled:hover:translate-x-0`}
                     disabled={!topology && !isLoadingTopology}
                   >
-                    <BarChartIcon
-                      className={`w-5 h-5 ${
-                        !isSidebarCollapsed ? "mr-2.5" : ""
-                      }`}
-                    />
-                    {!isSidebarCollapsed && "Topology Stats"}
+                    <BarChartIcon className="w-5 h-5" />
                   </Button>
                 </TooltipTrigger>
-                {isSidebarCollapsed && (
-                  <TooltipContent side="right">
-                    <p>Topology Stats</p>
-                  </TooltipContent>
-                )}
+                <TooltipContent side="right">
+                  <p>Topology Stats</p>
+                </TooltipContent>
               </Tooltip>
-            </div>
-          </div>
 
-          {/* Sidebar Footer */}
-          <div
-            className={`${
-              isSidebarCollapsed ? "p-2" : "p-5"
-            } border-t border-border/50 bg-gradient-to-t from-muted/20 to-transparent space-y-3`}
-          >
-            {isSidebarCollapsed ? (
+              {/* Theme Toggle */}
               <div className="flex justify-center">
                 <ThemeToggle />
               </div>
-            ) : (
-              <div className="flex items-center justify-end px-1">
-                <ThemeToggle />
-              </div>
-            )}
-            <div
-              className={`flex ${
-                isSidebarCollapsed ? "flex-col gap-2" : "gap-2"
-              }`}
-            >
+
+              {/* Logout Button */}
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button
                     onClick={handleLogout}
-                    variant={isSidebarCollapsed ? "ghost" : "outline"}
+                    variant="ghost"
                     size="sm"
-                    className={`${
-                      isSidebarCollapsed
-                        ? "w-full justify-center px-0"
-                        : "flex-1 justify-start"
-                    } ${
-                      !isSidebarCollapsed
-                        ? "border-[#3287C8]/50 dark:border-[#3287C8]/50 hover:border-[#3287C8] dark:hover:border-[#3287C8]"
-                        : ""
-                    } text-[#3287C8] dark:text-[#3287C8] hover:bg-[#3287C8]/10 dark:hover:bg-[#3287C8]/10 transition-all duration-200 hover:shadow-sm hover:translate-x-0.5 font-medium`}
+                    className="w-full justify-center px-0 text-[#3287C8] dark:text-[#3287C8] hover:bg-[#3287C8]/10 dark:hover:bg-[#3287C8]/10 transition-all duration-200 hover:shadow-sm hover:translate-x-0.5 font-medium"
                   >
-                    <LogoutIcon
-                      className={`w-5 h-5 ${
-                        !isSidebarCollapsed ? "mr-2.5" : ""
-                      }`}
-                    />
-                    {!isSidebarCollapsed && "Logout"}
+                    <LogoutIcon className="w-5 h-5" />
                   </Button>
                 </TooltipTrigger>
-                {isSidebarCollapsed && (
-                  <TooltipContent side="right">
-                    <p>Logout</p>
-                  </TooltipContent>
-                )}
+                <TooltipContent side="right">
+                  <p>Logout</p>
+                </TooltipContent>
               </Tooltip>
             </div>
           </div>
+
+          {/* Content Area */}
+          {selectedSection && (
+            <div className="flex-1 p-5 overflow-y-auto scrollbar-thin scrollbar-thumb-border scrollbar-track-transparent">
+              {selectedSection === "newL2VPN" && (
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between mb-4">
+                    <h2 className="text-xl font-semibold">
+                      New L2VPN Connection
+                    </h2>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setSelectedSection(null)}
+                      className="h-8 w-8 p-0"
+                    >
+                      ×
+                    </Button>
+                  </div>
+                  <NewL2VPNModal
+                    isOpen={true}
+                    onClose={() => setSelectedSection(null)}
+                    onConfirm={(data) => {
+                      handleNewL2VPN(data);
+                      setSelectedSection(null);
+                    }}
+                    availablePorts={extractAllPorts()}
+                  />
+                </div>
+              )}
+              {selectedSection === "connectionStatus" && (
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between mb-4">
+                    <h2 className="text-xl font-semibold">Connection Status</h2>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setSelectedSection(null)}
+                      className="h-8 w-8 p-0"
+                    >
+                      ×
+                    </Button>
+                  </div>
+                  {hasValidTokens ? (
+                    <>
+                      <div className="flex items-center gap-3 p-3 bg-muted rounded-lg">
+                        <div className="relative">
+                          <div className="w-3 h-3 rounded-full bg-green-500 shadow-sm"></div>
+                          {hasValidTokens && (
+                            <div className="absolute inset-0 w-3 h-3 rounded-full bg-green-500 animate-ping opacity-75"></div>
+                          )}
+                        </div>
+                        <div className="flex-1">
+                          <p className="text-sm font-medium">
+                            Authenticated via
+                          </p>
+                          <p className="text-lg font-bold text-primary">
+                            {Object.keys(tokens)
+                              .map((k) => k.toUpperCase())
+                              .join(", ")}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="p-3 bg-muted rounded-lg">
+                          <p className="text-xs text-muted-foreground mb-1">
+                            Locations
+                          </p>
+                          <p className="text-2xl font-bold text-primary">
+                            {nodeCount}
+                          </p>
+                        </div>
+                        <div className="p-3 bg-muted rounded-lg">
+                          <p className="text-xs text-muted-foreground mb-1">
+                            Connections
+                          </p>
+                          <p className="text-2xl font-bold text-primary">
+                            {linkCount}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="pt-2 border-t">
+                        <p className="text-xs text-muted-foreground">
+                          {nodeCount === 0
+                            ? "Ready for topology data"
+                            : `${nodeCount} locations • ${linkCount} connections`}
+                        </p>
+                      </div>
+                    </>
+                  ) : (
+                    <div className="p-3 bg-muted rounded-lg">
+                      <p className="text-sm text-muted-foreground">
+                        Not authenticated. Please authenticate with an identity
+                        provider to access full functionality.
+                      </p>
+                    </div>
+                  )}
+                </div>
+              )}
+              {selectedSection === "topologyStats" && (
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between mb-4">
+                    <h2 className="text-xl font-semibold">
+                      Topology Statistics
+                    </h2>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setSelectedSection(null)}
+                      className="h-8 w-8 p-0"
+                    >
+                      ×
+                    </Button>
+                  </div>
+                  {isLoadingTopology ? (
+                    <p className="text-sm text-muted-foreground">
+                      Loading topology data from API...
+                    </p>
+                  ) : topology ? (
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
+                        <span className="text-sm font-medium">Nodes</span>
+                        <span className="text-lg font-bold text-primary">
+                          {topology.nodes.length}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
+                        <span className="text-sm font-medium">Links</span>
+                        <span className="text-lg font-bold text-primary">
+                          {topology.links.length}
+                        </span>
+                      </div>
+                      <div className="pt-2 border-t">
+                        <p className="text-xs text-muted-foreground">
+                          Showing {topology.nodes.length} nodes and{" "}
+                          {topology.links.length} links from SDX API
+                        </p>
+                      </div>
+                    </div>
+                  ) : (
+                    <p className="text-sm text-muted-foreground">
+                      Interactive map view - click 'Refresh Topology' to load
+                      data
+                    </p>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </div>
 
