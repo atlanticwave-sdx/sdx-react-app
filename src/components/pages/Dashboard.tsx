@@ -37,12 +37,158 @@ import { NewL2VPNModal, L2VPNData } from "@/components/NewL2VPNModal";
 import { TopologyMap } from "@/components/TopologyMap";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import sdxLogo from "@/assets/images/sdx-logo.svg";
+import logoImage from "@/assets/images/no-background-logo 2.png";
 
 interface DashboardProps {
   onBack: () => void;
   onNavigateToTokens: () => void;
   onLogout?: () => void;
 }
+
+// Icon Components
+const HomeIcon = ({ className }: { className?: string }) => (
+  <svg
+    width="36"
+    height="36"
+    viewBox="0 0 24 24"
+    fill="none"
+    xmlns="http://www.w3.org/2000/svg"
+    className={className}
+  >
+    <path
+      d="M10 20.9999H5C3.89543 20.9999 3 20.1045 3 18.9999V12.2968C3 11.7851 3.19615 11.2928 3.54809 10.9214L10.5481 3.53247C11.3369 2.69979 12.663 2.69979 13.4519 3.53247L20.4519 10.9214C20.8038 11.2928 21 11.7851 21 12.2968V18.9999C21 20.1045 20.1046 20.9999 19 20.9999H14M10 20.9999V15.4999C10 15.2238 10.2239 14.9999 10.5 14.9999H13.5C13.7761 14.9999 14 15.2238 14 15.4999V20.9999M10 20.9999H14"
+      stroke="currentColor"
+      strokeWidth="1.5"
+    />
+  </svg>
+);
+
+const KeyIcon = ({ className }: { className?: string }) => (
+  <svg
+    width="36"
+    height="36"
+    viewBox="0 0 24 24"
+    fill="none"
+    xmlns="http://www.w3.org/2000/svg"
+    className={className}
+  >
+    <path
+      fillRule="evenodd"
+      clipRule="evenodd"
+      d="M17.0645 12.1579L20.9592 16.0526C21.2212 16.3525 21.3124 16.765 21.2013 17.1474L20.4856 19.6421C20.3753 20.0196 20.0826 20.3163 19.7066 20.4316L17.1487 21.2C16.741 21.3105 16.3053 21.1986 16.0013 20.9053L12.0961 17C11.5653 16.4697 10.8464 16.1708 10.0961 16.1684C9.73491 16.17 9.37746 16.2415 9.04345 16.3789C8.70814 16.5108 8.35111 16.5786 7.99082 16.5789C7.23959 16.5813 6.51893 16.2816 5.99082 15.7474L2.83292 12.5895C2.11555 11.8746 1.83459 10.831 2.09608 9.85263L3.32766 5.29474C3.57794 4.30573 4.34269 3.5289 5.32766 3.26316L9.92766 2.09474C10.1683 2.03221 10.4159 2.00037 10.6645 2C11.4148 2.00233 12.1337 2.30126 12.6645 2.83158L15.8224 5.98947C16.6314 6.79876 16.8762 8.01434 16.4434 9.07368C16.0107 10.133 16.2555 11.3486 17.0645 12.1579ZM16.9803 19.6526L19.0856 19.0316L19.6645 16.9684L15.9487 13.2526C14.6842 11.9957 14.3056 10.0987 14.9908 8.45263C15.1717 7.97833 15.0561 7.44201 14.6961 7.08421L11.5382 3.92632C11.3059 3.6882 10.9866 3.55514 10.654 3.55789C10.5458 3.5419 10.4358 3.5419 10.3277 3.55789L5.73819 4.78947C5.30689 4.9055 4.97 5.24239 4.85398 5.67368L3.6224 10.3053C3.50688 10.7381 3.63131 11.1997 3.94871 11.5158L7.10661 14.6737C7.33886 14.9118 7.65821 15.0449 7.99082 15.0421C8.1523 15.0406 8.31239 15.0121 8.4645 14.9579C8.98451 14.7403 9.54292 14.6293 10.1066 14.6316C11.291 14.6183 12.4303 15.0854 13.2645 15.9263L16.9803 19.6526Z"
+      fill="currentColor"
+    />
+    <path
+      d="M10.2961 6.96843L7.03291 10.2316C6.72507 10.5398 6.72507 11.0391 7.03291 11.3474C7.34114 11.6552 7.84047 11.6552 8.1487 11.3474L11.4119 8.08422C11.5623 7.9376 11.6472 7.73642 11.6472 7.52633C11.6472 7.31623 11.5623 7.11505 11.4119 6.96843C11.1036 6.66059 10.6043 6.66059 10.2961 6.96843Z"
+      fill="currentColor"
+    />
+  </svg>
+);
+
+const PlusIcon = ({ className }: { className?: string }) => (
+  <svg
+    width="36"
+    height="36"
+    viewBox="0 0 24 24"
+    fill="none"
+    xmlns="http://www.w3.org/2000/svg"
+    className={className}
+  >
+    <path
+      fillRule="evenodd"
+      clipRule="evenodd"
+      d="M6 2H18C20.2091 2 22 3.79086 22 6V18C22 20.2091 20.2091 22 18 22H6C3.79086 22 2 20.2091 2 18V6C2 3.79086 3.79086 2 6 2ZM19.7041 19.7041C20.1561 19.2522 20.41 18.6392 20.41 18V6C20.41 5.36083 20.1561 4.74784 19.7041 4.29587C19.2522 3.84391 18.6392 3.59 18 3.59H6C4.66899 3.59 3.59 4.66899 3.59 6V18C3.59 18.6392 3.84391 19.2522 4.29587 19.7041C4.74784 20.1561 5.36083 20.41 6 20.41H18C18.6392 20.41 19.2522 20.1561 19.7041 19.7041Z"
+      fill="currentColor"
+    />
+    <path
+      d="M16 11.25H12.75V8C12.75 7.58579 12.4142 7.25 12 7.25C11.5858 7.25 11.25 7.58579 11.25 8V11.25H8C7.58579 11.25 7.25 11.5858 7.25 12C7.25 12.4142 7.58579 12.75 8 12.75H11.25V16C11.25 16.4142 11.5858 16.75 12 16.75C12.4142 16.75 12.75 16.4142 12.75 16V12.75H16C16.4142 12.75 16.75 12.4142 16.75 12C16.75 11.5858 16.4142 11.25 16 11.25Z"
+      fill="currentColor"
+    />
+  </svg>
+);
+
+const RefreshIcon = ({ className }: { className?: string }) => (
+  <svg
+    width="36"
+    height="36"
+    viewBox="0 0 24 24"
+    fill="none"
+    xmlns="http://www.w3.org/2000/svg"
+    className={className}
+  >
+    <path
+      d="M12.5122 4.02129L13.2722 3.26129C13.5476 2.96578 13.5395 2.50528 13.2539 2.21967C12.9682 1.93406 12.5077 1.92593 12.2122 2.20129L10.2122 4.20129C9.91978 4.49411 9.91978 4.96847 10.2122 5.26129L12.2122 7.26129C12.505 7.55375 12.9794 7.55375 13.2722 7.26129C13.5647 6.96847 13.5647 6.49411 13.2722 6.20129L12.6122 5.54129C15.9796 5.95841 18.6039 8.66112 18.9217 12.0393C19.2395 15.4175 17.1653 18.5622 13.9347 19.6C10.7042 20.6378 7.18665 19.2894 5.47757 16.3581C3.76849 13.4269 4.32777 9.70148 6.82223 7.40129C7.06396 7.11386 7.05582 6.69195 6.80319 6.41405C6.55056 6.13616 6.13133 6.08797 5.82223 6.30129C2.78041 9.1031 2.11554 13.6519 4.2282 17.2071C6.34086 20.7623 10.6541 22.353 14.5692 21.0207C18.4842 19.6884 20.9319 15.797 20.4375 11.6911C19.9431 7.58524 16.6417 4.38614 12.5222 4.02129H12.5122Z"
+      fill="currentColor"
+    />
+  </svg>
+);
+
+const BarChartIcon = ({ className }: { className?: string }) => (
+  <svg
+    width="36"
+    height="36"
+    viewBox="0 0 24 24"
+    fill="none"
+    xmlns="http://www.w3.org/2000/svg"
+    className={className}
+  >
+    <path
+      d="M12.0502 10.96H8.93018C8.51597 10.96 8.18018 10.6242 8.18018 10.21C8.18018 9.79575 8.51597 9.45996 8.93018 9.45996H12.0502C12.4644 9.45996 12.8002 9.79575 12.8002 10.21C12.8002 10.6242 12.4644 10.96 12.0502 10.96Z"
+      fill="currentColor"
+    />
+    <path
+      d="M8.93018 12.5698H15.0702C15.4844 12.5698 15.8202 12.9056 15.8202 13.3198C15.8202 13.734 15.4844 14.0698 15.0702 14.0698H8.93018C8.51597 14.0698 8.18018 13.734 8.18018 13.3198C8.18018 12.9056 8.51597 12.5698 8.93018 12.5698Z"
+      fill="currentColor"
+    />
+    <path
+      d="M14.2302 15.5H8.93018C8.51597 15.5 8.18018 15.8358 8.18018 16.25C8.18018 16.6642 8.51597 17 8.93018 17H14.2302C14.6444 17 14.9802 16.6642 14.9802 16.25C14.9802 15.8358 14.6444 15.5 14.2302 15.5Z"
+      fill="currentColor"
+    />
+    <path
+      fillRule="evenodd"
+      clipRule="evenodd"
+      d="M14.27 2C15.0792 1.99888 15.7474 2.63193 15.79 3.44C18.1649 3.70703 19.9696 5.70032 20 8.09V18.18C19.9945 20.8011 17.8711 22.9245 15.25 22.93H8.75C6.12893 22.9245 4.0055 20.8011 4 18.18V8.09C4.03041 5.70032 5.83508 3.70703 8.21 3.44C8.25747 2.63419 8.9228 2.00388 9.73 2H14.27ZM14.29 3.44H9.73V4.63H14.29V3.44ZM18.5 18.18C18.5 19.9766 17.0465 21.4345 15.25 21.44H8.75C6.95345 21.4345 5.49999 19.9766 5.5 18.18V8.09C5.50398 6.49887 6.65936 5.14458 8.23 4.89C8.35276 5.62136 8.98843 6.15532 9.73 6.15H14.27C15.0116 6.15532 15.6472 5.62136 15.77 4.89C17.3406 5.14458 18.496 6.49887 18.5 8.09V18.18Z"
+      fill="currentColor"
+    />
+  </svg>
+);
+
+const LogoutIcon = ({ className }: { className?: string }) => (
+  <svg
+    width="36"
+    height="36"
+    viewBox="0 0 24 24"
+    fill="none"
+    xmlns="http://www.w3.org/2000/svg"
+    className={className}
+  >
+    <path
+      d="M10 12H19M19 12L17 10M19 12L17 14M15 16V19C15 20.1046 14.1046 21 13 21H7C5.89543 21 5 20.1046 5 19V5C5 3.89543 5.89543 3 7 3H13C14.1046 3 15 3.89543 15 5V8"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      strokeLinecap="round"
+    />
+  </svg>
+);
+
+const GlobeIcon = ({ className }: { className?: string }) => (
+  <svg
+    width="36"
+    height="36"
+    viewBox="0 0 24 24"
+    fill="none"
+    xmlns="http://www.w3.org/2000/svg"
+    className={className}
+  >
+    <path
+      d="M12 20V10M18 20V4M6 20V16"
+      stroke="currentColor"
+      strokeWidth="4"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+  </svg>
+);
 
 export function Dashboard({
   onBack,
@@ -289,33 +435,30 @@ export function Dashboard({
         {/* Sidebar Header - Logo & Title */}
         <div className="p-6 border-b border-border/50 bg-gradient-to-br from-background to-muted/20 relative">
           {!isSidebarCollapsed && (
-            <div className="text-left">
-              <h1 className="text-3xl tracking-tight leading-tight font-serif mb-2">
+            <div className="text-left flex items-center gap-3 mb-4">
+              <img
+                src={logoImage}
+                alt="AtlanticWave SDX Logo"
+                className="w-12 h-12 max-w-12 max-h-12 object-contain flex-shrink-0"
+                style={{ width: "45px", height: "45px" }}
+              />
+              <h1 className="text-3xl tracking-tight leading-tight font-serif">
                 <span className="text-sky-500 font-extrabold">Atlantic</span>
                 <span className="text-blue-800 dark:text-blue-300">Wave </span>
                 <span className="inline-block bg-sky-400 text-white rounded-md pl-[4px] pr-[10px] pt-[6px] text-lg font-serif tracking-wide shadow-sm">
                   SDX
                 </span>
               </h1>
-              <h2 className="text-xs uppercase tracking-[0.05em] leading-tight text-blue-800 dark:text-blue-300/80 mt-[-4px] mb-3 font-medium">
-                International Distributed Software-Defined Exchange
-              </h2>
-              <div className="space-y-2 pt-2 border-t border-border/30">
-                <p className="text-sm text-[rgb(50,135,200)] dark:text-blue-400 font-semibold">
-                  Network Topology & Connection Management
-                </p>
-              </div>
             </div>
           )}
           {isSidebarCollapsed && (
             <div className="flex items-center justify-center">
-              <div className="text-2xl font-serif">
-                <span className="text-sky-500 font-extrabold">A</span>
-                <span className="text-blue-800 dark:text-blue-300">W</span>
-                <span className="inline-block bg-sky-400 text-white rounded-md px-1.5 py-0.5 text-sm">
-                  S
-                </span>
-              </div>
+              <img
+                src={logoImage}
+                alt="AtlanticWave SDX Logo"
+                className="w-6 h-6 max-w-6 max-h-6 object-contain flex-shrink-0"
+                style={{ width: "64px", height: "64px" }}
+              />
             </div>
           )}
           {/* Toggle Button */}
@@ -335,34 +478,52 @@ export function Dashboard({
             isSidebarCollapsed ? "p-2" : "p-5"
           } space-y-3 overflow-y-auto scrollbar-thin scrollbar-thumb-border scrollbar-track-transparent`}
         >
-          {/* Navigation Section Label */}
-          {!isSidebarCollapsed && (
-            <div className="px-2 pt-2">
-              <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground/70">
-                Navigation
-              </h3>
-            </div>
-          )}
-
           {/* Navigation Buttons */}
-          <div className="space-y-2">
+          <div className={isSidebarCollapsed ? "space-y-4" : "space-y-2"}>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  onClick={onBack}
+                  variant={isSidebarCollapsed ? "ghost" : "outline"}
+                  size="sm"
+                  className={`w-full ${
+                    isSidebarCollapsed ? "justify-center px-0" : "justify-start"
+                  } ${
+                    !isSidebarCollapsed
+                      ? "border-border/50 hover:border-[rgb(64,143,204)] dark:hover:border-blue-400/50"
+                      : ""
+                  } text-[rgb(50,135,200)] dark:text-blue-400 hover:bg-[rgb(236,244,250)] dark:hover:bg-blue-500/10 transition-all duration-200 hover:shadow-sm hover:translate-x-0.5 font-medium`}
+                >
+                  <HomeIcon
+                    className={`w-6 h-6 ${!isSidebarCollapsed ? "mr-2.5" : ""}`}
+                  />
+                  {!isSidebarCollapsed && "Back to Main"}
+                </Button>
+              </TooltipTrigger>
+              {isSidebarCollapsed && (
+                <TooltipContent side="right">
+                  <p>Back to Main</p>
+                </TooltipContent>
+              )}
+            </Tooltip>
+
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button
                   onClick={onNavigateToTokens}
-                  variant="outline"
+                  variant={isSidebarCollapsed ? "ghost" : "outline"}
                   size="sm"
                   className={`w-full ${
                     isSidebarCollapsed ? "justify-center px-0" : "justify-start"
-                  } border-border/50 text-[rgb(50,135,200)] dark:text-blue-400 hover:bg-[rgb(236,244,250)] dark:hover:bg-blue-500/10 hover:border-[rgb(64,143,204)] dark:hover:border-blue-400/50 transition-all duration-200 hover:shadow-sm hover:translate-x-0.5`}
+                  } ${
+                    !isSidebarCollapsed
+                      ? "border-border/50 hover:border-[rgb(64,143,204)] dark:hover:border-blue-400/50"
+                      : ""
+                  } text-[rgb(50,135,200)] dark:text-blue-400 hover:bg-[rgb(236,244,250)] dark:hover:bg-blue-500/10 transition-all duration-200 hover:shadow-sm hover:translate-x-0.5`}
                 >
-                  <span
-                    className={`text-base ${
-                      !isSidebarCollapsed ? "mr-2.5" : ""
-                    }`}
-                  >
-                    🔐
-                  </span>
+                  <KeyIcon
+                    className={`w-6 h-6 ${!isSidebarCollapsed ? "mr-2.5" : ""}`}
+                  />
                   {!isSidebarCollapsed && "Manage Tokens"}
                 </Button>
               </TooltipTrigger>
@@ -378,19 +539,31 @@ export function Dashboard({
                 <Button
                   onClick={loadTopology}
                   disabled={!hasValidTokens || isLoadingTopology}
-                  variant="outline"
+                  variant={isSidebarCollapsed ? "ghost" : "outline"}
                   size="sm"
                   className={`w-full ${
                     isSidebarCollapsed ? "justify-center px-0" : "justify-start"
-                  } border-border/50 text-[rgb(50,135,200)] dark:text-blue-400 hover:bg-[rgb(236,244,250)] dark:hover:bg-blue-500/10 hover:border-[rgb(64,143,204)] dark:hover:border-blue-400/50 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 hover:shadow-sm hover:translate-x-0.5 disabled:hover:translate-x-0`}
+                  } ${
+                    !isSidebarCollapsed
+                      ? "border-border/50 hover:border-[rgb(64,143,204)] dark:hover:border-blue-400/50"
+                      : ""
+                  } text-[rgb(50,135,200)] dark:text-blue-400 hover:bg-[rgb(236,244,250)] dark:hover:bg-blue-500/10 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 hover:shadow-sm hover:translate-x-0.5 disabled:hover:translate-x-0`}
                 >
-                  <span
-                    className={`text-base ${
-                      !isSidebarCollapsed ? "mr-2.5" : ""
-                    }`}
-                  >
-                    {isLoadingTopology ? "⏳" : "🔄"}
-                  </span>
+                  {isLoadingTopology ? (
+                    <span
+                      className={`text-base ${
+                        !isSidebarCollapsed ? "mr-2.5" : ""
+                      }`}
+                    >
+                      ⏳
+                    </span>
+                  ) : (
+                    <RefreshIcon
+                      className={`w-5 h-5 ${
+                        !isSidebarCollapsed ? "mr-2.5" : ""
+                      }`}
+                    />
+                  )}
                   {!isSidebarCollapsed &&
                     (isLoadingTopology ? "Loading..." : "Refresh Topology")}
                 </Button>
@@ -411,20 +584,23 @@ export function Dashboard({
                       setShowNewL2VPNModal(true);
                     }}
                     disabled={!hasValidTokens}
+                    variant={isSidebarCollapsed ? "ghost" : "outline"}
                     size="sm"
                     className={`w-full ${
                       isSidebarCollapsed
                         ? "justify-center px-0"
                         : "justify-start"
-                    } bg-[rgb(50,135,200)] dark:bg-blue-600 hover:bg-[rgb(40,120,185)] dark:hover:bg-blue-700 text-white shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] font-semibold`}
+                    } ${
+                      !isSidebarCollapsed
+                        ? "border-border/50 hover:border-[rgb(64,143,204)] dark:hover:border-blue-400/50"
+                        : ""
+                    } text-[rgb(50,135,200)] dark:text-blue-400 hover:bg-[rgb(236,244,250)] dark:hover:bg-blue-500/10 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 hover:shadow-sm hover:translate-x-0.5 disabled:hover:translate-x-0`}
                   >
-                    <span
-                      className={`text-base ${
+                    <PlusIcon
+                      className={`w-5 h-5 ${
                         !isSidebarCollapsed ? "mr-2.5" : ""
                       }`}
-                    >
-                      🔗
-                    </span>
+                    />
                     {!isSidebarCollapsed && "New L2VPN"}
                   </Button>
                 </TooltipTrigger>
@@ -439,34 +615,29 @@ export function Dashboard({
 
           {/* Status Section */}
           <div className="pt-4 mt-4 border-t border-border/50">
-            {!isSidebarCollapsed && (
-              <div className="px-2 pt-2 pb-2">
-                <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground/70">
-                  Status
-                </h3>
-              </div>
-            )}
-            <div className="space-y-2">
+            <div className={isSidebarCollapsed ? "space-y-4" : "space-y-2"}>
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button
                     onClick={() => setShowAuthInfo(true)}
-                    variant="outline"
+                    variant={isSidebarCollapsed ? "ghost" : "outline"}
                     size="sm"
                     className={`w-full ${
                       isSidebarCollapsed
                         ? "justify-center px-0"
                         : "justify-start"
-                    } border-border/50 text-[rgb(50,135,200)] dark:text-blue-400 hover:bg-[rgb(236,244,250)] dark:hover:bg-blue-500/10 hover:border-[rgb(64,143,204)] dark:hover:border-blue-400/50 transition-all duration-200 hover:shadow-sm hover:translate-x-0.5 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-x-0`}
+                    } ${
+                      !isSidebarCollapsed
+                        ? "border-border/50 hover:border-[rgb(64,143,204)] dark:hover:border-blue-400/50"
+                        : ""
+                    } text-[rgb(50,135,200)] dark:text-blue-400 hover:bg-[rgb(236,244,250)] dark:hover:bg-blue-500/10 transition-all duration-200 hover:shadow-sm hover:translate-x-0.5 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-x-0`}
                     disabled={!hasValidTokens}
                   >
-                    <span
-                      className={`text-base ${
+                    <GlobeIcon
+                      className={`w-5 h-5 ${
                         !isSidebarCollapsed ? "mr-2.5" : ""
                       }`}
-                    >
-                      🌐
-                    </span>
+                    />
                     {!isSidebarCollapsed && "Connection Status"}
                   </Button>
                 </TooltipTrigger>
@@ -481,22 +652,24 @@ export function Dashboard({
                 <TooltipTrigger asChild>
                   <Button
                     onClick={() => setShowTopologyInfo(true)}
-                    variant="outline"
+                    variant={isSidebarCollapsed ? "ghost" : "outline"}
                     size="sm"
                     className={`w-full ${
                       isSidebarCollapsed
                         ? "justify-center px-0"
                         : "justify-start"
-                    } border-border/50 text-[rgb(50,135,200)] dark:text-blue-400 hover:bg-[rgb(236,244,250)] dark:hover:bg-blue-500/10 hover:border-[rgb(64,143,204)] dark:hover:border-blue-400/50 transition-all duration-200 hover:shadow-sm hover:translate-x-0.5 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-x-0`}
+                    } ${
+                      !isSidebarCollapsed
+                        ? "border-border/50 hover:border-[rgb(64,143,204)] dark:hover:border-blue-400/50"
+                        : ""
+                    } text-[rgb(50,135,200)] dark:text-blue-400 hover:bg-[rgb(236,244,250)] dark:hover:bg-blue-500/10 transition-all duration-200 hover:shadow-sm hover:translate-x-0.5 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-x-0`}
                     disabled={!topology && !isLoadingTopology}
                   >
-                    <span
-                      className={`text-base ${
+                    <BarChartIcon
+                      className={`w-5 h-5 ${
                         !isSidebarCollapsed ? "mr-2.5" : ""
                       }`}
-                    >
-                      📊
-                    </span>
+                    />
                     {!isSidebarCollapsed && "Topology Stats"}
                   </Button>
                 </TooltipTrigger>
@@ -515,16 +688,12 @@ export function Dashboard({
               isSidebarCollapsed ? "p-2" : "p-5"
             } border-t border-border/50 bg-gradient-to-t from-muted/20 to-transparent space-y-3`}
           >
-            {!isSidebarCollapsed && (
-              <div className="flex items-center justify-between px-1">
-                <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                  Appearance
-                </span>
+            {isSidebarCollapsed ? (
+              <div className="flex justify-center">
                 <ThemeToggle />
               </div>
-            )}
-            {isSidebarCollapsed && (
-              <div className="flex justify-center">
+            ) : (
+              <div className="flex items-center justify-end px-1">
                 <ThemeToggle />
               </div>
             )}
@@ -536,50 +705,24 @@ export function Dashboard({
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button
-                    onClick={onBack}
-                    variant="ghost"
-                    size="sm"
-                    className={`${
-                      isSidebarCollapsed
-                        ? "w-full justify-center px-0"
-                        : "flex-1 justify-start"
-                    } text-[rgb(50,135,200)] dark:text-blue-400 hover:bg-[rgb(236,244,250)] dark:hover:bg-blue-500/10 transition-all duration-200 hover:shadow-sm hover:translate-x-0.5 font-medium`}
-                  >
-                    <span
-                      className={`text-base ${
-                        !isSidebarCollapsed ? "mr-2.5" : ""
-                      }`}
-                    >
-                      🏠
-                    </span>
-                    {!isSidebarCollapsed && "Back to Main"}
-                  </Button>
-                </TooltipTrigger>
-                {isSidebarCollapsed && (
-                  <TooltipContent side="right">
-                    <p>Back to Main</p>
-                  </TooltipContent>
-                )}
-              </Tooltip>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
                     onClick={handleLogout}
-                    variant="outline"
+                    variant={isSidebarCollapsed ? "ghost" : "outline"}
                     size="sm"
                     className={`${
                       isSidebarCollapsed
                         ? "w-full justify-center px-0"
                         : "flex-1 justify-start"
-                    } text-red-600 dark:text-red-400 border-red-300 dark:border-red-800/50 hover:bg-red-50 dark:hover:bg-red-950/30 hover:border-red-400 dark:hover:border-red-700/50 transition-all duration-200 hover:shadow-sm hover:translate-x-0.5 font-medium`}
+                    } ${
+                      !isSidebarCollapsed
+                        ? "border-[#3287C8]/50 dark:border-[#3287C8]/50 hover:border-[#3287C8] dark:hover:border-[#3287C8]"
+                        : ""
+                    } text-[#3287C8] dark:text-[#3287C8] hover:bg-[#3287C8]/10 dark:hover:bg-[#3287C8]/10 transition-all duration-200 hover:shadow-sm hover:translate-x-0.5 font-medium`}
                   >
-                    <span
-                      className={`text-base ${
+                    <LogoutIcon
+                      className={`w-5 h-5 ${
                         !isSidebarCollapsed ? "mr-2.5" : ""
                       }`}
-                    >
-                      🚪
-                    </span>
+                    />
                     {!isSidebarCollapsed && "Logout"}
                   </Button>
                 </TooltipTrigger>
