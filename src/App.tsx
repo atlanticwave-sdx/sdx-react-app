@@ -16,11 +16,20 @@ import { TokenStorage } from "@/lib/token-storage";
 import { useTokenRefresh } from "@/hooks/useTokenRefresh";
 import { SessionManager } from "@/lib/session";
 
-type Page = "landing" | "login" | "email-validation" | "token" | "dashboard" | "orcid-callback" | "cilogon-callback";
+type Page =
+  | "landing"
+  | "login"
+  | "email-validation"
+  | "token"
+  | "dashboard"
+  | "orcid-callback"
+  | "cilogon-callback";
 
 function App() {
   const [currentPage, setCurrentPage] = useState<Page>("landing");
-  const [selectedProvider, setSelectedProvider] = useState<Provider | undefined>();
+  const [selectedProvider, setSelectedProvider] = useState<
+    Provider | undefined
+  >();
   const [loginProvider, setLoginProvider] = useState<Provider | undefined>();
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => {
     // Initialize authentication state on component mount
@@ -31,23 +40,22 @@ function App() {
   const tokenRefresh = useTokenRefresh({
     refreshBeforeExpiryMinutes: 5,
     checkIntervalMinutes: 1,
-    showNotifications: true
+    showNotifications: true,
   });
-
 
   // Handle URL navigation with session management
   useEffect(() => {
     const updatePageFromURL = () => {
       const path = window.location.pathname;
       const searchParams = new URLSearchParams(window.location.search);
-      
+
       // Determine base path based on environment
       const isProduction = import.meta.env.PROD;
       const basePath = isProduction ? "/multi-provider-authe" : "";
-      
+
       // Update session activity
       SessionManager.updateActivity();
-      
+
       // Handle ORCID callback
       if (path === `${basePath}/auth/callback/orcid`) {
         setCurrentPage("orcid-callback");
@@ -66,39 +74,44 @@ function App() {
       } else if (path === `${basePath}/email-validation`) {
         setCurrentPage("email-validation");
       } else if (path === `${basePath}/token`) {
-        setCurrentPage("token");
+        // Redirect token route to dashboard (token management is now a modal)
+        setCurrentPage("dashboard");
+        window.history.replaceState({}, "", `${basePath}/dashboard`);
       } else if (path === `${basePath}/dashboard`) {
         // Check authentication before allowing dashboard access
-        console.log('Dashboard accessed, checking authentication...');
-        console.log('Current localStorage session:', localStorage.getItem('sdx_user_session'));
-        console.log('Available tokens:', {
+        console.log("Dashboard accessed, checking authentication...");
+        console.log(
+          "Current localStorage session:",
+          localStorage.getItem("sdx_user_session")
+        );
+        console.log("Available tokens:", {
           orcid: !!TokenStorage.getToken("orcid"),
-          cilogon: !!TokenStorage.getToken("cilogon")
+          cilogon: !!TokenStorage.getToken("cilogon"),
         });
-        
+
         const isAuth = SessionManager.isAuthenticated();
-        console.log('Dashboard auth check result:', isAuth);
-        
+        console.log("Dashboard auth check result:", isAuth);
+
         if (isAuth) {
-          console.log('Dashboard authenticated, setting state');
+          console.log("Dashboard authenticated, setting state");
           setIsAuthenticated(true);
           setCurrentPage("dashboard");
         } else {
-          console.log('Not authenticated, redirecting to landing');
-          console.log('Session state:', SessionManager.getSession());
+          console.log("Not authenticated, redirecting to landing");
+          console.log("Session state:", SessionManager.getSession());
           setIsAuthenticated(false);
           setCurrentPage("landing");
           window.history.replaceState({}, "", basePath || "/");
         }
       } else {
         // Root path - check if user is authenticated
-        console.log('Root path accessed, checking authentication...');
+        console.log("Root path accessed, checking authentication...");
         const isAuth = SessionManager.isAuthenticated();
-        console.log('Is authenticated:', isAuth);
-        
+        console.log("Is authenticated:", isAuth);
+
         if (isAuth) {
           // Redirect authenticated users to dashboard
-          console.log('Root authenticated, redirecting to dashboard');
+          console.log("Root authenticated, redirecting to dashboard");
           setIsAuthenticated(true);
           setCurrentPage("dashboard");
           const dashboardPath = `${basePath}/dashboard`;
@@ -106,7 +119,7 @@ function App() {
             window.history.replaceState({}, "", dashboardPath);
           }
         } else {
-          console.log('Not authenticated, showing landing page');
+          console.log("Not authenticated, showing landing page");
           setIsAuthenticated(false);
           setCurrentPage("landing");
         }
@@ -122,9 +135,9 @@ function App() {
     // Determine base path based on environment
     const isProduction = import.meta.env.PROD;
     const basePath = isProduction ? "/multi-provider-authe" : "";
-    
+
     let path = basePath || "/";
-    
+
     switch (page) {
       case "login":
         path = `${basePath}/login${provider ? `?provider=${provider}` : ""}`;
@@ -143,7 +156,7 @@ function App() {
         path = basePath || "/";
         break;
     }
-    
+
     window.history.pushState({}, "", path);
     setCurrentPage(page);
   };
@@ -158,7 +171,7 @@ function App() {
     if (loginProvider) {
       SessionManager.createSession(loginProvider);
       setIsAuthenticated(true); // Update authentication state
-      console.log('Login completed, session created for:', loginProvider);
+      console.log("Login completed, session created for:", loginProvider);
     }
     navigateTo("dashboard"); // Go directly to dashboard instead of token page
   };
@@ -175,7 +188,7 @@ function App() {
   const handleNavigateToEmailValidation = (email?: string) => {
     // Store the email for the validation page
     if (email) {
-      sessionStorage.setItem('pre_validated_email', email);
+      sessionStorage.setItem("pre_validated_email", email);
     }
     navigateTo("email-validation");
   };
@@ -189,13 +202,13 @@ function App() {
   const handleNavigateToDashboard = () => {
     // Check authentication before navigating to dashboard
     const isAuth = SessionManager.isAuthenticated();
-    console.log('Navigate to dashboard - auth check:', isAuth);
-    
+    console.log("Navigate to dashboard - auth check:", isAuth);
+
     if (isAuth) {
       setIsAuthenticated(true);
       navigateTo("dashboard");
     } else {
-      console.log('Not authenticated, cannot navigate to dashboard');
+      console.log("Not authenticated, cannot navigate to dashboard");
       setIsAuthenticated(false);
       navigateTo("landing");
     }
@@ -210,31 +223,33 @@ function App() {
     setSelectedProvider(undefined);
     setLoginProvider(undefined);
     setIsAuthenticated(false);
-    
+
     // Use SessionManager.logout() which handles provider-specific logout
     SessionManager.logout();
-    
+
     // Note: For ORCID, this will redirect to ORCID logout page
     // For other providers, it will just clear local session and stay on current page
     // So we only navigate to landing if we're still on the same page (no redirect happened)
     setTimeout(() => {
-      if (window.location.pathname !== '/') {
+      if (window.location.pathname !== "/") {
         navigateTo("landing");
       }
     }, 100);
   };
 
-
   return (
-    <div className="min-h-screen" style={{ backgroundColor: 'rgb(255, 255, 255)' }}>
+    <div
+      className="min-h-screen"
+      style={{ backgroundColor: "rgb(255, 255, 255)" }}
+    >
       <Toaster />
-      
+
       {/* Token expiry notifications - shown on all pages */}
-      <TokenExpiryNotification 
+      <TokenExpiryNotification
         warningMinutes={15}
-        className="fixed top-4 left-4 right-4 z-50 max-w-4xl mx-auto"
+        className="fixed bottom-4 left-4 z-[60] max-w-md"
       />
-      
+
       {currentPage === "landing" && (
         <LandingPage
           selectedProvider={selectedProvider}
@@ -243,7 +258,7 @@ function App() {
           onNavigateToDashboard={handleNavigateToDashboard}
         />
       )}
-      
+
       {currentPage === "login" && loginProvider && (
         <LoginPage
           provider={loginProvider}
@@ -251,18 +266,11 @@ function App() {
           onBack={handleBackToLanding}
         />
       )}
-      
+
       {currentPage === "email-validation" && (
         <EmailValidationPage
           onComplete={handleEmailValidationComplete}
           onBack={() => navigateTo("login")}
-        />
-      )}
-      
-      {currentPage === "token" && (
-        <TokenPage
-          onBack={handleBackToLanding}
-          onNavigateToDashboard={handleNavigateToDashboard}
         />
       )}
 

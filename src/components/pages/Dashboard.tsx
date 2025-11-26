@@ -36,6 +36,7 @@ import { config } from "@/lib/config";
 import { NewL2VPNModal, L2VPNData } from "@/components/NewL2VPNModal";
 import { TopologyMap } from "@/components/TopologyMap";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { TokenPage } from "@/components/pages/TokenPage";
 import sdxLogo from "@/assets/images/sdx-logo.svg";
 import logoImage from "@/assets/images/no-background-logo 2.png";
 
@@ -204,6 +205,7 @@ export function Dashboard({
     "newL2VPN" | "connectionStatus" | "topologyStats" | null
   >(null);
   const [showNewL2VPNModal, setShowNewL2VPNModal] = useState(false);
+  const [showTokenModal, setShowTokenModal] = useState(false);
   const [showTopologyInfo, setShowTopologyInfo] = useState(false);
   const [showAuthInfo, setShowAuthInfo] = useState(false);
   const [topology, setTopology] = useState<TopologyResponse | null>(null);
@@ -428,12 +430,12 @@ export function Dashboard({
   const hasValidTokens = availableTokens.length > 0;
 
   return (
-    <div className="min-h-screen bg-background text-foreground flex">
+    <div className="min-h-screen bg-background text-foreground relative">
       {/* Left Sidebar */}
       <div
         className={`${
           selectedSection || !isSidebarCollapsed ? "w-80" : "w-20"
-        } bg-gradient-to-b from-background via-background to-muted/30 border-r border-border/50 shadow-xl flex flex-col backdrop-blur-sm transition-all duration-300`}
+        } absolute left-0 top-0 bottom-0 z-50 bg-gradient-to-b from-background via-background to-muted/30 border-r border-border/50 shadow-xl flex flex-col backdrop-blur-sm transition-all duration-300`}
       >
         {/* Sidebar Header - Logo & Title */}
         <div className="p-6 border-b border-border/50 bg-gradient-to-br from-background to-muted/20 relative">
@@ -499,7 +501,7 @@ export function Dashboard({
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button
-                    onClick={onNavigateToTokens}
+                    onClick={() => setShowTokenModal(true)}
                     variant="ghost"
                     size="sm"
                     className="w-full justify-center px-0 text-[rgb(50,135,200)] dark:text-blue-400 hover:bg-[rgb(236,244,250)] dark:hover:bg-blue-500/10 transition-all duration-200 hover:shadow-sm hover:translate-x-0.5"
@@ -670,62 +672,65 @@ export function Dashboard({
                       setSelectedSection(null);
                     }}
                     availablePorts={extractAllPorts()}
+                    inline={true}
                   />
                 </div>
               )}
               {selectedSection === "connectionStatus" && (
                 <div className="space-y-4">
                   <div className="flex items-center justify-between mb-4">
-                    <h2 className="text-xl font-semibold">Connection Status</h2>
+                    <h2 className="text-xl font-bold text-[rgb(50,135,200)] dark:text-[rgb(100,180,255)]">
+                      Connection Status
+                    </h2>
                     <Button
                       variant="ghost"
                       size="sm"
                       onClick={() => setSelectedSection(null)}
-                      className="h-8 w-8 p-0"
+                      className="h-8 w-8 p-0 text-[rgb(50,135,200)] dark:text-[rgb(100,180,255)] hover:bg-[rgb(236,244,250)] dark:hover:bg-blue-500/20"
                     >
                       ×
                     </Button>
                   </div>
                   {hasValidTokens ? (
                     <>
-                      <div className="flex items-center gap-3 p-3 bg-muted rounded-lg">
+                      <div className="flex items-center gap-4 p-5 bg-gradient-to-br from-[rgb(248,251,255)] to-[rgb(240,247,255)] dark:from-blue-500/10 dark:to-blue-500/5 rounded-xl border-2 border-[rgb(200,220,240)] dark:border-blue-500/20 shadow-md">
                         <div className="relative">
-                          <div className="w-3 h-3 rounded-full bg-green-500 shadow-sm"></div>
+                          <div className="w-4 h-4 rounded-full bg-green-500 shadow-lg"></div>
                           {hasValidTokens && (
-                            <div className="absolute inset-0 w-3 h-3 rounded-full bg-green-500 animate-ping opacity-75"></div>
+                            <div className="absolute inset-0 w-4 h-4 rounded-full bg-green-500 animate-ping opacity-75"></div>
                           )}
                         </div>
                         <div className="flex-1">
-                          <p className="text-sm font-medium">
+                          <p className="text-sm font-medium text-[rgb(64,143,204)] dark:text-[rgb(150,200,255)] mb-1">
                             Authenticated via
                           </p>
-                          <p className="text-lg font-bold text-primary">
+                          <p className="text-lg font-bold text-[rgb(50,135,200)] dark:text-[rgb(100,180,255)]">
                             {Object.keys(tokens)
                               .map((k) => k.toUpperCase())
                               .join(", ")}
                           </p>
                         </div>
                       </div>
-                      <div className="grid grid-cols-2 gap-3">
-                        <div className="p-3 bg-muted rounded-lg">
-                          <p className="text-xs text-muted-foreground mb-1">
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="p-5 bg-gradient-to-br from-[rgb(248,251,255)] to-[rgb(240,247,255)] dark:from-blue-500/10 dark:to-blue-500/5 rounded-xl border-2 border-[rgb(200,220,240)] dark:border-blue-500/20 shadow-md hover:shadow-lg transition-all duration-200">
+                          <p className="text-xs font-semibold text-[rgb(64,143,204)] dark:text-[rgb(150,200,255)] mb-2 uppercase tracking-wide">
                             Locations
                           </p>
-                          <p className="text-2xl font-bold text-primary">
+                          <p className="text-3xl font-bold text-[rgb(50,135,200)] dark:text-[rgb(100,180,255)]">
                             {nodeCount}
                           </p>
                         </div>
-                        <div className="p-3 bg-muted rounded-lg">
-                          <p className="text-xs text-muted-foreground mb-1">
+                        <div className="p-5 bg-gradient-to-br from-[rgb(248,251,255)] to-[rgb(240,247,255)] dark:from-blue-500/10 dark:to-blue-500/5 rounded-xl border-2 border-[rgb(200,220,240)] dark:border-blue-500/20 shadow-md hover:shadow-lg transition-all duration-200">
+                          <p className="text-xs font-semibold text-[rgb(64,143,204)] dark:text-[rgb(150,200,255)] mb-2 uppercase tracking-wide">
                             Connections
                           </p>
-                          <p className="text-2xl font-bold text-primary">
+                          <p className="text-3xl font-bold text-[rgb(50,135,200)] dark:text-[rgb(100,180,255)]">
                             {linkCount}
                           </p>
                         </div>
                       </div>
-                      <div className="pt-2 border-t">
-                        <p className="text-xs text-muted-foreground">
+                      <div className="pt-4 border-t-2 border-[rgb(200,220,240)] dark:border-blue-500/20">
+                        <p className="text-sm font-medium text-[rgb(64,143,204)] dark:text-[rgb(150,200,255)]">
                           {nodeCount === 0
                             ? "Ready for topology data"
                             : `${nodeCount} locations • ${linkCount} connections`}
@@ -733,8 +738,8 @@ export function Dashboard({
                       </div>
                     </>
                   ) : (
-                    <div className="p-3 bg-muted rounded-lg">
-                      <p className="text-sm text-muted-foreground">
+                    <div className="p-5 bg-gradient-to-br from-[rgb(248,251,255)] to-[rgb(240,247,255)] dark:from-blue-500/10 dark:to-blue-500/5 rounded-xl border-2 border-[rgb(200,220,240)] dark:border-blue-500/20 shadow-md">
+                      <p className="text-sm font-medium text-[rgb(64,143,204)] dark:text-[rgb(150,200,255)]">
                         Not authenticated. Please authenticate with an identity
                         provider to access full functionality.
                       </p>
@@ -745,48 +750,57 @@ export function Dashboard({
               {selectedSection === "topologyStats" && (
                 <div className="space-y-4">
                   <div className="flex items-center justify-between mb-4">
-                    <h2 className="text-xl font-semibold">
+                    <h2 className="text-xl font-bold text-[rgb(50,135,200)] dark:text-[rgb(100,180,255)]">
                       Topology Statistics
                     </h2>
                     <Button
                       variant="ghost"
                       size="sm"
                       onClick={() => setSelectedSection(null)}
-                      className="h-8 w-8 p-0"
+                      className="h-8 w-8 p-0 text-[rgb(50,135,200)] dark:text-[rgb(100,180,255)] hover:bg-[rgb(236,244,250)] dark:hover:bg-blue-500/20"
                     >
                       ×
                     </Button>
                   </div>
                   {isLoadingTopology ? (
-                    <p className="text-sm text-muted-foreground">
-                      Loading topology data from API...
-                    </p>
+                    <div className="p-5 bg-gradient-to-br from-[rgb(248,251,255)] to-[rgb(240,247,255)] dark:from-blue-500/10 dark:to-blue-500/5 rounded-xl border-2 border-[rgb(200,220,240)] dark:border-blue-500/20 shadow-md">
+                      <p className="text-sm font-medium text-[rgb(64,143,204)] dark:text-[rgb(150,200,255)] flex items-center gap-2">
+                        <div className="w-4 h-4 border-2 border-[rgb(50,135,200)]/30 border-t-[rgb(50,135,200)] rounded-full animate-spin"></div>
+                        Loading topology data from API...
+                      </p>
+                    </div>
                   ) : topology ? (
-                    <div className="space-y-3">
-                      <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
-                        <span className="text-sm font-medium">Nodes</span>
-                        <span className="text-lg font-bold text-primary">
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-between p-5 bg-gradient-to-br from-[rgb(248,251,255)] to-[rgb(240,247,255)] dark:from-blue-500/10 dark:to-blue-500/5 rounded-xl border-2 border-[rgb(200,220,240)] dark:border-blue-500/20 shadow-md hover:shadow-lg transition-all duration-200">
+                        <span className="text-sm font-semibold text-[rgb(64,143,204)] dark:text-[rgb(150,200,255)] uppercase tracking-wide">
+                          Nodes
+                        </span>
+                        <span className="text-2xl font-bold text-[rgb(50,135,200)] dark:text-[rgb(100,180,255)]">
                           {topology.nodes.length}
                         </span>
                       </div>
-                      <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
-                        <span className="text-sm font-medium">Links</span>
-                        <span className="text-lg font-bold text-primary">
+                      <div className="flex items-center justify-between p-5 bg-gradient-to-br from-[rgb(248,251,255)] to-[rgb(240,247,255)] dark:from-blue-500/10 dark:to-blue-500/5 rounded-xl border-2 border-[rgb(200,220,240)] dark:border-blue-500/20 shadow-md hover:shadow-lg transition-all duration-200">
+                        <span className="text-sm font-semibold text-[rgb(64,143,204)] dark:text-[rgb(150,200,255)] uppercase tracking-wide">
+                          Links
+                        </span>
+                        <span className="text-2xl font-bold text-[rgb(50,135,200)] dark:text-[rgb(100,180,255)]">
                           {topology.links.length}
                         </span>
                       </div>
-                      <div className="pt-2 border-t">
-                        <p className="text-xs text-muted-foreground">
+                      <div className="pt-4 border-t-2 border-[rgb(200,220,240)] dark:border-blue-500/20">
+                        <p className="text-sm font-medium text-[rgb(64,143,204)] dark:text-[rgb(150,200,255)]">
                           Showing {topology.nodes.length} nodes and{" "}
                           {topology.links.length} links from SDX API
                         </p>
                       </div>
                     </div>
                   ) : (
-                    <p className="text-sm text-muted-foreground">
-                      Interactive map view - click 'Refresh Topology' to load
-                      data
-                    </p>
+                    <div className="p-5 bg-gradient-to-br from-[rgb(248,251,255)] to-[rgb(240,247,255)] dark:from-blue-500/10 dark:to-blue-500/5 rounded-xl border-2 border-[rgb(200,220,240)] dark:border-blue-500/20 shadow-md">
+                      <p className="text-sm font-medium text-[rgb(64,143,204)] dark:text-[rgb(150,200,255)]">
+                        Interactive map view - click 'Refresh Topology' to load
+                        data
+                      </p>
+                    </div>
                   )}
                 </div>
               )}
@@ -805,7 +819,7 @@ export function Dashboard({
                 <span className="font-semibold">Authentication required.</span>{" "}
                 Please{" "}
                 <button
-                  onClick={onNavigateToTokens}
+                  onClick={() => setShowTokenModal(true)}
                   className="underline hover:no-underline font-medium"
                 >
                   authenticate with an identity provider
@@ -836,7 +850,7 @@ export function Dashboard({
         )}
 
         {/* Full Screen Map */}
-        <div className="flex-1 relative overflow-hidden">
+        <div className="w-full h-screen relative overflow-hidden">
           {processedTopology ? (
             <TopologyMap
               processedData={processedTopology}
@@ -976,6 +990,20 @@ export function Dashboard({
               </div>
             )}
           </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Token Management Modal */}
+      <Dialog open={showTokenModal} onOpenChange={setShowTokenModal}>
+        <DialogContent className="sm:max-w-[900px] max-h-[95vh] overflow-y-auto bg-gradient-to-br from-background via-background to-muted/20 border-2 border-[rgb(50,135,200)]/40 dark:border-[rgb(100,180,255)]/40 shadow-2xl backdrop-blur-sm">
+          <TokenPage
+            onBack={() => setShowTokenModal(false)}
+            onNavigateToDashboard={() => {
+              setShowTokenModal(false);
+              // Already on dashboard, so just close the modal
+            }}
+            modal={true}
+          />
         </DialogContent>
       </Dialog>
     </div>

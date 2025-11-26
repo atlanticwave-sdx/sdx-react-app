@@ -24,9 +24,10 @@ import { FullSDXLogo } from "@/components/FullSDXLogo";
 interface TokenPageProps {
   onBack: () => void;
   onNavigateToDashboard?: () => void;
+  modal?: boolean; // If true, hides header elements (logo, back button, view dashboard)
 }
 
-export function TokenPage({ onBack, onNavigateToDashboard }: TokenPageProps) {
+export function TokenPage({ onBack, onNavigateToDashboard, modal = false }: TokenPageProps) {
   const [tokens, setTokens] = useState<{
     cilogon?: TokenData;
     orcid?: TokenData;
@@ -200,10 +201,10 @@ export function TokenPage({ onBack, onNavigateToDashboard }: TokenPageProps) {
     }
     setTokens(validTokens);
 
-    // Show success message if we just got new tokens
+    // Show success message if we just got new tokens (only if not in modal mode and user is not already authenticated)
     const previousCount = Object.keys(tokens).length;
     const newCount = Object.keys(validTokens).length;
-    if (newCount > previousCount && newCount > 0) {
+    if (newCount > previousCount && newCount > 0 && !modal && !SessionManager.isAuthenticated()) {
       const newProviders = Object.keys(validTokens).filter(
         (provider) => !tokens[provider as keyof typeof tokens]
       );
@@ -229,10 +230,11 @@ export function TokenPage({ onBack, onNavigateToDashboard }: TokenPageProps) {
     ) {
       setSelectedToken(mostRecentToken);
 
-      // Create session and redirect to dashboard if we have valid tokens
+      // Create session and redirect to dashboard if we have valid tokens (only if not in modal mode)
       if (
         Object.keys(validTokens).length > 0 &&
-        !SessionManager.isAuthenticated()
+        !SessionManager.isAuthenticated() &&
+        !modal
       ) {
         SessionManager.createSession(mostRecentToken.provider);
         toast.success(
@@ -299,10 +301,59 @@ export function TokenPage({ onBack, onNavigateToDashboard }: TokenPageProps) {
 
   if (availableTokens.length === 0) {
     return (
-      <div className="container mx-auto px-6 py-16 max-w-3xl bg-[rgb(255,255,255)] min-h-screen">
+      <div className={`${modal ? "p-6" : "container mx-auto px-6 py-16"} ${modal ? "" : "max-w-3xl"} bg-transparent ${modal ? "" : "min-h-screen"}`}>
         {/* Header */}
-        <FullSDXLogo />
+        {!modal && <FullSDXLogo />}
 
+        {!modal && (
+          <div className="flex items-center gap-4 mb-8">
+            <Button
+              variant="ghost"
+              onClick={onBack}
+              className="-ml-2 text-base text-[rgb(50,135,200)] hover:bg-[rgb(236,244,250)]"
+            >
+              ← Back to selection
+            </Button>
+            {onNavigateToDashboard && (
+              <Button
+                variant="outline"
+                onClick={onNavigateToDashboard}
+                className="text-base border-[rgb(120,176,219)] text-[rgb(50,135,200)] hover:bg-[rgb(236,244,250)]"
+              >
+                📊 View Dashboard
+              </Button>
+            )}
+          </div>
+        )}
+
+        <div className="space-y-6">
+          <div className="space-y-2 p-5 bg-gradient-to-br from-[rgb(248,251,255)] to-[rgb(240,247,255)] dark:from-blue-500/10 dark:to-blue-500/5 rounded-xl border-2 border-[rgb(200,220,240)] dark:border-blue-500/20 shadow-sm hover:shadow-md transition-all duration-200">
+            <h3 className="text-xl font-bold text-[rgb(50,135,200)] dark:text-[rgb(100,180,255)] mb-1">
+              No Valid Tokens
+            </h3>
+            <p className="text-sm font-medium text-[rgb(64,143,204)] dark:text-[rgb(150,200,255)]">
+              You don't have any valid tokens. Please authenticate with a
+              provider first.
+            </p>
+          </div>
+          <Button
+            onClick={onBack}
+            className="w-full py-4 text-lg font-semibold bg-[rgb(50,135,200)] hover:bg-[rgb(64,143,204)] dark:bg-[rgb(100,180,255)] dark:hover:bg-[rgb(120,200,255)] text-white shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-105 active:scale-95"
+            size="lg"
+          >
+            Go Back to Authentication
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className={`${modal ? "p-6" : "container mx-auto px-6 py-16"} ${modal ? "" : "max-w-6xl"} bg-transparent ${modal ? "" : "min-h-screen"}`}>
+      {/* Header */}
+      {!modal && <FullSDXLogo />}
+
+      {!modal && (
         <div className="flex items-center gap-4 mb-8">
           <Button
             variant="ghost"
@@ -321,58 +372,11 @@ export function TokenPage({ onBack, onNavigateToDashboard }: TokenPageProps) {
             </Button>
           )}
         </div>
+      )}
 
-        <Card className="shadow-lg border-2 border-[rgb(120,176,219)] bg-[rgb(255,255,255)]">
-          <CardHeader className="pb-8">
-            <CardTitle className="text-2xl text-[rgb(64,143,204)]">
-              No Valid Tokens
-            </CardTitle>
-            <CardDescription className="text-lg mt-2 text-[rgb(50,135,200)]">
-              You don't have any valid tokens. Please authenticate with a
-              provider first.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="pt-4">
-            <Button
-              onClick={onBack}
-              className="w-full py-4 text-lg font-semibold bg-[rgb(50,135,200)] hover:bg-[rgb(64,143,204)] text-[rgb(255,255,255)]"
-              size="lg"
-            >
-              Go Back to Authentication
-            </Button>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
-
-  return (
-    <div className="container mx-auto px-6 py-16 max-w-6xl bg-[rgb(255,255,255)] min-h-screen">
-      {/* Header */}
-      <FullSDXLogo />
-
-      <div className="flex items-center gap-4 mb-8">
-        <Button
-          variant="ghost"
-          onClick={onBack}
-          className="-ml-2 text-base text-[rgb(50,135,200)] hover:bg-[rgb(236,244,250)]"
-        >
-          ← Back to selection
-        </Button>
-        {onNavigateToDashboard && (
-          <Button
-            variant="outline"
-            onClick={onNavigateToDashboard}
-            className="text-base border-[rgb(120,176,219)] text-[rgb(50,135,200)] hover:bg-[rgb(236,244,250)]"
-          >
-            📊 View Dashboard
-          </Button>
-        )}
-      </div>
-
-      <div className="grid lg:grid-cols-3 gap-8">
+      <div className={`grid ${modal ? "lg:grid-cols-1" : "lg:grid-cols-3"} gap-8`}>
         {/* Token Refresh Status */}
-        <div className="lg:col-span-3">
+        <div className={modal ? "col-span-1" : "lg:col-span-3"}>
           <TokenStatus
             providers={Object.keys(tokens) as any[]}
             showRefreshButtons={true}
@@ -381,103 +385,99 @@ export function TokenPage({ onBack, onNavigateToDashboard }: TokenPageProps) {
         </div>
 
         {/* Token Selection */}
-        <Card className="lg:col-span-1 shadow-lg border-2 border-[rgb(120,176,219)] bg-[rgb(255,255,255)]">
-          <CardHeader className="pb-8">
-            <CardTitle className="text-2xl text-[rgb(64,143,204)]">
-              Available Tokens
-            </CardTitle>
-            <CardDescription className="text-lg mt-2 text-[rgb(50,135,200)]">
-              Select a token to view details
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-6 pt-0">
-            {availableTokens.map(([provider, token]) => {
-              const status = getTokenStatus(token);
-              const isSelected = selectedToken?.provider === provider;
+        {!modal && (
+          <Card className="lg:col-span-1 shadow-lg border-2 border-[rgb(120,176,219)] bg-[rgb(255,255,255)]">
+            <CardHeader className="pb-8">
+              <CardTitle className="text-2xl text-[rgb(64,143,204)]">
+                Available Tokens
+              </CardTitle>
+              <CardDescription className="text-lg mt-2 text-[rgb(50,135,200)]">
+                Select a token to view details
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6 pt-0">
+              {availableTokens.map(([provider, token]) => {
+                const status = getTokenStatus(token);
+                const isSelected = selectedToken?.provider === provider;
 
-              return (
-                <div
-                  key={provider}
-                  className={`p-6 rounded-xl border-2 cursor-pointer transition-all hover:shadow-md ${
-                    isSelected
-                      ? "border-[rgb(50,135,200)] bg-[rgb(236,244,250)] shadow-md"
-                      : "border-[rgb(120,176,219)] hover:border-[rgb(50,135,200)] hover:bg-[rgb(236,244,250)]"
-                  }`}
-                  onClick={() => setSelectedToken(token)}
-                >
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-4">
-                      <div>
-                        <div
-                          className="font-semibold text-lg"
-                          style={{ color: "rgb(64, 143, 204)" }}
-                        >
-                          {provider.toUpperCase()}
-                        </div>
-                        <div
-                          className="text-sm mt-1"
-                          style={{ color: "rgb(50, 135, 200)" }}
-                        >
-                          {status.formattedTime} remaining
-                        </div>
-                        {status.canRefresh && (
-                          <div className="text-xs text-green-600 mt-1">
-                            Auto-refresh enabled
+                return (
+                  <div
+                    key={provider}
+                    className={`p-6 rounded-xl border-2 cursor-pointer transition-all hover:shadow-md ${
+                      isSelected
+                        ? "border-[rgb(50,135,200)] bg-[rgb(236,244,250)] shadow-md"
+                        : "border-[rgb(120,176,219)] hover:border-[rgb(50,135,200)] hover:bg-[rgb(236,244,250)]"
+                    }`}
+                    onClick={() => setSelectedToken(token)}
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-4">
+                        <div>
+                          <div
+                            className="font-semibold text-lg"
+                            style={{ color: "rgb(64, 143, 204)" }}
+                          >
+                            {provider.toUpperCase()}
                           </div>
+                          <div
+                            className="text-sm mt-1"
+                            style={{ color: "rgb(50, 135, 200)" }}
+                          >
+                            {status.formattedTime} remaining
+                          </div>
+                          {status.canRefresh && (
+                            <div className="text-xs text-green-600 mt-1">
+                              Auto-refresh enabled
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        {status.isExpiringSoon && (
+                          <Badge variant="destructive" className="text-xs">
+                            {status.canRefresh ? "Refreshing" : "Expires Soon"}
+                          </Badge>
+                        )}
+                        {status.isValid ? (
+                          <span
+                            style={{ color: "rgb(50, 135, 200)" }}
+                            className="text-xl"
+                          >
+                            ✓
+                          </span>
+                        ) : (
+                          <span className="text-destructive text-xl">✗</span>
                         )}
                       </div>
                     </div>
-                    <div className="flex items-center gap-3">
-                      {status.isExpiringSoon && (
-                        <Badge variant="destructive" className="text-xs">
-                          {status.canRefresh ? "Refreshing" : "Expires Soon"}
-                        </Badge>
-                      )}
-                      {status.isValid ? (
-                        <span
-                          style={{ color: "rgb(50, 135, 200)" }}
-                          className="text-xl"
-                        >
-                          ✓
-                        </span>
-                      ) : (
-                        <span className="text-destructive text-xl">✗</span>
-                      )}
-                    </div>
                   </div>
-                </div>
-              );
-            })}
-          </CardContent>
-        </Card>
+                );
+              })}
+            </CardContent>
+          </Card>
+        )}
 
         {/* Token Details */}
         {selectedToken && claims && (
-          <Card className="lg:col-span-2 shadow-lg border-2 border-[rgb(120,176,219)] bg-[rgb(255,255,255)]">
-            <CardHeader className="pb-8">
-              <CardTitle className="text-2xl text-[rgb(64,143,204)]">
+          <div className={`${modal ? "col-span-1" : "lg:col-span-2"} space-y-6`}>
+            <div className="space-y-2 p-5 bg-gradient-to-br from-[rgb(248,251,255)] to-[rgb(240,247,255)] dark:from-blue-500/10 dark:to-blue-500/5 rounded-xl border-2 border-[rgb(200,220,240)] dark:border-blue-500/20 shadow-sm hover:shadow-md transition-all duration-200">
+              <h3 className="text-xl font-bold text-[rgb(50,135,200)] dark:text-[rgb(100,180,255)] mb-1">
                 Token Details & Actions
-              </CardTitle>
-              <CardDescription className="text-lg mt-2 text-[rgb(50,135,200)]">
+              </h3>
+              <p className="text-sm font-medium text-[rgb(64,143,204)] dark:text-[rgb(150,200,255)]">
                 Claims and metadata for {selectedToken.provider.toUpperCase()}{" "}
                 token
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-8 pt-0">
-              <div className="space-y-6">
+              </p>
+            </div>
+            <div className="space-y-6">
+              <div className="space-y-4">
                 {claims.sub && (
-                  <div className="flex items-start gap-4 p-4 rounded-xl bg-[rgb(236,244,250)] border border-[rgb(120,176,219)]">
+                  <div className="flex items-start gap-4 p-5 rounded-xl bg-gradient-to-br from-[rgb(248,251,255)] to-[rgb(240,247,255)] dark:from-blue-500/10 dark:to-blue-500/5 border-2 border-[rgb(200,220,240)] dark:border-blue-500/20 shadow-sm hover:shadow-md transition-all duration-200">
                     <div className="min-w-0 flex-1">
-                      <div
-                        className="text-base font-semibold mb-2"
-                        style={{ color: "rgb(64, 143, 204)" }}
-                      >
+                      <div className="text-sm font-semibold mb-2 text-[rgb(64,143,204)] dark:text-[rgb(150,200,255)] uppercase tracking-wide">
                         Subject
                       </div>
-                      <div
-                        className="text-base break-all"
-                        style={{ color: "rgb(50, 135, 200)" }}
-                      >
+                      <div className="text-base break-all text-[rgb(50,135,200)] dark:text-[rgb(100,180,255)] font-medium">
                         {claims.sub}
                       </div>
                     </div>
@@ -485,18 +485,12 @@ export function TokenPage({ onBack, onNavigateToDashboard }: TokenPageProps) {
                 )}
 
                 {claims.email && (
-                  <div className="flex items-start gap-4 p-4 rounded-xl bg-[rgb(236,244,250)] border border-[rgb(120,176,219)]">
+                  <div className="flex items-start gap-4 p-5 rounded-xl bg-gradient-to-br from-[rgb(248,251,255)] to-[rgb(240,247,255)] dark:from-blue-500/10 dark:to-blue-500/5 border-2 border-[rgb(200,220,240)] dark:border-blue-500/20 shadow-sm hover:shadow-md transition-all duration-200">
                     <div className="min-w-0 flex-1">
-                      <div
-                        className="text-base font-semibold mb-2"
-                        style={{ color: "rgb(64, 143, 204)" }}
-                      >
+                      <div className="text-sm font-semibold mb-2 text-[rgb(64,143,204)] dark:text-[rgb(150,200,255)] uppercase tracking-wide">
                         Email
                       </div>
-                      <div
-                        className="text-base"
-                        style={{ color: "rgb(50, 135, 200)" }}
-                      >
+                      <div className="text-base text-[rgb(50,135,200)] dark:text-[rgb(100,180,255)] font-medium">
                         {claims.email}
                       </div>
                     </div>
@@ -504,18 +498,12 @@ export function TokenPage({ onBack, onNavigateToDashboard }: TokenPageProps) {
                 )}
 
                 {claims.iss && (
-                  <div className="flex items-start gap-4 p-4 rounded-xl bg-[rgb(236,244,250)] border border-[rgb(120,176,219)]">
+                  <div className="flex items-start gap-4 p-5 rounded-xl bg-gradient-to-br from-[rgb(248,251,255)] to-[rgb(240,247,255)] dark:from-blue-500/10 dark:to-blue-500/5 border-2 border-[rgb(200,220,240)] dark:border-blue-500/20 shadow-sm hover:shadow-md transition-all duration-200">
                     <div className="min-w-0 flex-1">
-                      <div
-                        className="text-base font-semibold mb-2"
-                        style={{ color: "rgb(64, 143, 204)" }}
-                      >
+                      <div className="text-sm font-semibold mb-2 text-[rgb(64,143,204)] dark:text-[rgb(150,200,255)] uppercase tracking-wide">
                         Issuer
                       </div>
-                      <div
-                        className="text-base break-all"
-                        style={{ color: "rgb(50, 135, 200)" }}
-                      >
+                      <div className="text-base break-all text-[rgb(50,135,200)] dark:text-[rgb(100,180,255)] font-medium">
                         {claims.iss}
                       </div>
                     </div>
@@ -523,35 +511,23 @@ export function TokenPage({ onBack, onNavigateToDashboard }: TokenPageProps) {
                 )}
 
                 <div className="grid grid-cols-2 gap-4">
-                  <div className="flex items-start gap-4 p-4 rounded-xl bg-[rgb(236,244,250)] border border-[rgb(120,176,219)]">
+                  <div className="flex items-start gap-4 p-5 rounded-xl bg-gradient-to-br from-[rgb(248,251,255)] to-[rgb(240,247,255)] dark:from-blue-500/10 dark:to-blue-500/5 border-2 border-[rgb(200,220,240)] dark:border-blue-500/20 shadow-sm hover:shadow-md transition-all duration-200">
                     <div className="min-w-0 flex-1">
-                      <div
-                        className="text-base font-semibold mb-2"
-                        style={{ color: "rgb(64, 143, 204)" }}
-                      >
+                      <div className="text-sm font-semibold mb-2 text-[rgb(64,143,204)] dark:text-[rgb(150,200,255)] uppercase tracking-wide">
                         Issued At
                       </div>
-                      <div
-                        className="text-sm"
-                        style={{ color: "rgb(50, 135, 200)" }}
-                      >
+                      <div className="text-sm text-[rgb(50,135,200)] dark:text-[rgb(100,180,255)] font-medium">
                         {formatDate(selectedToken.issued_at)}
                       </div>
                     </div>
                   </div>
 
-                  <div className="flex items-start gap-4 p-4 rounded-xl bg-[rgb(236,244,250)] border border-[rgb(120,176,219)]">
+                  <div className="flex items-start gap-4 p-5 rounded-xl bg-gradient-to-br from-[rgb(248,251,255)] to-[rgb(240,247,255)] dark:from-blue-500/10 dark:to-blue-500/5 border-2 border-[rgb(200,220,240)] dark:border-blue-500/20 shadow-sm hover:shadow-md transition-all duration-200">
                     <div className="min-w-0 flex-1">
-                      <div
-                        className="text-base font-semibold mb-2"
-                        style={{ color: "rgb(64, 143, 204)" }}
-                      >
+                      <div className="text-sm font-semibold mb-2 text-[rgb(64,143,204)] dark:text-[rgb(150,200,255)] uppercase tracking-wide">
                         Expires At
                       </div>
-                      <div
-                        className="text-sm"
-                        style={{ color: "rgb(50, 135, 200)" }}
-                      >
+                      <div className="text-sm text-[rgb(50,135,200)] dark:text-[rgb(100,180,255)] font-medium">
                         {formatDate(
                           selectedToken.issued_at + selectedToken.expires_in
                         )}
@@ -560,24 +536,18 @@ export function TokenPage({ onBack, onNavigateToDashboard }: TokenPageProps) {
                   </div>
                 </div>
 
-                <div className="flex items-start gap-4 p-4 rounded-xl bg-[rgb(236,244,250)] border border-[rgb(120,176,219)]">
+                <div className="flex items-start gap-4 p-5 rounded-xl bg-gradient-to-br from-[rgb(248,251,255)] to-[rgb(240,247,255)] dark:from-blue-500/10 dark:to-blue-500/5 border-2 border-[rgb(200,220,240)] dark:border-blue-500/20 shadow-sm hover:shadow-md transition-all duration-200">
                   <div className="min-w-0 flex-1">
-                    <div
-                      className="text-base font-semibold mb-2"
-                      style={{ color: "rgb(64, 143, 204)" }}
-                    >
+                    <div className="text-sm font-semibold mb-2 text-[rgb(64,143,204)] dark:text-[rgb(150,200,255)] uppercase tracking-wide">
                       Token Status
                     </div>
                     <div className="flex items-center gap-2">
-                      <div
-                        className="text-sm"
-                        style={{ color: "rgb(50, 135, 200)" }}
-                      >
+                      <div className="text-sm text-[rgb(50,135,200)] dark:text-[rgb(100,180,255)] font-medium">
                         {TokenStorage.formatTimeUntilExpiry(selectedToken)}{" "}
                         remaining
                       </div>
                       {TokenStorage.canRefreshToken(selectedToken) && (
-                        <Badge variant="secondary" className="text-xs">
+                        <Badge variant="secondary" className="text-xs bg-transparent dark:bg-transparent text-[rgb(50,135,200)] dark:text-[rgb(100,180,255)] border-0 font-medium">
                           Auto-refresh enabled
                         </Badge>
                       )}
@@ -586,13 +556,13 @@ export function TokenPage({ onBack, onNavigateToDashboard }: TokenPageProps) {
                 </div>
               </div>
 
-              <Separator className="my-8" />
+              <Separator className="my-6 border-[rgb(200,220,240)] dark:border-blue-500/20" />
 
               <div className="space-y-4">
                 <Button
                   onClick={handleSendToBackend}
                   disabled={!TokenStorage.isTokenValid(selectedToken)}
-                  className="w-full py-4 text-lg font-semibold bg-[rgb(50,135,200)] hover:bg-[rgb(64,143,204)] text-[rgb(255,255,255)] disabled:opacity-50"
+                  className="w-full py-4 text-lg font-semibold bg-[rgb(50,135,200)] hover:bg-[rgb(64,143,204)] dark:bg-[rgb(100,180,255)] dark:hover:bg-[rgb(120,200,255)] text-white shadow-lg hover:shadow-xl transition-all duration-200 disabled:opacity-50 hover:scale-105 active:scale-95"
                   size="lg"
                 >
                   Connect using API
@@ -605,7 +575,7 @@ export function TokenPage({ onBack, onNavigateToDashboard }: TokenPageProps) {
                       window.open("http://190.103.184.199", "_blank")
                     }
                     disabled={!TokenStorage.isTokenValid(selectedToken)}
-                    className="py-3 text-base font-medium bg-[rgb(120,176,219)] hover:bg-[rgb(64,143,204)] text-[rgb(255,255,255)] disabled:opacity-50"
+                    className="py-3 text-base font-medium bg-[rgb(50,135,200)] hover:bg-[rgb(64,143,204)] dark:bg-[rgb(100,180,255)] dark:hover:bg-[rgb(120,200,255)] text-white shadow-md hover:shadow-lg transition-all duration-200 disabled:opacity-50 hover:scale-105 active:scale-95"
                   >
                     Connect using MEICAN
                   </Button>
@@ -615,7 +585,7 @@ export function TokenPage({ onBack, onNavigateToDashboard }: TokenPageProps) {
                       window.open("https://fabric-testbed.net", "_blank")
                     }
                     disabled={!TokenStorage.isTokenValid(selectedToken)}
-                    className="py-3 text-base font-medium bg-[rgb(120,176,219)] hover:bg-[rgb(64,143,204)] text-[rgb(255,255,255)] disabled:opacity-50"
+                    className="py-3 text-base font-medium bg-[rgb(50,135,200)] hover:bg-[rgb(64,143,204)] dark:bg-[rgb(100,180,255)] dark:hover:bg-[rgb(120,200,255)] text-white shadow-md hover:shadow-lg transition-all duration-200 disabled:opacity-50 hover:scale-105 active:scale-95"
                   >
                     Connect using FABRIC
                   </Button>
@@ -624,38 +594,32 @@ export function TokenPage({ onBack, onNavigateToDashboard }: TokenPageProps) {
                 <Button
                   variant="outline"
                   onClick={handleClearAllTokens}
-                  className="w-full py-3 text-base font-medium border-2 text-destructive hover:text-destructive"
-                  style={{
-                    borderColor: "rgb(200, 50, 50)",
-                    color: "rgb(200, 50, 50)",
-                  }}
+                  className="w-full py-3 text-base font-medium border-2 border-red-500/50 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 hover:border-red-500 dark:hover:border-red-400 transition-all duration-200 shadow-sm hover:shadow-md hover:scale-105 active:scale-95"
                 >
                   Clear All Tokens
                 </Button>
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </div>
         )}
       </div>
 
       {/* Backend Configuration Info */}
-      <Card className="mt-12 shadow-lg border-2 border-[rgb(120,176,219)] bg-[rgb(255,255,255)]">
-        <CardHeader className="pb-6">
-          <CardTitle className="text-2xl text-[rgb(64,143,204)]">
+      <div className={`${modal ? "mt-6" : "mt-12"} space-y-4`}>
+        <div className="space-y-2 p-5 bg-gradient-to-br from-[rgb(248,251,255)] to-[rgb(240,247,255)] dark:from-blue-500/10 dark:to-blue-500/5 rounded-xl border-2 border-[rgb(200,220,240)] dark:border-blue-500/20 shadow-sm hover:shadow-md transition-all duration-200">
+          <h3 className="text-xl font-bold text-[rgb(50,135,200)] dark:text-[rgb(100,180,255)] mb-1">
             Current Configuration
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="pt-4">
-          <div className="p-4 rounded-xl bg-[rgb(236,244,250)] border border-[rgb(120,176,219)]">
-            <div className="font-semibold text-[rgb(64,143,204)] mb-2">
-              Backend URL
-            </div>
-            <div className="text-[rgb(50,135,200)] break-all">
-              https://sdxapi.atlanticwave-sdx.ai/
-            </div>
+          </h3>
+        </div>
+        <div className="p-5 rounded-xl bg-gradient-to-br from-[rgb(248,251,255)] to-[rgb(240,247,255)] dark:from-blue-500/10 dark:to-blue-500/5 border-2 border-[rgb(200,220,240)] dark:border-blue-500/20 shadow-sm hover:shadow-md transition-all duration-200">
+          <div className="text-sm font-semibold text-[rgb(64,143,204)] dark:text-[rgb(150,200,255)] mb-2 uppercase tracking-wide">
+            Backend URL
           </div>
-        </CardContent>
-      </Card>
+          <div className="text-base text-[rgb(50,135,200)] dark:text-[rgb(100,180,255)] break-all font-medium">
+            https://sdxapi.atlanticwave-sdx.ai/
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
