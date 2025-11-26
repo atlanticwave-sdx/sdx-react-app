@@ -9,11 +9,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
+import Tooltip from "@mui/material/Tooltip";
 import { toast } from "sonner";
 import {
   TokenData,
@@ -191,6 +187,71 @@ const GlobeIcon = ({ className }: { className?: string }) => (
   </svg>
 );
 
+// Blue Tooltip component with direct styling
+function BlueTooltip({
+  children,
+  title,
+  placement = "right",
+}: {
+  children: React.ReactElement;
+  title: string;
+  placement?: "right" | "left" | "top" | "bottom";
+}) {
+  const isDark = document.documentElement.classList.contains("dark");
+
+  return (
+    <Tooltip
+      title={title}
+      arrow
+      placement={placement}
+      componentsProps={{
+        tooltip: {
+          sx: {
+            backgroundColor: isDark
+              ? "rgba(59, 130, 246, 0.1)"
+              : "rgb(248, 251, 255)",
+            background: isDark
+              ? "linear-gradient(to bottom right, rgba(59, 130, 246, 0.1), rgba(59, 130, 246, 0.05))"
+              : "linear-gradient(to bottom right, rgb(248, 251, 255), rgb(240, 247, 255))",
+            color: isDark ? "rgb(100, 180, 255)" : "rgb(50, 135, 200)",
+            border: isDark
+              ? "2px solid rgba(59, 130, 246, 0.2)"
+              : "2px solid rgb(200, 220, 240)",
+            borderRadius: "6px",
+            padding: "4px 8px",
+            fontSize: "12px",
+            fontWeight: 600,
+            boxShadow:
+              "0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)",
+            backdropFilter: "blur(4px)",
+            "&, & *": {
+              color: isDark
+                ? "rgb(100, 180, 255) !important"
+                : "rgb(50, 135, 200) !important",
+            },
+            "& .MuiTooltip-arrow": {
+              color: isDark ? "rgba(59, 130, 246, 0.2)" : "rgb(200, 220, 240)",
+              "&::before": {
+                backgroundColor: isDark
+                  ? "rgba(59, 130, 246, 0.1)"
+                  : "rgb(248, 251, 255)",
+                background: isDark
+                  ? "linear-gradient(to bottom right, rgba(59, 130, 246, 0.1), rgba(59, 130, 246, 0.05))"
+                  : "linear-gradient(to bottom right, rgb(248, 251, 255), rgb(240, 247, 255))",
+                border: isDark
+                  ? "2px solid rgba(59, 130, 246, 0.2)"
+                  : "2px solid rgb(200, 220, 240)",
+              },
+            },
+          },
+        },
+      }}
+    >
+      {children}
+    </Tooltip>
+  );
+}
+
 export function Dashboard({
   onBack,
   onNavigateToTokens,
@@ -202,10 +263,9 @@ export function Dashboard({
   }>({});
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(true);
   const [selectedSection, setSelectedSection] = useState<
-    "newL2VPN" | "connectionStatus" | "topologyStats" | null
+    "newL2VPN" | "connectionStatus" | "topologyStats" | "manageTokens" | null
   >(null);
   const [showNewL2VPNModal, setShowNewL2VPNModal] = useState(false);
-  const [showTokenModal, setShowTokenModal] = useState(false);
   const [showTopologyInfo, setShowTopologyInfo] = useState(false);
   const [showAuthInfo, setShowAuthInfo] = useState(false);
   const [topology, setTopology] = useState<TopologyResponse | null>(null);
@@ -482,62 +542,60 @@ export function Dashboard({
           >
             {/* All Buttons */}
             <div className="space-y-4">
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    onClick={onBack}
-                    variant="ghost"
-                    size="sm"
-                    className="w-full justify-center px-0 text-[rgb(50,135,200)] dark:text-blue-400 hover:bg-[rgb(236,244,250)] dark:hover:bg-blue-500/10 transition-all duration-200 hover:shadow-sm hover:translate-x-0.5 font-medium"
-                  >
-                    <HomeIcon className="w-6 h-6" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent side="right">
-                  <p>Back to Main</p>
-                </TooltipContent>
-              </Tooltip>
+              <BlueTooltip title="Back to Main" placement="right">
+                <Button
+                  onClick={onBack}
+                  variant="ghost"
+                  size="sm"
+                  className="w-full justify-center px-0 text-[rgb(50,135,200)] dark:text-blue-400 hover:bg-[rgb(236,244,250)] dark:hover:bg-blue-500/10 transition-all duration-200 hover:shadow-sm hover:translate-x-0.5 font-medium"
+                >
+                  <HomeIcon className="w-6 h-6" />
+                </Button>
+              </BlueTooltip>
 
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    onClick={() => setShowTokenModal(true)}
-                    variant="ghost"
-                    size="sm"
-                    className="w-full justify-center px-0 text-[rgb(50,135,200)] dark:text-blue-400 hover:bg-[rgb(236,244,250)] dark:hover:bg-blue-500/10 transition-all duration-200 hover:shadow-sm hover:translate-x-0.5"
-                  >
-                    <KeyIcon className="w-6 h-6" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent side="right">
-                  <p>Manage Tokens</p>
-                </TooltipContent>
-              </Tooltip>
+              <BlueTooltip title="Manage Tokens" placement="right">
+                <Button
+                  onClick={() => {
+                    if (selectedSection === "manageTokens") {
+                      setSelectedSection(null);
+                    } else {
+                      setSelectedSection("manageTokens");
+                    }
+                  }}
+                  variant="ghost"
+                  size="sm"
+                  className={`w-full justify-center px-0 ${
+                    selectedSection === "manageTokens"
+                      ? "bg-[rgb(236,244,250)] dark:bg-blue-500/20 border border-[rgb(64,143,204)] dark:border-blue-400/50"
+                      : ""
+                  } text-[rgb(50,135,200)] dark:text-blue-400 hover:bg-[rgb(236,244,250)] dark:hover:bg-blue-500/10 transition-all duration-200 hover:shadow-sm hover:translate-x-0.5`}
+                >
+                  <KeyIcon className="w-6 h-6" />
+                </Button>
+              </BlueTooltip>
 
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    onClick={loadTopology}
-                    disabled={!hasValidTokens || isLoadingTopology}
-                    variant="ghost"
-                    size="sm"
-                    className="w-full justify-center px-0 text-[rgb(50,135,200)] dark:text-blue-400 hover:bg-[rgb(236,244,250)] dark:hover:bg-blue-500/10 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 hover:shadow-sm hover:translate-x-0.5 disabled:hover:translate-x-0"
-                  >
-                    {isLoadingTopology ? (
-                      <span className="text-base">⏳</span>
-                    ) : (
-                      <RefreshIcon className="w-5 h-5" />
-                    )}
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent side="right">
-                  <p>{isLoadingTopology ? "Loading..." : "Refresh Topology"}</p>
-                </TooltipContent>
-              </Tooltip>
+              <BlueTooltip
+                title={isLoadingTopology ? "Loading..." : "Refresh Topology"}
+                placement="right"
+              >
+                <Button
+                  onClick={loadTopology}
+                  disabled={!hasValidTokens || isLoadingTopology}
+                  variant="ghost"
+                  size="sm"
+                  className="w-full justify-center px-0 text-[rgb(50,135,200)] dark:text-blue-400 hover:bg-[rgb(236,244,250)] dark:hover:bg-blue-500/10 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 hover:shadow-sm hover:translate-x-0.5 disabled:hover:translate-x-0"
+                >
+                  {isLoadingTopology ? (
+                    <span className="text-base">⏳</span>
+                  ) : (
+                    <RefreshIcon className="w-5 h-5" />
+                  )}
+                </Button>
+              </BlueTooltip>
 
               <div className="pt-2">
-                <Tooltip>
-                  <TooltipTrigger asChild>
+                {isSidebarCollapsed ? (
+                  <BlueTooltip title="New L2VPN" placement="right">
                     <Button
                       onClick={() => {
                         console.log("New Connection button clicked");
@@ -558,69 +616,75 @@ export function Dashboard({
                     >
                       <PlusIcon className="w-5 h-5" />
                     </Button>
-                  </TooltipTrigger>
-                  {isSidebarCollapsed && (
-                    <TooltipContent side="right">
-                      <p>New L2VPN</p>
-                    </TooltipContent>
-                  )}
-                </Tooltip>
+                  </BlueTooltip>
+                ) : (
+                  <Button
+                    onClick={() => {
+                      console.log("New Connection button clicked");
+                      if (selectedSection === "newL2VPN") {
+                        setSelectedSection(null);
+                      } else {
+                        setSelectedSection("newL2VPN");
+                      }
+                    }}
+                    disabled={!hasValidTokens}
+                    variant="ghost"
+                    size="sm"
+                    className={`w-full justify-center px-0 ${
+                      selectedSection === "newL2VPN"
+                        ? "bg-[rgb(236,244,250)] dark:bg-blue-500/20 border border-[rgb(64,143,204)] dark:border-blue-400/50"
+                        : ""
+                    } text-[rgb(50,135,200)] dark:text-blue-400 hover:bg-[rgb(236,244,250)] dark:hover:bg-blue-500/10 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 hover:shadow-sm hover:translate-x-0.5 disabled:hover:translate-x-0`}
+                  >
+                    <PlusIcon className="w-5 h-5" />
+                  </Button>
+                )}
               </div>
 
               {/* Status Section Buttons */}
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    onClick={() => {
-                      if (selectedSection === "connectionStatus") {
-                        setSelectedSection(null);
-                      } else {
-                        setSelectedSection("connectionStatus");
-                      }
-                    }}
-                    variant="ghost"
-                    size="sm"
-                    className={`w-full justify-center px-0 ${
-                      selectedSection === "connectionStatus"
-                        ? "bg-[rgb(236,244,250)] dark:bg-blue-500/20 border border-[rgb(64,143,204)] dark:border-blue-400/50"
-                        : ""
-                    } text-[rgb(50,135,200)] dark:text-blue-400 hover:bg-[rgb(236,244,250)] dark:hover:bg-blue-500/10 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 hover:shadow-sm hover:translate-x-0.5 disabled:hover:translate-x-0`}
-                    disabled={!hasValidTokens}
-                  >
-                    <GlobeIcon className="w-5 h-5" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent side="right">
-                  <p>Connection Status</p>
-                </TooltipContent>
-              </Tooltip>
+              <BlueTooltip title="Connection Status" placement="right">
+                <Button
+                  onClick={() => {
+                    if (selectedSection === "connectionStatus") {
+                      setSelectedSection(null);
+                    } else {
+                      setSelectedSection("connectionStatus");
+                    }
+                  }}
+                  variant="ghost"
+                  size="sm"
+                  className={`w-full justify-center px-0 ${
+                    selectedSection === "connectionStatus"
+                      ? "bg-[rgb(236,244,250)] dark:bg-blue-500/20 border border-[rgb(64,143,204)] dark:border-blue-400/50"
+                      : ""
+                  } text-[rgb(50,135,200)] dark:text-blue-400 hover:bg-[rgb(236,244,250)] dark:hover:bg-blue-500/10 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 hover:shadow-sm hover:translate-x-0.5 disabled:hover:translate-x-0`}
+                  disabled={!hasValidTokens}
+                >
+                  <GlobeIcon className="w-5 h-5" />
+                </Button>
+              </BlueTooltip>
 
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    onClick={() => {
-                      if (selectedSection === "topologyStats") {
-                        setSelectedSection(null);
-                      } else {
-                        setSelectedSection("topologyStats");
-                      }
-                    }}
-                    variant="ghost"
-                    size="sm"
-                    className={`w-full justify-center px-0 ${
-                      selectedSection === "topologyStats"
-                        ? "bg-[rgb(236,244,250)] dark:bg-blue-500/20 border border-[rgb(64,143,204)] dark:border-blue-400/50"
-                        : ""
-                    } text-[rgb(50,135,200)] dark:text-blue-400 hover:bg-[rgb(236,244,250)] dark:hover:bg-blue-500/10 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 hover:shadow-sm hover:translate-x-0.5 disabled:hover:translate-x-0`}
-                    disabled={!topology && !isLoadingTopology}
-                  >
-                    <BarChartIcon className="w-5 h-5" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent side="right">
-                  <p>Topology Stats</p>
-                </TooltipContent>
-              </Tooltip>
+              <BlueTooltip title="Topology Stats" placement="right">
+                <Button
+                  onClick={() => {
+                    if (selectedSection === "topologyStats") {
+                      setSelectedSection(null);
+                    } else {
+                      setSelectedSection("topologyStats");
+                    }
+                  }}
+                  variant="ghost"
+                  size="sm"
+                  className={`w-full justify-center px-0 ${
+                    selectedSection === "topologyStats"
+                      ? "bg-[rgb(236,244,250)] dark:bg-blue-500/20 border border-[rgb(64,143,204)] dark:border-blue-400/50"
+                      : ""
+                  } text-[rgb(50,135,200)] dark:text-blue-400 hover:bg-[rgb(236,244,250)] dark:hover:bg-blue-500/10 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 hover:shadow-sm hover:translate-x-0.5 disabled:hover:translate-x-0`}
+                  disabled={!topology && !isLoadingTopology}
+                >
+                  <BarChartIcon className="w-5 h-5" />
+                </Button>
+              </BlueTooltip>
 
               {/* Theme Toggle */}
               <div className="flex justify-center">
@@ -628,21 +692,16 @@ export function Dashboard({
               </div>
 
               {/* Logout Button */}
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    onClick={handleLogout}
-                    variant="ghost"
-                    size="sm"
-                    className="w-full justify-center px-0 text-[#3287C8] dark:text-[#3287C8] hover:bg-[#3287C8]/10 dark:hover:bg-[#3287C8]/10 transition-all duration-200 hover:shadow-sm hover:translate-x-0.5 font-medium"
-                  >
-                    <LogoutIcon className="w-5 h-5" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent side="right">
-                  <p>Logout</p>
-                </TooltipContent>
-              </Tooltip>
+              <BlueTooltip title="Logout" placement="right">
+                <Button
+                  onClick={handleLogout}
+                  variant="ghost"
+                  size="sm"
+                  className="w-full justify-center px-0 text-[#3287C8] dark:text-[#3287C8] hover:bg-[#3287C8]/10 dark:hover:bg-[#3287C8]/10 transition-all duration-200 hover:shadow-sm hover:translate-x-0.5 font-medium"
+                >
+                  <LogoutIcon className="w-5 h-5" />
+                </Button>
+              </BlueTooltip>
             </div>
           </div>
 
@@ -804,6 +863,31 @@ export function Dashboard({
                   )}
                 </div>
               )}
+              {selectedSection === "manageTokens" && (
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between mb-4">
+                    <h2 className="text-xl font-bold text-[rgb(50,135,200)] dark:text-[rgb(100,180,255)]">
+                      Manage Tokens
+                    </h2>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setSelectedSection(null)}
+                      className="h-8 w-8 p-0 text-[rgb(50,135,200)] dark:text-[rgb(100,180,255)] hover:bg-[rgb(236,244,250)] dark:hover:bg-blue-500/20"
+                    >
+                      ×
+                    </Button>
+                  </div>
+                  <TokenPage
+                    onBack={() => setSelectedSection(null)}
+                    onNavigateToDashboard={() => {
+                      // Already on dashboard, just close the section
+                      setSelectedSection(null);
+                    }}
+                    modal={true}
+                  />
+                </div>
+              )}
             </div>
           )}
         </div>
@@ -819,7 +903,7 @@ export function Dashboard({
                 <span className="font-semibold">Authentication required.</span>{" "}
                 Please{" "}
                 <button
-                  onClick={() => setShowTokenModal(true)}
+                  onClick={() => setSelectedSection("manageTokens")}
                   className="underline hover:no-underline font-medium"
                 >
                   authenticate with an identity provider
@@ -990,20 +1074,6 @@ export function Dashboard({
               </div>
             )}
           </div>
-        </DialogContent>
-      </Dialog>
-
-      {/* Token Management Modal */}
-      <Dialog open={showTokenModal} onOpenChange={setShowTokenModal}>
-        <DialogContent className="sm:max-w-[900px] max-h-[95vh] overflow-y-auto bg-gradient-to-br from-background via-background to-muted/20 border-2 border-[rgb(50,135,200)]/40 dark:border-[rgb(100,180,255)]/40 shadow-2xl backdrop-blur-sm">
-          <TokenPage
-            onBack={() => setShowTokenModal(false)}
-            onNavigateToDashboard={() => {
-              setShowTokenModal(false);
-              // Already on dashboard, so just close the modal
-            }}
-            modal={true}
-          />
         </DialogContent>
       </Dialog>
     </div>
