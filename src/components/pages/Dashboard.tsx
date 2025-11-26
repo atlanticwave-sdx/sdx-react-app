@@ -751,42 +751,32 @@ export function Dashboard({
                     </Button>
                   </div>
                   {hasValidTokens ? (
-                    <>
-                      <div className="flex items-center gap-4 p-5 bg-gradient-to-br from-[rgb(248,251,255)] to-[rgb(240,247,255)] dark:from-blue-500/10 dark:to-blue-500/5 rounded-xl border-2 border-[rgb(200,220,240)] dark:border-blue-500/20 shadow-md">
-                        <div className="relative">
-                          <div className="w-4 h-4 rounded-full bg-green-500 shadow-lg"></div>
-                          {hasValidTokens && (
-                            <div className="absolute inset-0 w-4 h-4 rounded-full bg-green-500 animate-ping opacity-75"></div>
-                          )}
-                        </div>
-                        <div className="flex-1">
-                          <p className="text-sm font-medium text-[rgb(64,143,204)] dark:text-[rgb(150,200,255)] mb-1">
-                            Authenticated via
-                          </p>
-                          <p className="text-lg font-bold text-[rgb(50,135,200)] dark:text-[rgb(100,180,255)]">
-                            {Object.keys(tokens)
-                              .map((k) => k.toUpperCase())
-                              .join(", ")}
-                          </p>
-                        </div>
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-between p-5 bg-gradient-to-br from-[rgb(248,251,255)] to-[rgb(240,247,255)] dark:from-blue-500/10 dark:to-blue-500/5 rounded-xl border-2 border-[rgb(200,220,240)] dark:border-blue-500/20 shadow-md hover:shadow-lg transition-all duration-200">
+                        <span className="text-sm font-semibold text-[rgb(64,143,204)] dark:text-[rgb(150,200,255)] uppercase tracking-wide">
+                          Authenticated via
+                        </span>
+                        <span className="text-2xl font-bold text-[rgb(50,135,200)] dark:text-[rgb(100,180,255)]">
+                          {Object.keys(tokens)
+                            .map((k) => k.toUpperCase())
+                            .join(", ")}
+                        </span>
                       </div>
-                      <div className="grid grid-cols-2 gap-4">
-                        <div className="p-5 bg-gradient-to-br from-[rgb(248,251,255)] to-[rgb(240,247,255)] dark:from-blue-500/10 dark:to-blue-500/5 rounded-xl border-2 border-[rgb(200,220,240)] dark:border-blue-500/20 shadow-md hover:shadow-lg transition-all duration-200">
-                          <p className="text-xs font-semibold text-[rgb(64,143,204)] dark:text-[rgb(150,200,255)] mb-2 uppercase tracking-wide">
-                            Locations
-                          </p>
-                          <p className="text-3xl font-bold text-[rgb(50,135,200)] dark:text-[rgb(100,180,255)]">
-                            {nodeCount}
-                          </p>
-                        </div>
-                        <div className="p-5 bg-gradient-to-br from-[rgb(248,251,255)] to-[rgb(240,247,255)] dark:from-blue-500/10 dark:to-blue-500/5 rounded-xl border-2 border-[rgb(200,220,240)] dark:border-blue-500/20 shadow-md hover:shadow-lg transition-all duration-200">
-                          <p className="text-xs font-semibold text-[rgb(64,143,204)] dark:text-[rgb(150,200,255)] mb-2 uppercase tracking-wide">
-                            Connections
-                          </p>
-                          <p className="text-3xl font-bold text-[rgb(50,135,200)] dark:text-[rgb(100,180,255)]">
-                            {linkCount}
-                          </p>
-                        </div>
+                      <div className="flex items-center justify-between p-5 bg-gradient-to-br from-[rgb(248,251,255)] to-[rgb(240,247,255)] dark:from-blue-500/10 dark:to-blue-500/5 rounded-xl border-2 border-[rgb(200,220,240)] dark:border-blue-500/20 shadow-md hover:shadow-lg transition-all duration-200">
+                        <span className="text-sm font-semibold text-[rgb(64,143,204)] dark:text-[rgb(150,200,255)] uppercase tracking-wide">
+                          Locations
+                        </span>
+                        <span className="text-2xl font-bold text-[rgb(50,135,200)] dark:text-[rgb(100,180,255)]">
+                          {nodeCount}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between p-5 bg-gradient-to-br from-[rgb(248,251,255)] to-[rgb(240,247,255)] dark:from-blue-500/10 dark:to-blue-500/5 rounded-xl border-2 border-[rgb(200,220,240)] dark:border-blue-500/20 shadow-md hover:shadow-lg transition-all duration-200">
+                        <span className="text-sm font-semibold text-[rgb(64,143,204)] dark:text-[rgb(150,200,255)] uppercase tracking-wide">
+                          Connections
+                        </span>
+                        <span className="text-2xl font-bold text-[rgb(50,135,200)] dark:text-[rgb(100,180,255)]">
+                          {linkCount}
+                        </span>
                       </div>
                       <div className="pt-4 border-t-2 border-[rgb(200,220,240)] dark:border-blue-500/20">
                         <p className="text-sm font-medium text-[rgb(64,143,204)] dark:text-[rgb(150,200,255)]">
@@ -795,7 +785,7 @@ export function Dashboard({
                             : `${nodeCount} locations • ${linkCount} connections`}
                         </p>
                       </div>
-                    </>
+                    </div>
                   ) : (
                     <div className="p-5 bg-gradient-to-br from-[rgb(248,251,255)] to-[rgb(240,247,255)] dark:from-blue-500/10 dark:to-blue-500/5 rounded-xl border-2 border-[rgb(200,220,240)] dark:border-blue-500/20 shadow-md">
                       <p className="text-sm font-medium text-[rgb(64,143,204)] dark:text-[rgb(150,200,255)]">

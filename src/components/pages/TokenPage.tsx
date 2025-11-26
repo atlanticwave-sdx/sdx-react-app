@@ -530,51 +530,6 @@ export function TokenPage({
                     </div>
                   </div>
                 )}
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="flex items-start gap-4 p-5 rounded-xl bg-gradient-to-br from-[rgb(248,251,255)] to-[rgb(240,247,255)] dark:from-blue-500/10 dark:to-blue-500/5 border-2 border-[rgb(200,220,240)] dark:border-blue-500/20 shadow-sm hover:shadow-md transition-all duration-200">
-                    <div className="min-w-0 flex-1">
-                      <div className="text-sm font-semibold mb-2 text-[rgb(64,143,204)] dark:text-[rgb(150,200,255)] uppercase tracking-wide">
-                        Issued At
-                      </div>
-                      <div className="text-sm text-[rgb(50,135,200)] dark:text-[rgb(100,180,255)] font-medium">
-                        {formatDate(selectedToken.issued_at)}
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="flex items-start gap-4 p-5 rounded-xl bg-gradient-to-br from-[rgb(248,251,255)] to-[rgb(240,247,255)] dark:from-blue-500/10 dark:to-blue-500/5 border-2 border-[rgb(200,220,240)] dark:border-blue-500/20 shadow-sm hover:shadow-md transition-all duration-200">
-                    <div className="min-w-0 flex-1">
-                      <div className="text-sm font-semibold mb-2 text-[rgb(64,143,204)] dark:text-[rgb(150,200,255)] uppercase tracking-wide">
-                        Expires At
-                      </div>
-                      <div className="text-sm text-[rgb(50,135,200)] dark:text-[rgb(100,180,255)] font-medium">
-                        {formatDate(
-                          selectedToken.issued_at + selectedToken.expires_in
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="flex items-start gap-4 p-5 rounded-xl bg-gradient-to-br from-[rgb(248,251,255)] to-[rgb(240,247,255)] dark:from-blue-500/10 dark:to-blue-500/5 border-2 border-[rgb(200,220,240)] dark:border-blue-500/20 shadow-sm hover:shadow-md transition-all duration-200">
-                  <div className="min-w-0 flex-1">
-                    <div className="text-sm font-semibold mb-2 text-[rgb(64,143,204)] dark:text-[rgb(150,200,255)] uppercase tracking-wide">
-                      Token Status
-                    </div>
-                    <div className="flex flex-col gap-1">
-                      <div className="text-sm text-[rgb(50,135,200)] dark:text-[rgb(100,180,255)] font-medium">
-                        {TokenStorage.formatTimeUntilExpiry(selectedToken)}{" "}
-                        remaining
-                      </div>
-                      {TokenStorage.canRefreshToken(selectedToken) && (
-                        <span className="text-sm text-[rgb(50,135,200)] dark:text-[rgb(100,180,255)] font-medium">
-                          Auto-refresh enabled
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                </div>
               </div>
 
               <Separator className="my-6 border-[rgb(200,220,240)] dark:border-blue-500/20" />
