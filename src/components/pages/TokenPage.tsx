@@ -27,7 +27,11 @@ interface TokenPageProps {
   modal?: boolean; // If true, hides header elements (logo, back button, view dashboard)
 }
 
-export function TokenPage({ onBack, onNavigateToDashboard, modal = false }: TokenPageProps) {
+export function TokenPage({
+  onBack,
+  onNavigateToDashboard,
+  modal = false,
+}: TokenPageProps) {
   const [tokens, setTokens] = useState<{
     cilogon?: TokenData;
     orcid?: TokenData;
@@ -204,7 +208,12 @@ export function TokenPage({ onBack, onNavigateToDashboard, modal = false }: Toke
     // Show success message if we just got new tokens (only if not in modal mode and user is not already authenticated)
     const previousCount = Object.keys(tokens).length;
     const newCount = Object.keys(validTokens).length;
-    if (newCount > previousCount && newCount > 0 && !modal && !SessionManager.isAuthenticated()) {
+    if (
+      newCount > previousCount &&
+      newCount > 0 &&
+      !modal &&
+      !SessionManager.isAuthenticated()
+    ) {
       const newProviders = Object.keys(validTokens).filter(
         (provider) => !tokens[provider as keyof typeof tokens]
       );
@@ -301,7 +310,11 @@ export function TokenPage({ onBack, onNavigateToDashboard, modal = false }: Toke
 
   if (availableTokens.length === 0) {
     return (
-      <div className={`${modal ? "p-6" : "container mx-auto px-6 py-16"} ${modal ? "" : "max-w-3xl"} bg-transparent ${modal ? "" : "min-h-screen"}`}>
+      <div
+        className={`${modal ? "p-6" : "container mx-auto px-6 py-16"} ${
+          modal ? "" : "max-w-3xl"
+        } bg-transparent ${modal ? "" : "min-h-screen"}`}
+      >
         {/* Header */}
         {!modal && <FullSDXLogo />}
 
@@ -349,7 +362,11 @@ export function TokenPage({ onBack, onNavigateToDashboard, modal = false }: Toke
   }
 
   return (
-    <div className={`${modal ? "p-6" : "container mx-auto px-6 py-16"} ${modal ? "" : "max-w-6xl"} bg-transparent ${modal ? "" : "min-h-screen"}`}>
+    <div
+      className={`${modal ? "p-6" : "container mx-auto px-6 py-16"} ${
+        modal ? "" : "max-w-6xl"
+      } bg-transparent ${modal ? "" : "min-h-screen"}`}
+    >
       {/* Header */}
       {!modal && <FullSDXLogo />}
 
@@ -374,7 +391,9 @@ export function TokenPage({ onBack, onNavigateToDashboard, modal = false }: Toke
         </div>
       )}
 
-      <div className={`grid ${modal ? "lg:grid-cols-1" : "lg:grid-cols-3"} gap-8`}>
+      <div
+        className={`grid ${modal ? "lg:grid-cols-1" : "lg:grid-cols-3"} gap-8`}
+      >
         {/* Token Refresh Status */}
         <div className={modal ? "col-span-1" : "lg:col-span-3"}>
           <TokenStatus
@@ -459,7 +478,9 @@ export function TokenPage({ onBack, onNavigateToDashboard, modal = false }: Toke
 
         {/* Token Details */}
         {selectedToken && claims && (
-          <div className={`${modal ? "col-span-1" : "lg:col-span-2"} space-y-6`}>
+          <div
+            className={`${modal ? "col-span-1" : "lg:col-span-2"} space-y-6`}
+          >
             <div className="space-y-2 p-5 bg-gradient-to-br from-[rgb(248,251,255)] to-[rgb(240,247,255)] dark:from-blue-500/10 dark:to-blue-500/5 rounded-xl border-2 border-[rgb(200,220,240)] dark:border-blue-500/20 shadow-sm hover:shadow-md transition-all duration-200">
               <h3 className="text-xl font-bold text-[rgb(50,135,200)] dark:text-[rgb(100,180,255)] mb-1">
                 Token Details & Actions
@@ -541,15 +562,15 @@ export function TokenPage({ onBack, onNavigateToDashboard, modal = false }: Toke
                     <div className="text-sm font-semibold mb-2 text-[rgb(64,143,204)] dark:text-[rgb(150,200,255)] uppercase tracking-wide">
                       Token Status
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex flex-col gap-1">
                       <div className="text-sm text-[rgb(50,135,200)] dark:text-[rgb(100,180,255)] font-medium">
                         {TokenStorage.formatTimeUntilExpiry(selectedToken)}{" "}
                         remaining
                       </div>
                       {TokenStorage.canRefreshToken(selectedToken) && (
-                        <Badge variant="secondary" className="text-xs bg-transparent dark:bg-transparent text-[rgb(50,135,200)] dark:text-[rgb(100,180,255)] border-0 font-medium">
+                        <span className="text-sm text-[rgb(50,135,200)] dark:text-[rgb(100,180,255)] font-medium">
                           Auto-refresh enabled
-                        </Badge>
+                        </span>
                       )}
                     </div>
                   </div>

@@ -1,11 +1,17 @@
-import { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { AlertTriangle, CheckCircle2, RefreshCw, Clock, AlertCircle } from 'lucide-react';
-import { TokenStorage } from '@/lib/token-storage';
-import { TokenData, Provider } from '@/lib/types';
-import { useTokenRefresh } from '@/hooks/useTokenRefresh';
+import { useState, useEffect } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import {
+  AlertTriangle,
+  CheckCircle2,
+  RefreshCw,
+  Clock,
+  AlertCircle,
+} from "lucide-react";
+import { TokenStorage } from "@/lib/token-storage";
+import { TokenData, Provider } from "@/lib/types";
+import { useTokenRefresh } from "@/hooks/useTokenRefresh";
 
 interface TokenStatusProps {
   providers?: Provider[];
@@ -13,23 +19,23 @@ interface TokenStatusProps {
   compact?: boolean;
 }
 
-export function TokenStatus({ 
-  providers = ['cilogon', 'orcid'], 
+export function TokenStatus({
+  providers = ["cilogon", "orcid"],
   showRefreshButtons = true,
-  compact = false 
+  compact = false,
 }: TokenStatusProps) {
   const [tokens, setTokens] = useState<Record<string, TokenData | null>>({});
-  
+
   const { refreshStatus, manualRefresh, isTokenNearExpiry } = useTokenRefresh({
     showNotifications: true,
-    refreshBeforeExpiryMinutes: 5
+    refreshBeforeExpiryMinutes: 5,
   });
 
   // Update token status every second
   useEffect(() => {
     const updateTokens = () => {
       const newTokens: Record<string, TokenData | null> = {};
-      providers.forEach(provider => {
+      providers.forEach((provider) => {
         newTokens[provider] = TokenStorage.getToken(provider);
       });
       setTokens(newTokens);
@@ -43,11 +49,11 @@ export function TokenStatus({
   const getTokenStatusInfo = (provider: Provider, token: TokenData | null) => {
     if (!token) {
       return {
-        status: 'missing' as const,
-        color: 'text-muted-foreground',
-        bgColor: 'bg-muted',
+        status: "missing" as const,
+        color: "text-muted-foreground",
+        bgColor: "bg-muted",
         icon: AlertCircle,
-        message: 'Not authenticated'
+        message: "Not authenticated",
       };
     }
 
@@ -57,30 +63,32 @@ export function TokenStatus({
 
     if (!isValid) {
       return {
-        status: 'expired' as const,
-        color: 'text-destructive',
-        bgColor: 'bg-destructive/10',
+        status: "expired" as const,
+        color: "text-destructive",
+        bgColor: "bg-destructive/10",
         icon: AlertTriangle,
-        message: 'Token expired'
+        message: "Token expired",
       };
     }
 
     if (isNearExpiry) {
       return {
-        status: 'warning' as const,
-        color: 'text-orange-600',
-        bgColor: 'bg-orange-50',
+        status: "warning" as const,
+        color: "text-orange-600",
+        bgColor: "bg-orange-50",
         icon: AlertTriangle,
-        message: canRefresh ? 'Expires soon (auto-refresh enabled)' : 'Expires soon (manual auth required)'
+        message: canRefresh
+          ? "Expires soon (auto-refresh enabled)"
+          : "Expires soon (manual auth required)",
       };
     }
 
     return {
-      status: 'valid' as const,
-      color: 'text-green-600',
-      bgColor: 'bg-green-50',
+      status: "valid" as const,
+      color: "text-green-600",
+      bgColor: "bg-green-50",
       icon: CheckCircle2,
-      message: 'Valid'
+      message: "Valid",
     };
   };
 
@@ -95,12 +103,14 @@ export function TokenStatus({
           const token = tokens[provider];
           const statusInfo = getTokenStatusInfo(provider, token);
           const Icon = statusInfo.icon;
-          const isRefreshing = refreshStatus.isRefreshing && refreshStatus.refreshErrors[provider] === null;
+          const isRefreshing =
+            refreshStatus.isRefreshing &&
+            refreshStatus.refreshErrors[provider] === null;
 
           return (
-            <Badge 
-              key={provider} 
-              variant="outline" 
+            <Badge
+              key={provider}
+              variant="outline"
               className={`${statusInfo.bgColor} ${statusInfo.color} border-current`}
             >
               <Icon className="w-3 h-3 mr-1" />
@@ -134,23 +144,27 @@ export function TokenStatus({
           const statusInfo = getTokenStatusInfo(provider, token);
           const Icon = statusInfo.icon;
           const canRefresh = token && TokenStorage.canRefreshToken(token);
-          const isRefreshing = refreshStatus.isRefreshing && refreshStatus.refreshErrors[provider] === null;
+          const isRefreshing =
+            refreshStatus.isRefreshing &&
+            refreshStatus.refreshErrors[provider] === null;
           const refreshError = refreshStatus.refreshErrors[provider];
 
           return (
-            <div key={provider} className="flex items-center justify-between p-3 rounded-lg border">
+            <div
+              key={provider}
+              className="flex items-center justify-between p-3 rounded-lg border"
+            >
               <div className="flex items-center gap-3">
                 <Icon className={`w-5 h-5 ${statusInfo.color}`} />
                 <div>
-                  <div className="font-medium">
-                    {provider.toUpperCase()}
-                  </div>
+                  <div className="font-medium">{provider.toUpperCase()}</div>
                   <div className={`text-sm ${statusInfo.color}`}>
                     {statusInfo.message}
                   </div>
                   {token && (
                     <div className="text-xs text-muted-foreground">
-                      Expires: {TokenStorage.getTokenExpiryDate(token).toLocaleString()}
+                      Expires:{" "}
+                      {TokenStorage.getTokenExpiryDate(token).toLocaleString()}
                     </div>
                   )}
                   {refreshError && (
@@ -167,7 +181,7 @@ export function TokenStatus({
                     {TokenStorage.formatTimeUntilExpiry(token)}
                   </Badge>
                 )}
-                
+
                 {showRefreshButtons && canRefresh && (
                   <Button
                     size="sm"

@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { X, RefreshCw, AlertTriangle } from "lucide-react";
 import { TokenStorage } from "@/lib/token-storage";
 import { TokenData, Provider } from "@/lib/types";
@@ -104,12 +103,9 @@ export function TokenExpiryNotification({
                 </span>
               </span>
               {TokenStorage.canRefreshToken(token) && (
-                <Badge
-                  variant="secondary"
-                  className="text-xs bg-transparent dark:bg-transparent text-[rgb(50,135,200)] dark:text-[rgb(100,180,255)] border-0 font-medium px-2 py-0.5"
-                >
+                <span className="text-sm text-[rgb(50,135,200)] dark:text-[rgb(100,180,255)] font-medium">
                   Auto-refresh enabled
-                </Badge>
+                </span>
               )}
             </div>
             <div className="flex items-center gap-2 flex-shrink-0">
