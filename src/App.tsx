@@ -90,12 +90,22 @@ function App() {
         });
 
         const isAuth = SessionManager.isAuthenticated();
+        const isEmailVerified = SessionManager.isEmailVerified();
         console.log("Dashboard auth check result:", isAuth);
+        console.log("Email verification check result:", isEmailVerified);
 
-        if (isAuth) {
+        if (isAuth && isEmailVerified) {
           console.log("Dashboard authenticated, setting state");
           setIsAuthenticated(true);
           setCurrentPage("dashboard");
+        } else if (isAuth && !isEmailVerified) {
+          console.log(
+            "Authenticated but email not verified, redirecting to email validation"
+          );
+          toast.warning("Please verify your email to access the dashboard.");
+          setIsAuthenticated(true);
+          setCurrentPage("email-validation");
+          window.history.replaceState({}, "", `${basePath}/email-validation`);
         } else {
           console.log("Not authenticated, redirecting to landing");
           console.log("Session state:", SessionManager.getSession());
@@ -104,20 +114,32 @@ function App() {
           window.history.replaceState({}, "", basePath || "/");
         }
       } else {
-        // Root path - check if user is authenticated
+        // Root path - check if user is authenticated and email verified
         console.log("Root path accessed, checking authentication...");
         const isAuth = SessionManager.isAuthenticated();
+        const isEmailVerified = SessionManager.isEmailVerified();
         console.log("Is authenticated:", isAuth);
+        console.log("Is email verified:", isEmailVerified);
 
-        if (isAuth) {
-          // Redirect authenticated users to dashboard
-          console.log("Root authenticated, redirecting to dashboard");
+        if (isAuth && isEmailVerified) {
+          // Redirect authenticated and verified users to dashboard
+          console.log(
+            "Root authenticated and verified, redirecting to dashboard"
+          );
           setIsAuthenticated(true);
           setCurrentPage("dashboard");
           const dashboardPath = `${basePath}/dashboard`;
           if (path !== dashboardPath) {
             window.history.replaceState({}, "", dashboardPath);
           }
+        } else if (isAuth && !isEmailVerified) {
+          // Redirect to email validation if authenticated but not verified
+          console.log(
+            "Authenticated but email not verified, redirecting to email validation"
+          );
+          setIsAuthenticated(true);
+          setCurrentPage("email-validation");
+          window.history.replaceState({}, "", `${basePath}/email-validation`);
         } else {
           console.log("Not authenticated, showing landing page");
           setIsAuthenticated(false);
@@ -190,6 +212,7 @@ function App() {
     if (email) {
       sessionStorage.setItem("pre_validated_email", email);
     }
+    sessionStorage.setItem("trigger_refresh", "true");
     navigateTo("email-validation");
   };
 
@@ -200,13 +223,25 @@ function App() {
   };
 
   const handleNavigateToDashboard = () => {
-    // Check authentication before navigating to dashboard
+    // Check authentication and email verification before navigating to dashboard
     const isAuth = SessionManager.isAuthenticated();
+    const isEmailVerified = SessionManager.isEmailVerified();
     console.log("Navigate to dashboard - auth check:", isAuth);
+    console.log(
+      "Navigate to dashboard - email verification check:",
+      isEmailVerified
+    );
 
-    if (isAuth) {
+    if (isAuth && isEmailVerified) {
       setIsAuthenticated(true);
       navigateTo("dashboard");
+    } else if (isAuth && !isEmailVerified) {
+      console.log(
+        "Authenticated but email not verified, redirecting to email validation"
+      );
+      toast.warning("Please verify your email to access the dashboard.");
+      setIsAuthenticated(true);
+      navigateTo("email-validation");
     } else {
       console.log("Not authenticated, cannot navigate to dashboard");
       setIsAuthenticated(false);
@@ -274,13 +309,25 @@ function App() {
         />
       )}
 
-      {currentPage === "dashboard" && isAuthenticated && (
-        <Dashboard
-          onBack={handleBackToLanding}
-          onNavigateToTokens={handleNavigateToTokens}
-          onLogout={handleLogout}
-        />
-      )}
+      {currentPage === "dashboard" &&
+        isAuthenticated &&
+        SessionManager.isEmailVerified() && (
+          <Dashboard
+            onBack={handleBackToLanding}
+            onNavigateToTokens={handleNavigateToTokens}
+            onLogout={handleLogout}
+          />
+        )}
+
+      {/* Redirect to email validation if authenticated but not verified */}
+      {currentPage === "dashboard" &&
+        isAuthenticated &&
+        !SessionManager.isEmailVerified() && (
+          <EmailValidationPage
+            onComplete={handleEmailValidationComplete}
+            onBack={() => navigateTo("login")}
+          />
+        )}
 
       {currentPage === "dashboard" && !isAuthenticated && (
         <LandingPage
