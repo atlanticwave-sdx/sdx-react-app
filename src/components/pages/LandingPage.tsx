@@ -1,4 +1,3 @@
-import { useState } from "react";
 import {
   Card,
   CardContent,
@@ -9,6 +8,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Provider } from "@/lib/config";
 import { FullSDXLogo } from "@/components/FullSDXLogo";
+import { CILogonProvider } from "@/lib/providers/cilogon";
 
 interface LandingPageProps {
   onLogin: (provider: Provider) => void;
@@ -32,6 +32,23 @@ export function LandingPage({
   onLogin,
   onNavigateToDashboard,
 }: LandingPageProps) {
+  const handleProviderClick = async (provider: Provider) => {
+    // For CILogon, directly start authentication and skip the login page
+    if (provider === "cilogon") {
+      try {
+        await CILogonProvider.startAuthentication();
+        // This will redirect the page, so no code after this will execute
+      } catch (error) {
+        console.error("Failed to start CILogon authentication:", error);
+        // If there's an error, fall back to the login page
+        onLogin(provider);
+      }
+    } else {
+      // For other providers (e.g., ORCID), use the existing flow
+      onLogin(provider);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-white p-3 pt-8">
       {/* Dashboard button in top right */}
@@ -74,7 +91,7 @@ export function LandingPage({
                     variant="outline"
                     className="w-full justify-start p-6 h-auto transition-all duration-200 rounded-lg bg-white hover:bg-[rgb(245,245,245)] !border-[rgb(200,200,200)] hover:!border-[rgb(180,180,180)] hover:shadow-md active:scale-[0.98]"
                     style={{ marginBottom: isLastButton ? "0" : "10px" }}
-                    onClick={() => onLogin(provider)}
+                    onClick={() => handleProviderClick(provider)}
                   >
                     <div className="flex items-center gap-4 w-full">
                       <div className="flex-shrink-0">
