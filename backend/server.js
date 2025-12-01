@@ -567,6 +567,66 @@ app.get("/api/topology", validateToken, async (req, res) => {
   }
 });
 
+// L2VPN list endpoint
+app.get("/api/l2vpn/1.0", validateToken, async (req, res) => {
+  try {
+    const l2vpnUrl = `${SDX_API_CONFIG.baseUrl}/l2vpn/1.0`;
+
+    if (!isProduction) {
+      console.log("L2VPN list request received");
+      console.log("Fetching from:", l2vpnUrl);
+    }
+
+    // Forward request to SDX API
+    const response = await fetch(l2vpnUrl, {
+      method: "GET",
+      headers: {
+        Accept: "application/json",
+        "Content-Type": "application/json",
+        ...(req.token && { Authorization: `Bearer ${req.token}` }),
+      },
+    });
+
+    if (!isProduction) {
+      console.log("SDX L2VPN API response status:", response.status);
+    }
+
+    const responseText = await response.text();
+    let responseData;
+
+    try {
+      responseData = JSON.parse(responseText);
+    } catch (parseError) {
+      console.error("Failed to parse L2VPN response:", responseText);
+      return res.status(response.status).json({
+        error: "Invalid response from SDX API",
+        ...(!isProduction && { details: responseText }),
+      });
+    }
+
+    if (!response.ok) {
+      console.error("L2VPN list fetch failed:", response.status, responseData);
+      return res.status(response.status).json({
+        error: "Failed to fetch L2VPNs",
+        status: response.status,
+        ...responseData,
+      });
+    }
+
+    if (!isProduction) {
+      console.log("L2VPNs fetched successfully:", responseData);
+    }
+
+    res.status(response.status).json(responseData);
+  } catch (error) {
+    console.error("L2VPN list endpoint error:", error.message);
+    res.status(500).json({
+      error: "Internal server error while fetching L2VPNs",
+      ...(!isProduction && { message: error.message }),
+    });
+  }
+});
+
 // L2VPN creation endpoint
 app.post("/api/l2vpn/1.0", validateToken, async (req, res) => {
   try {
@@ -711,6 +771,7 @@ app.get("/", (req, res) => {
       "POST /api/send-verification": "Send email verification code",
       "POST /api/verify-code": "Verify email code",
       "GET /api/topology": "Get network topology",
+      "GET /api/l2vpn/1.0": "List L2VPN connections",
       "POST /api/l2vpn/1.0": "Create L2VPN connection",
       "GET /health": "Health check",
       ...(!isProduction && {

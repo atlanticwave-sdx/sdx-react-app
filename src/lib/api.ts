@@ -205,4 +205,84 @@ export class ApiService {
       throw error;
     }
   }
+
+  /**
+   * Get list of L2VPN connections
+   */
+  static async getL2VPNs(): Promise<any[]> {
+    const token = this.getAuthToken();
+
+    if (!token) {
+      throw new Error('No authentication token available. Please login first.');
+    }
+
+    // Use the backend proxy endpoint to avoid CORS issues
+    const url = `${config.api.baseUrl}/l2vpn/1.0`;
+
+    console.log('Fetching L2VPNs from:', url);
+
+    try {
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+
+      console.log(`L2VPN list API response status: ${response.status}`);
+
+      // Read response text first
+      const responseText = await response.text();
+      console.log('L2VPN list response text:', responseText);
+
+      let data;
+      try {
+        data = JSON.parse(responseText);
+      } catch (parseError) {
+        throw new Error(`Invalid JSON response: ${responseText}`);
+      }
+
+      // Check if response is not OK OR if the data contains an error field
+      if (!response.ok || data.error || data.status === 'error') {
+        const errorMessage = data.error || data.reason || data.message || `HTTP ${response.status}: ${response.statusText}`;
+        console.log('Error response data:', data);
+
+        // Throw error with full response data
+        const error = new Error(errorMessage) as any;
+        error.responseData = data;
+        throw error;
+      }
+
+      // Handle different response formats:
+      // 1. Array response
+      // 2. Object with l2vpns/data properties
+      // 3. Object with UUID keys (convert to array)
+      let l2vpns: any[] = [];
+      
+      if (Array.isArray(data)) {
+        l2vpns = data;
+      } else if (data.l2vpns || data.data) {
+        l2vpns = data.l2vpns || data.data || [];
+      } else if (typeof data === 'object' && data !== null) {
+        // Convert object with UUID keys to array
+        // Each value should have a service_id or use the key as id
+        l2vpns = Object.entries(data).map(([key, value]: [string, any]) => ({
+          ...value,
+          id: value.service_id || key,
+          uuid: value.service_id || key,
+        }));
+      }
+      
+      console.log(`Fetched ${l2vpns.length} L2VPNs successfully`);
+      return l2vpns;
+
+    } catch (error) {
+      console.error('L2VPN list fetch failed with error:', error);
+      if (error instanceof TypeError) {
+        console.error('This might be a CORS or network connectivity issue');
+      }
+      throw error;
+    }
+  }
 }
