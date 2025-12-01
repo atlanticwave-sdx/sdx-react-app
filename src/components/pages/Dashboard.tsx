@@ -1037,105 +1037,119 @@ export function Dashboard({
                       </p>
                     </div>
                   ) : (
-                    <div className="rounded-md border border-[rgb(200,220,240)] dark:border-blue-500/20 overflow-hidden">
-                      <div className="overflow-x-auto">
-                        <Table>
-                          <TableHeader>
-                            <TableRow className="bg-muted/50">
-                              <TableHead className="font-semibold min-w-[120px]">
+                    <div className="rounded-md border border-[rgb(200,220,240)] dark:border-blue-500/20 overflow-hidden max-h-[600px] overflow-y-auto">
+                      <div className="divide-y divide-[rgb(200,220,240)] dark:divide-blue-500/20">
+                        {l2vpns.map((l2vpn, index) => (
+                          <div
+                            key={l2vpn.id || l2vpn.uuid || index}
+                            className="p-4 space-y-3 bg-gradient-to-br from-[rgb(248,251,255)] to-[rgb(240,247,255)] dark:from-blue-500/10 dark:to-blue-500/5 hover:bg-gradient-to-br hover:from-[rgb(240,247,255)] hover:to-[rgb(232,243,255)] dark:hover:from-blue-500/15 dark:hover:to-blue-500/10 transition-colors"
+                          >
+                            {/* ID */}
+                            <div className="flex flex-col gap-1">
+                              <span className="text-xs font-semibold text-[rgb(64,143,204)] dark:text-[rgb(150,200,255)] uppercase tracking-wide">
                                 🆔 ID
-                              </TableHead>
-                              <TableHead className="font-semibold min-w-[200px]">
+                              </span>
+                              <span className="font-mono text-sm text-foreground break-all">
+                                {l2vpn.id || l2vpn.uuid || "N/A"}
+                              </span>
+                            </div>
+
+                            {/* Name */}
+                            <div className="flex flex-col gap-1">
+                              <span className="text-xs font-semibold text-[rgb(64,143,204)] dark:text-[rgb(150,200,255)] uppercase tracking-wide">
                                 🏷️ Name
-                              </TableHead>
-                              <TableHead className="font-semibold min-w-[250px]">
+                              </span>
+                              <span className="text-sm font-medium text-foreground">
+                                {l2vpn.name || "Unnamed"}
+                              </span>
+                            </div>
+
+                            {/* Endpoints */}
+                            <div className="flex flex-col gap-1">
+                              <span className="text-xs font-semibold text-[rgb(64,143,204)] dark:text-[rgb(150,200,255)] uppercase tracking-wide">
                                 🔌 Endpoints
-                              </TableHead>
-                              <TableHead className="font-semibold min-w-[150px]">
-                                👤 Ownership
-                              </TableHead>
-                              <TableHead className="font-semibold min-w-[120px]">
-                                🔄 Status
-                              </TableHead>
-                              <TableHead className="font-semibold min-w-[150px]">
-                                📅 Created
-                              </TableHead>
-                            </TableRow>
-                          </TableHeader>
-                          <TableBody>
-                            {l2vpns.map((l2vpn, index) => (
-                              <TableRow key={l2vpn.id || l2vpn.uuid || index}>
-                                <TableCell className="font-mono text-xs">
-                                  {l2vpn.id || l2vpn.uuid || "N/A"}
-                                </TableCell>
-                                <TableCell className="font-medium">
-                                  {l2vpn.name || "Unnamed"}
-                                </TableCell>
-                                <TableCell>
-                                  <div className="flex flex-col gap-1">
-                                    {Array.isArray(l2vpn.endpoints) ? (
-                                      l2vpn.endpoints.map(
-                                        (endpoint: any, epIndex: number) => (
-                                          <div
-                                            key={epIndex}
-                                            className="text-xs"
-                                          >
-                                            {typeof endpoint === "string" ? (
-                                              endpoint
-                                            ) : (
-                                              <span>
-                                                {endpoint.port_id ||
-                                                  endpoint.port ||
-                                                  "N/A"}
-                                                {endpoint.vlan &&
-                                                  ` (VLAN: ${endpoint.vlan})`}
-                                              </span>
-                                            )}
-                                          </div>
-                                        )
-                                      )
-                                    ) : (
-                                      <span className="text-xs text-muted-foreground">
-                                        {JSON.stringify(
-                                          l2vpn.endpoints || "N/A"
+                              </span>
+                              <div className="flex flex-col gap-2">
+                                {Array.isArray(l2vpn.endpoints) ? (
+                                  l2vpn.endpoints.map(
+                                    (endpoint: any, epIndex: number) => (
+                                      <div
+                                        key={epIndex}
+                                        className="text-sm text-foreground"
+                                      >
+                                        {typeof endpoint === "string" ? (
+                                          <span className="break-all">
+                                            {endpoint}
+                                          </span>
+                                        ) : (
+                                          <span className="break-all">
+                                            {endpoint.port_id ||
+                                              endpoint.port ||
+                                              "N/A"}
+                                            {endpoint.vlan &&
+                                              ` (VLAN: ${endpoint.vlan})`}
+                                          </span>
                                         )}
-                                      </span>
-                                    )}
-                                  </div>
-                                </TableCell>
-                                <TableCell className="text-xs">
-                                  {l2vpn.ownership || "N/A"}
-                                </TableCell>
-                                <TableCell>
-                                  <Badge
-                                    variant={
-                                      l2vpn.status === "active" ||
-                                      l2vpn.state === "active"
-                                        ? "default"
-                                        : l2vpn.status === "inactive" ||
-                                          l2vpn.state === "inactive"
-                                        ? "secondary"
-                                        : "outline"
-                                    }
-                                  >
-                                    {l2vpn.status || l2vpn.state || "Unknown"}
-                                  </Badge>
-                                </TableCell>
-                                <TableCell className="text-xs text-muted-foreground">
-                                  {l2vpn.created_at
-                                    ? new Date(
-                                        l2vpn.created_at
-                                      ).toLocaleDateString()
-                                    : l2vpn.created
-                                    ? new Date(
-                                        l2vpn.created
-                                      ).toLocaleDateString()
-                                    : "N/A"}
-                                </TableCell>
-                              </TableRow>
-                            ))}
-                          </TableBody>
-                        </Table>
+                                      </div>
+                                    )
+                                  )
+                                ) : (
+                                  <span className="text-sm text-muted-foreground">
+                                    {JSON.stringify(l2vpn.endpoints || "N/A")}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+
+                            {/* Ownership */}
+                            <div className="flex flex-col gap-1">
+                              <span className="text-xs font-semibold text-[rgb(64,143,204)] dark:text-[rgb(150,200,255)] uppercase tracking-wide">
+                                👤 Ownership
+                              </span>
+                              <span className="text-sm text-foreground">
+                                {l2vpn.ownership || "N/A"}
+                              </span>
+                            </div>
+
+                            {/* Status */}
+                            <div className="flex flex-col gap-1">
+                              <span className="text-xs font-semibold text-[rgb(64,143,204)] dark:text-[rgb(150,200,255)] uppercase tracking-wide">
+                                🔄 Status
+                              </span>
+                              <div>
+                                <Badge
+                                  variant={
+                                    l2vpn.status === "active" ||
+                                    l2vpn.state === "active"
+                                      ? "default"
+                                      : l2vpn.status === "inactive" ||
+                                        l2vpn.state === "inactive"
+                                      ? "secondary"
+                                      : "outline"
+                                  }
+                                >
+                                  {l2vpn.status || l2vpn.state || "Unknown"}
+                                </Badge>
+                              </div>
+                            </div>
+
+                            {/* Created */}
+                            <div className="flex flex-col gap-1">
+                              <span className="text-xs font-semibold text-[rgb(64,143,204)] dark:text-[rgb(150,200,255)] uppercase tracking-wide">
+                                📅 Created
+                              </span>
+                              <span className="text-sm text-muted-foreground">
+                                {l2vpn.created_at
+                                  ? new Date(
+                                      l2vpn.created_at
+                                    ).toLocaleDateString()
+                                  : l2vpn.created
+                                  ? new Date(l2vpn.created).toLocaleDateString()
+                                  : "N/A"}
+                              </span>
+                            </div>
+                          </div>
+                        ))}
                       </div>
                     </div>
                   )}
