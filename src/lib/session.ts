@@ -6,44 +6,95 @@ export interface UserSession {
   provider?: Provider;
   authenticatedAt?: number;
   lastActivity?: number;
+  emailVerified?: boolean;
+  verifiedEmail?: string;
 }
 
 export class SessionManager {
-  private static SESSION_KEY = 'sdx_user_session';
+  private static SESSION_KEY = "sdx_user_session";
   private static SESSION_TIMEOUT = 24 * 60 * 60 * 1000; // 24 hours
 
   /**
    * Check if user has a valid session
    */
   static isAuthenticated(): boolean {
-    console.log('SessionManager.isAuthenticated() called');
+    console.log("SessionManager.isAuthenticated() called");
     const session = this.getSession();
-    console.log('Current session:', session);
-    
+    console.log("Current session:", session);
+
     if (!session.isAuthenticated) {
-      console.log('Session not authenticated');
+      console.log("Session not authenticated");
       return false;
     }
 
     // Check if session has expired
     if (this.isSessionExpired()) {
-      console.log('Session expired, clearing...');
+      console.log("Session expired, clearing...");
       this.clearSession();
       return false;
     }
 
     // Check if user has valid tokens
     const hasTokens = this.hasValidTokens();
-    console.log('Has valid tokens:', hasTokens);
-    
+    console.log("Has valid tokens:", hasTokens);
+
     if (!hasTokens) {
-      console.log('No valid tokens found, clearing session...');
+      console.log("No valid tokens found, clearing session...");
       this.clearSession();
       return false;
     }
-    
-    console.log('Authentication check passed');
+
+    console.log("Authentication check passed");
     return true;
+  }
+
+  /**
+   * Check if user has verified their email
+   */
+  static isEmailVerified(): boolean {
+    console.log("SessionManager.isEmailVerified() called");
+    const session = this.getSession();
+    console.log("Email verification status:", session.emailVerified);
+    return session.emailVerified === true;
+  }
+
+  /**
+   * Mark email as verified
+   */
+  static setEmailVerified(email: string): void {
+    const session = this.getSession();
+    session.emailVerified = true;
+    session.verifiedEmail = email;
+    localStorage.setItem(this.SESSION_KEY, JSON.stringify(session));
+    console.log("Email verified and stored:", email);
+  }
+
+  /**
+   * Get verified email address
+   */
+  static getVerifiedEmail(): string | null {
+    const session = this.getSession();
+    return session.verifiedEmail || null;
+  }
+
+  /**
+   * Clear email verification status
+   */
+  static clearEmailVerification(): void {
+    const session = this.getSession();
+    if (session.isAuthenticated) {
+      session.emailVerified = false;
+      session.verifiedEmail = undefined;
+      localStorage.setItem(this.SESSION_KEY, JSON.stringify(session));
+      console.log("Email verification cleared");
+    }
+  }
+
+  /**
+   * Check if user is fully authenticated (OAuth + Email)
+   */
+  static isFullyAuthenticated(): boolean {
+    return this.isAuthenticated() && this.isEmailVerified();
   }
 
   /**
@@ -57,7 +108,7 @@ export class SessionManager {
       }
       return JSON.parse(stored);
     } catch (error) {
-      console.error('Error reading session:', error);
+      console.error("Error reading session:", error);
       return { isAuthenticated: false };
     }
   }
@@ -70,11 +121,11 @@ export class SessionManager {
       isAuthenticated: true,
       provider,
       authenticatedAt: Date.now(),
-      lastActivity: Date.now()
+      lastActivity: Date.now(),
     };
 
     localStorage.setItem(this.SESSION_KEY, JSON.stringify(session));
-    console.log('Session created for provider:', provider);
+    console.log("Session created for provider:", provider);
   }
 
   /**
@@ -94,7 +145,9 @@ export class SessionManager {
   static clearSession(): void {
     localStorage.removeItem(this.SESSION_KEY);
     TokenStorage.clearAllTokens();
-    console.log('Session cleared');
+    sessionStorage.removeItem("email_verified");
+    sessionStorage.removeItem("verified_email");
+    console.log("Session cleared");
   }
 
   /**
@@ -103,33 +156,37 @@ export class SessionManager {
   static logout(): void {
     const session = this.getSession();
     const provider = session.provider;
-    
+
     // Clear local session and tokens first
     this.clearSession();
-    
+
     // Handle provider-specific logout
-    if (provider === 'orcid') {
+    if (provider === "orcid") {
       // For ORCID, we'll make a request to their logout endpoint and then redirect
       const logoutUrl = config.orcid.logoutUrl;
       const postLogoutRedirect = config.orcid.postLogoutRedirectUri;
-      
-      console.log('Destroying ORCID session and redirecting to homepage');
-      
+
+      console.log("Destroying ORCID session and redirecting to homepage");
+
       // Make a request to ORCID logout endpoint in the background
-      fetch(logoutUrl, { 
-        method: 'GET',
-        credentials: 'include',
-        mode: 'no-cors' 
-      }).catch(() => {
-        // Ignore any errors from the logout request
-        console.log('ORCID logout request completed (may have CORS error, but that\'s expected)');
-      }).finally(() => {
-        // Always redirect to homepage regardless of logout request result
-        window.location.href = postLogoutRedirect;
-      });
-    } else if (provider === 'cilogon') {
+      fetch(logoutUrl, {
+        method: "GET",
+        credentials: "include",
+        mode: "no-cors",
+      })
+        .catch(() => {
+          // Ignore any errors from the logout request
+          console.log(
+            "ORCID logout request completed (may have CORS error, but that's expected)"
+          );
+        })
+        .finally(() => {
+          // Always redirect to homepage regardless of logout request result
+          window.location.href = postLogoutRedirect;
+        });
+    } else if (provider === "cilogon") {
       // CILogon logout - could be implemented later if needed
-      console.log('CILogon logout - local session cleared');
+      console.log("CILogon logout - local session cleared");
       // Redirect to homepage for non-ORCID providers
       window.location.href = config.orcid.postLogoutRedirectUri;
     } else {
@@ -156,14 +213,14 @@ export class SessionManager {
     const cilogon = TokenStorage.getToken("cilogon");
     const orcid = TokenStorage.getToken("orcid");
 
-    console.log('Token check - CILogon:', cilogon ? 'exists' : 'missing');
-    console.log('Token check - ORCID:', orcid ? 'exists' : 'missing');
+    console.log("Token check - CILogon:", cilogon ? "exists" : "missing");
+    console.log("Token check - ORCID:", orcid ? "exists" : "missing");
 
     const hasValidCilogon = cilogon && TokenStorage.isTokenValid(cilogon);
     const hasValidOrcid = orcid && TokenStorage.isTokenValid(orcid);
 
-    console.log('Valid tokens - CILogon:', hasValidCilogon);
-    console.log('Valid tokens - ORCID:', hasValidOrcid);
+    console.log("Valid tokens - CILogon:", hasValidCilogon);
+    console.log("Valid tokens - ORCID:", hasValidOrcid);
 
     return !!(hasValidCilogon || hasValidOrcid);
   }

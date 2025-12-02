@@ -1,4 +1,5 @@
 // src/components/pages/emailValidationPage.tsx
+import { SessionManager } from "@/lib/session";
 import { useState, useEffect, useRef } from "react";
 import { useGoogleReCaptcha } from "react-google-recaptcha-v3";
 import {
@@ -294,7 +295,7 @@ export function EmailValidationPage({
 
         return;
       }
-
+      SessionManager.setEmailVerified(String(email).trim().toLowerCase());
       setVerificationStep("success");
       toast.success("✅ Email verified successfully!");
       setTimeout(() => onComplete(), 1200);
@@ -317,6 +318,7 @@ export function EmailValidationPage({
   };
 
   const handleConfirmEmail = () => {
+    SessionManager.setEmailVerified(email);
     toast.success("✅ Email confirmed!");
     setVerificationStep("success");
     setTimeout(() => {
@@ -415,14 +417,6 @@ export function EmailValidationPage({
             <Alert className="border-2 border-[rgb(120,176,219)] bg-[rgb(236,244,250)]">
               <AlertDescription className="text-base text-[rgb(64,143,204)]">
                 <div className="space-y-2">
-                  <div>
-                    <strong>Authenticated as:</strong>{" "}
-                    {userClaims.sub || "Unknown user"}
-                  </div>
-                  <div>
-                    <strong>Provider:</strong>{" "}
-                    {userToken?.provider?.toUpperCase?.() || "UNKNOWN"}
-                  </div>
                   {userClaims.email && (
                     <div>
                       <strong>Email from token:</strong> {userClaims.email}
