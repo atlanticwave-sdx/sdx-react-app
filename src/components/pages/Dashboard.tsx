@@ -311,6 +311,10 @@ export function Dashboard({
   const [l2vpns, setL2vpns] = useState<any[]>([]);
   const [isLoadingL2VPNs, setIsLoadingL2VPNs] = useState(false);
   const [l2vpnError, setL2vpnError] = useState<string | null>(null);
+  const [deletingL2VPNId, setDeletingL2VPNId] = useState<string | null>(null);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState<string | null>(
+    null
+  );
 
   useEffect(() => {
     loadTokens();
@@ -419,6 +423,31 @@ export function Dashboard({
       }
     } finally {
       setIsLoadingL2VPNs(false);
+    }
+  };
+
+  const handleDeleteL2VPN = async (serviceId: string) => {
+    setDeletingL2VPNId(serviceId);
+    try {
+      console.log("Deleting L2VPN:", serviceId);
+      await ApiService.deleteL2VPN(serviceId);
+
+      // Remove from local state
+      setL2vpns((prev) =>
+        prev.filter(
+          (l2vpn) => (l2vpn.id || l2vpn.uuid || l2vpn.service_id) !== serviceId
+        )
+      );
+
+      toast.success("L2VPN deleted successfully");
+      setShowDeleteConfirm(null);
+    } catch (error) {
+      console.error("Failed to delete L2VPN:", error);
+      const errorMessage =
+        error instanceof Error ? error.message : "Unknown error occurred";
+      toast.error(`Failed to delete L2VPN: ${errorMessage}`);
+    } finally {
+      setDeletingL2VPNId(null);
     }
   };
 
@@ -1044,6 +1073,30 @@ export function Dashboard({
                             key={l2vpn.id || l2vpn.uuid || index}
                             className="p-4 space-y-3 bg-gradient-to-br from-[rgb(248,251,255)] to-[rgb(240,247,255)] dark:from-blue-500/10 dark:to-blue-500/5 hover:bg-gradient-to-br hover:from-[rgb(240,247,255)] hover:to-[rgb(232,243,255)] dark:hover:from-blue-500/15 dark:hover:to-blue-500/10 transition-colors"
                           >
+                            {/* Actions Row */}
+                            <div className="flex justify-end">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() =>
+                                  setShowDeleteConfirm(
+                                    l2vpn.id || l2vpn.uuid || l2vpn.service_id
+                                  )
+                                }
+                                className="h-8 px-3 text-red-500 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-500/20"
+                                title="Delete L2VPN"
+                                disabled={
+                                  deletingL2VPNId ===
+                                  (l2vpn.id || l2vpn.uuid || l2vpn.service_id)
+                                }
+                              >
+                                {deletingL2VPNId ===
+                                (l2vpn.id || l2vpn.uuid || l2vpn.service_id)
+                                  ? "⏳ Deleting..."
+                                  : "🗑️ Delete"}
+                              </Button>
+                            </div>
+
                             {/* ID */}
                             <div className="flex flex-col gap-1">
                               <span className="text-xs font-semibold text-[rgb(64,143,204)] dark:text-[rgb(150,200,255)] uppercase tracking-wide">
@@ -1340,6 +1393,53 @@ export function Dashboard({
                 </p>
               </div>
             )}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog
+        open={showDeleteConfirm !== null}
+        onOpenChange={(open) => !open && setShowDeleteConfirm(null)}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-red-600 dark:text-red-400">
+              <span className="text-xl">⚠️</span>
+              Confirm Delete
+            </DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete this L2VPN connection? This action
+              cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            {showDeleteConfirm && (
+              <div className="p-3 bg-muted rounded-lg">
+                <p className="text-sm font-medium">L2VPN ID:</p>
+                <p className="text-xs font-mono text-muted-foreground break-all">
+                  {showDeleteConfirm}
+                </p>
+              </div>
+            )}
+            <div className="flex justify-end gap-3">
+              <Button
+                variant="outline"
+                onClick={() => setShowDeleteConfirm(null)}
+                disabled={deletingL2VPNId !== null}
+              >
+                Cancel
+              </Button>
+              <Button
+                variant="destructive"
+                onClick={() =>
+                  showDeleteConfirm && handleDeleteL2VPN(showDeleteConfirm)
+                }
+                disabled={deletingL2VPNId !== null}
+              >
+                {deletingL2VPNId ? "Deleting..." : "Delete"}
+              </Button>
+            </div>
           </div>
         </DialogContent>
       </Dialog>

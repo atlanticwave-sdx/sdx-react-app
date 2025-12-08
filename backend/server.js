@@ -567,6 +567,127 @@ app.get("/api/topology", validateToken, async (req, res) => {
   }
 });
 
+// L2VPN delete endpoint
+app.delete("/api/l2vpn/1.0/:serviceId", validateToken, async (req, res) => {
+  try {
+    const { serviceId } = req.params;
+    const l2vpnUrl = `${SDX_API_CONFIG.baseUrl}/l2vpn/1.0/${serviceId}`;
+
+    if (!isProduction) {
+      console.log("L2VPN delete request received");
+      console.log("Deleting L2VPN:", serviceId);
+      console.log("DELETE URL:", l2vpnUrl);
+    }
+
+    const response = await fetch(l2vpnUrl, {
+      method: "DELETE",
+      headers: {
+        Accept: "application/json",
+        "Content-Type": "application/json",
+        ...(req.token && { Authorization: `Bearer ${req.token}` }),
+      },
+    });
+
+    if (!isProduction) {
+      console.log("SDX L2VPN DELETE response status:", response.status);
+    }
+
+    const responseText = await response.text();
+    let responseData;
+
+    try {
+      responseData = responseText ? JSON.parse(responseText) : { success: true };
+    } catch (parseError) {
+      console.error("Failed to parse L2VPN delete response:", responseText);
+      responseData = { message: responseText || "Deleted successfully" };
+    }
+
+    if (!response.ok) {
+      console.error("L2VPN delete failed:", response.status, responseData);
+      return res.status(response.status).json({
+        error: "Failed to delete L2VPN",
+        status: response.status,
+        ...responseData,
+      });
+    }
+
+    if (!isProduction) {
+      console.log("L2VPN deleted successfully:", responseData);
+    }
+
+    res.status(response.status).json(responseData);
+  } catch (error) {
+    console.error("L2VPN delete endpoint error:", error.message);
+    res.status(500).json({
+      error: "Internal server error while deleting L2VPN",
+      ...(!isProduction && { message: error.message }),
+    });
+  }
+});
+
+// L2VPN update endpoint
+app.patch("/api/l2vpn/1.0/:serviceId", validateToken, async (req, res) => {
+  try {
+    const { serviceId } = req.params;
+    const l2vpnUrl = `${SDX_API_CONFIG.baseUrl}/l2vpn/1.0/${serviceId}`;
+
+    if (!isProduction) {
+      console.log("L2VPN update request received");
+      console.log("Updating L2VPN:", serviceId);
+      console.log("Request body:", JSON.stringify(req.body, null, 2));
+      console.log("PATCH URL:", l2vpnUrl);
+    }
+
+    const response = await fetch(l2vpnUrl, {
+      method: "PATCH",
+      headers: {
+        Accept: "application/json",
+        "Content-Type": "application/json",
+        ...(req.token && { Authorization: `Bearer ${req.token}` }),
+      },
+      body: JSON.stringify(req.body),
+    });
+
+    if (!isProduction) {
+      console.log("SDX L2VPN PATCH response status:", response.status);
+    }
+
+    const responseText = await response.text();
+    let responseData;
+
+    try {
+      responseData = JSON.parse(responseText);
+    } catch (parseError) {
+      console.error("Failed to parse L2VPN update response:", responseText);
+      return res.status(response.status).json({
+        error: "Invalid response from SDX API",
+        ...(!isProduction && { details: responseText }),
+      });
+    }
+
+    if (!response.ok) {
+      console.error("L2VPN update failed:", response.status, responseData);
+      return res.status(response.status).json({
+        error: "Failed to update L2VPN",
+        status: response.status,
+        ...responseData,
+      });
+    }
+
+    if (!isProduction) {
+      console.log("L2VPN updated successfully:", responseData);
+    }
+
+    res.status(response.status).json(responseData);
+  } catch (error) {
+    console.error("L2VPN update endpoint error:", error.message);
+    res.status(500).json({
+      error: "Internal server error while updating L2VPN",
+      ...(!isProduction && { message: error.message }),
+    });
+  }
+});
+
 // L2VPN list endpoint
 app.get("/api/l2vpn/1.0", validateToken, async (req, res) => {
   try {
@@ -773,6 +894,8 @@ app.get("/", (req, res) => {
       "GET /api/topology": "Get network topology",
       "GET /api/l2vpn/1.0": "List L2VPN connections",
       "POST /api/l2vpn/1.0": "Create L2VPN connection",
+      "PATCH /api/l2vpn/1.0/:serviceId": "Update L2VPN connection",
+      "DELETE /api/l2vpn/1.0/:serviceId": "Delete L2VPN connection",
       "GET /health": "Health check",
       ...(!isProduction && {
         "GET /api/test-email": "Test email sending (dev only)",
