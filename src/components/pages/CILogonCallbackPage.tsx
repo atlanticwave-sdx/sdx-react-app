@@ -144,6 +144,7 @@ export function CILogonCallbackPage({
       // Store the token data first
       const tokenData = {
         ...result.tokenData,
+        expires_in: 3600,
         issued_at: Math.floor(Date.now() / 1000), // Add current timestamp
         provider: "cilogon" as const, // Ensure provider is set
       };

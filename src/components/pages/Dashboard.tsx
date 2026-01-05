@@ -18,6 +18,14 @@ import {
   TopologyLink,
 } from "@/lib/types";
 import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
   TokenStorage,
   calculateOwnership,
   decodeJWT,
@@ -29,7 +37,7 @@ import {
   ProcessedTopology,
 } from "@/lib/topology-processor";
 import { config } from "@/lib/config";
-import { NewL2VPNModal, L2VPNData } from "@/components/NewL2VPNModal";
+import { NewL2VPNModal } from "@/components/NewL2VPNModal";
 import { TopologyMap } from "@/components/TopologyMap";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { TokenPage } from "@/components/pages/TokenPage";
@@ -187,6 +195,25 @@ const GlobeIcon = ({ className }: { className?: string }) => (
   </svg>
 );
 
+const ListIcon = ({ className }: { className?: string }) => (
+  <svg
+    width="36"
+    height="36"
+    viewBox="0 0 24 24"
+    fill="none"
+    xmlns="http://www.w3.org/2000/svg"
+    className={className}
+  >
+    <path
+      d="M8 6H21M8 12H21M8 18H21M3 6H3.01M3 12H3.01M3 18H3.01"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+  </svg>
+);
+
 // Blue Tooltip component with direct styling
 function BlueTooltip({
   children,
@@ -263,7 +290,12 @@ export function Dashboard({
   }>({});
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(true);
   const [selectedSection, setSelectedSection] = useState<
-    "newL2VPN" | "connectionStatus" | "topologyStats" | "manageTokens" | null
+    | "newL2VPN"
+    | "connectionStatus"
+    | "topologyStats"
+    | "manageTokens"
+    | "listL2VPNs"
+    | null
   >(null);
   const [showNewL2VPNModal, setShowNewL2VPNModal] = useState(false);
   const [showTopologyInfo, setShowTopologyInfo] = useState(false);
@@ -273,7 +305,16 @@ export function Dashboard({
     useState<ProcessedTopology | null>(null);
   const [isLoadingTopology, setIsLoadingTopology] = useState(false);
   const [topologyError, setTopologyError] = useState<string | null>(null);
-  const [allowedDomains] = useState<string[]>(config.topology.allowedDomains);
+  const [allowedDomains] = useState<string[]>([
+    ...config.topology.allowedDomains,
+  ]);
+  const [l2vpns, setL2vpns] = useState<any[]>([]);
+  const [isLoadingL2VPNs, setIsLoadingL2VPNs] = useState(false);
+  const [l2vpnError, setL2vpnError] = useState<string | null>(null);
+  const [deletingL2VPNId, setDeletingL2VPNId] = useState<string | null>(null);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState<string | null>(
+    null
+  );
 
   useEffect(() => {
     loadTokens();
@@ -285,6 +326,18 @@ export function Dashboard({
       loadTopology();
     }
   }, [tokens]);
+
+  useEffect(() => {
+    // Auto-load L2VPNs when the section is opened
+    if (
+      selectedSection === "listL2VPNs" &&
+      hasValidTokens &&
+      l2vpns.length === 0 &&
+      !isLoadingL2VPNs
+    ) {
+      loadL2VPNs();
+    }
+  }, [selectedSection]);
 
   const loadTokens = () => {
     const cilogon = TokenStorage.getToken("cilogon");
@@ -346,6 +399,58 @@ export function Dashboard({
     }
   };
 
+  const loadL2VPNs = async () => {
+    setIsLoadingL2VPNs(true);
+    setL2vpnError(null);
+
+    try {
+      console.log("Loading L2VPNs from API...");
+      const l2vpnData = await ApiService.getL2VPNs();
+      console.log("L2VPN data received:", l2vpnData);
+
+      setL2vpns(l2vpnData);
+      toast.success(`Loaded ${l2vpnData.length} L2VPN connection(s)`);
+    } catch (error) {
+      console.error("Failed to load L2VPNs:", error);
+      const errorMessage =
+        error instanceof Error ? error.message : "Unknown error occurred";
+      setL2vpnError(errorMessage);
+
+      if (errorMessage.includes("authentication")) {
+        toast.error("Authentication failed. Please login again.");
+      } else {
+        toast.error(`Failed to load L2VPNs: ${errorMessage}`);
+      }
+    } finally {
+      setIsLoadingL2VPNs(false);
+    }
+  };
+
+  const handleDeleteL2VPN = async (serviceId: string) => {
+    setDeletingL2VPNId(serviceId);
+    try {
+      console.log("Deleting L2VPN:", serviceId);
+      await ApiService.deleteL2VPN(serviceId);
+
+      // Remove from local state
+      setL2vpns((prev) =>
+        prev.filter(
+          (l2vpn) => (l2vpn.id || l2vpn.uuid || l2vpn.service_id) !== serviceId
+        )
+      );
+
+      toast.success("L2VPN deleted successfully");
+      setShowDeleteConfirm(null);
+    } catch (error) {
+      console.error("Failed to delete L2VPN:", error);
+      const errorMessage =
+        error instanceof Error ? error.message : "Unknown error occurred";
+      toast.error(`Failed to delete L2VPN: ${errorMessage}`);
+    } finally {
+      setDeletingL2VPNId(null);
+    }
+  };
+
   const handleLogout = () => {
     TokenStorage.clearAllTokens();
     setTokens({});
@@ -378,7 +483,7 @@ export function Dashboard({
     return allPorts;
   };
 
-  const handleNewL2VPN = async (l2vpnData: L2VPNData) => {
+  const handleNewL2VPN = async (l2vpnData: any) => {
     let loadingToast: any = null;
 
     try {
@@ -641,6 +746,36 @@ export function Dashboard({
                 )}
               </div>
 
+              {/* List L2VPNs Button */}
+              <BlueTooltip title="List L2VPNs" placement="right">
+                <Button
+                  onClick={() => {
+                    if (selectedSection === "listL2VPNs") {
+                      setSelectedSection(null);
+                    } else {
+                      setSelectedSection("listL2VPNs");
+                      if (l2vpns.length === 0 && !isLoadingL2VPNs) {
+                        loadL2VPNs();
+                      }
+                    }
+                  }}
+                  variant="ghost"
+                  size="sm"
+                  className={`w-full justify-center px-0 ${
+                    selectedSection === "listL2VPNs"
+                      ? "bg-[rgb(236,244,250)] dark:bg-blue-500/20 border border-[rgb(64,143,204)] dark:border-blue-400/50"
+                      : ""
+                  } text-[rgb(50,135,200)] dark:text-blue-400 hover:bg-[rgb(236,244,250)] dark:hover:bg-blue-500/10 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 hover:shadow-sm hover:translate-x-0.5 disabled:hover:translate-x-0`}
+                  disabled={!hasValidTokens}
+                >
+                  {isLoadingL2VPNs ? (
+                    <span className="text-base">⏳</span>
+                  ) : (
+                    <ListIcon className="w-5 h-5" />
+                  )}
+                </Button>
+              </BlueTooltip>
+
               {/* Status Section Buttons */}
               <BlueTooltip title="Connection Status" placement="right">
                 <Button
@@ -813,10 +948,10 @@ export function Dashboard({
                   </div>
                   {isLoadingTopology ? (
                     <div className="p-5 bg-gradient-to-br from-[rgb(248,251,255)] to-[rgb(240,247,255)] dark:from-blue-500/10 dark:to-blue-500/5 rounded-xl border-2 border-[rgb(200,220,240)] dark:border-blue-500/20 shadow-md">
-                      <p className="text-sm font-medium text-[rgb(64,143,204)] dark:text-[rgb(150,200,255)] flex items-center gap-2">
+                      <div className="text-sm font-medium text-[rgb(64,143,204)] dark:text-[rgb(150,200,255)] flex items-center gap-2">
                         <div className="w-4 h-4 border-2 border-[rgb(50,135,200)]/30 border-t-[rgb(50,135,200)] rounded-full animate-spin"></div>
                         Loading topology data from API...
-                      </p>
+                      </div>
                     </div>
                   ) : topology ? (
                     <div className="space-y-4">
@@ -876,6 +1011,201 @@ export function Dashboard({
                     }}
                     modal={true}
                   />
+                </div>
+              )}
+              {selectedSection === "listL2VPNs" && (
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between mb-4">
+                    <h2 className="text-xl font-bold text-[rgb(50,135,200)] dark:text-[rgb(100,180,255)]">
+                      L2VPN Connections
+                    </h2>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={loadL2VPNs}
+                        disabled={isLoadingL2VPNs || !hasValidTokens}
+                        className="h-8 px-3 text-[rgb(50,135,200)] dark:text-[rgb(100,180,255)] hover:bg-[rgb(236,244,250)] dark:hover:bg-blue-500/20 disabled:opacity-50"
+                        title="Refresh L2VPN list"
+                      >
+                        {isLoadingL2VPNs ? "⏳" : "🔄"}
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setSelectedSection(null)}
+                        className="h-8 w-8 p-0 text-[rgb(50,135,200)] dark:text-[rgb(100,180,255)] hover:bg-[rgb(236,244,250)] dark:hover:bg-blue-500/20"
+                        title="Close"
+                      >
+                        ×
+                      </Button>
+                    </div>
+                  </div>
+                  {l2vpnError && (
+                    <Alert className="border-2 border-red-200 bg-red-50 dark:border-red-800 dark:bg-red-900/20">
+                      <AlertDescription className="text-red-800 dark:text-red-200">
+                        <span className="font-semibold">
+                          Error loading L2VPNs:
+                        </span>{" "}
+                        {l2vpnError}
+                      </AlertDescription>
+                    </Alert>
+                  )}
+                  {isLoadingL2VPNs ? (
+                    <div className="p-5 bg-gradient-to-br from-[rgb(248,251,255)] to-[rgb(240,247,255)] dark:from-blue-500/10 dark:to-blue-500/5 rounded-xl border-2 border-[rgb(200,220,240)] dark:border-blue-500/20 shadow-md">
+                      <div className="text-sm font-medium text-[rgb(64,143,204)] dark:text-[rgb(150,200,255)] flex items-center gap-2">
+                        <div className="w-4 h-4 border-2 border-[rgb(50,135,200)]/30 border-t-[rgb(50,135,200)] rounded-full animate-spin"></div>
+                        Loading L2VPN connections...
+                      </div>
+                    </div>
+                  ) : l2vpns.length === 0 ? (
+                    <div className="p-5 bg-gradient-to-br from-[rgb(248,251,255)] to-[rgb(240,247,255)] dark:from-blue-500/10 dark:to-blue-500/5 rounded-xl border-2 border-[rgb(200,220,240)] dark:border-blue-500/20 shadow-md">
+                      <p className="text-sm font-medium text-[rgb(64,143,204)] dark:text-[rgb(150,200,255)]">
+                        No L2VPN connections found. Click the refresh button to
+                        load connections.
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="rounded-md border border-[rgb(200,220,240)] dark:border-blue-500/20 overflow-hidden max-h-[600px] overflow-y-auto">
+                      <div className="divide-y divide-[rgb(200,220,240)] dark:divide-blue-500/20">
+                        {l2vpns.map((l2vpn, index) => (
+                          <div
+                            key={l2vpn.id || l2vpn.uuid || index}
+                            className="p-4 space-y-3 bg-gradient-to-br from-[rgb(248,251,255)] to-[rgb(240,247,255)] dark:from-blue-500/10 dark:to-blue-500/5 hover:bg-gradient-to-br hover:from-[rgb(240,247,255)] hover:to-[rgb(232,243,255)] dark:hover:from-blue-500/15 dark:hover:to-blue-500/10 transition-colors"
+                          >
+                            {/* Actions Row */}
+                            <div className="flex justify-end">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() =>
+                                  setShowDeleteConfirm(
+                                    l2vpn.id || l2vpn.uuid || l2vpn.service_id
+                                  )
+                                }
+                                className="h-8 px-3 text-red-500 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-500/20"
+                                title="Delete L2VPN"
+                                disabled={
+                                  deletingL2VPNId ===
+                                  (l2vpn.id || l2vpn.uuid || l2vpn.service_id)
+                                }
+                              >
+                                {deletingL2VPNId ===
+                                (l2vpn.id || l2vpn.uuid || l2vpn.service_id)
+                                  ? "⏳ Deleting..."
+                                  : "🗑️ Delete"}
+                              </Button>
+                            </div>
+
+                            {/* ID */}
+                            <div className="flex flex-col gap-1">
+                              <span className="text-xs font-semibold text-[rgb(64,143,204)] dark:text-[rgb(150,200,255)] uppercase tracking-wide">
+                                🆔 ID
+                              </span>
+                              <span className="font-mono text-sm text-foreground break-all">
+                                {l2vpn.id || l2vpn.uuid || "N/A"}
+                              </span>
+                            </div>
+
+                            {/* Name */}
+                            <div className="flex flex-col gap-1">
+                              <span className="text-xs font-semibold text-[rgb(64,143,204)] dark:text-[rgb(150,200,255)] uppercase tracking-wide">
+                                🏷️ Name
+                              </span>
+                              <span className="text-sm font-medium text-foreground">
+                                {l2vpn.name || "Unnamed"}
+                              </span>
+                            </div>
+
+                            {/* Endpoints */}
+                            <div className="flex flex-col gap-1">
+                              <span className="text-xs font-semibold text-[rgb(64,143,204)] dark:text-[rgb(150,200,255)] uppercase tracking-wide">
+                                🔌 Endpoints
+                              </span>
+                              <div className="flex flex-col gap-2">
+                                {Array.isArray(l2vpn.endpoints) ? (
+                                  l2vpn.endpoints.map(
+                                    (endpoint: any, epIndex: number) => (
+                                      <div
+                                        key={epIndex}
+                                        className="text-sm text-foreground"
+                                      >
+                                        {typeof endpoint === "string" ? (
+                                          <span className="break-all">
+                                            {endpoint}
+                                          </span>
+                                        ) : (
+                                          <span className="break-all">
+                                            {endpoint.port_id ||
+                                              endpoint.port ||
+                                              "N/A"}
+                                            {endpoint.vlan &&
+                                              ` (VLAN: ${endpoint.vlan})`}
+                                          </span>
+                                        )}
+                                      </div>
+                                    )
+                                  )
+                                ) : (
+                                  <span className="text-sm text-muted-foreground">
+                                    {JSON.stringify(l2vpn.endpoints || "N/A")}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+
+                            {/* Ownership */}
+                            <div className="flex flex-col gap-1">
+                              <span className="text-xs font-semibold text-[rgb(64,143,204)] dark:text-[rgb(150,200,255)] uppercase tracking-wide">
+                                👤 Ownership
+                              </span>
+                              <span className="text-sm text-foreground">
+                                {l2vpn.ownership || "N/A"}
+                              </span>
+                            </div>
+
+                            {/* Status */}
+                            <div className="flex flex-col gap-1">
+                              <span className="text-xs font-semibold text-[rgb(64,143,204)] dark:text-[rgb(150,200,255)] uppercase tracking-wide">
+                                🔄 Status
+                              </span>
+                              <div>
+                                <Badge
+                                  variant={
+                                    l2vpn.status === "active" ||
+                                    l2vpn.state === "active"
+                                      ? "default"
+                                      : l2vpn.status === "inactive" ||
+                                        l2vpn.state === "inactive"
+                                      ? "secondary"
+                                      : "outline"
+                                  }
+                                >
+                                  {l2vpn.status || l2vpn.state || "Unknown"}
+                                </Badge>
+                              </div>
+                            </div>
+
+                            {/* Created */}
+                            <div className="flex flex-col gap-1">
+                              <span className="text-xs font-semibold text-[rgb(64,143,204)] dark:text-[rgb(150,200,255)] uppercase tracking-wide">
+                                📅 Created
+                              </span>
+                              <span className="text-sm text-muted-foreground">
+                                {l2vpn.created_at
+                                  ? new Date(
+                                      l2vpn.created_at
+                                    ).toLocaleDateString()
+                                  : l2vpn.created
+                                  ? new Date(l2vpn.created).toLocaleDateString()
+                                  : "N/A"}
+                              </span>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
@@ -1063,6 +1393,53 @@ export function Dashboard({
                 </p>
               </div>
             )}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog
+        open={showDeleteConfirm !== null}
+        onOpenChange={(open) => !open && setShowDeleteConfirm(null)}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-red-600 dark:text-red-400">
+              <span className="text-xl">⚠️</span>
+              Confirm Delete
+            </DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete this L2VPN connection? This action
+              cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            {showDeleteConfirm && (
+              <div className="p-3 bg-muted rounded-lg">
+                <p className="text-sm font-medium">L2VPN ID:</p>
+                <p className="text-xs font-mono text-muted-foreground break-all">
+                  {showDeleteConfirm}
+                </p>
+              </div>
+            )}
+            <div className="flex justify-end gap-3">
+              <Button
+                variant="outline"
+                onClick={() => setShowDeleteConfirm(null)}
+                disabled={deletingL2VPNId !== null}
+              >
+                Cancel
+              </Button>
+              <Button
+                variant="destructive"
+                onClick={() =>
+                  showDeleteConfirm && handleDeleteL2VPN(showDeleteConfirm)
+                }
+                disabled={deletingL2VPNId !== null}
+              >
+                {deletingL2VPNId ? "Deleting..." : "Delete"}
+              </Button>
+            </div>
           </div>
         </DialogContent>
       </Dialog>

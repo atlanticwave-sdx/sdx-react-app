@@ -205,4 +205,190 @@ export class ApiService {
       throw error;
     }
   }
+
+  /**
+   * Get list of L2VPN connections
+   */
+  static async getL2VPNs(): Promise<any[]> {
+    const token = this.getAuthToken();
+
+    if (!token) {
+      throw new Error('No authentication token available. Please login first.');
+    }
+
+    // Use the backend proxy endpoint to avoid CORS issues
+    const url = `${config.api.baseUrl}/l2vpn/1.0`;
+
+    console.log('Fetching L2VPNs from:', url);
+
+    try {
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+
+      console.log(`L2VPN list API response status: ${response.status}`);
+
+      // Read response text first
+      const responseText = await response.text();
+      console.log('L2VPN list response text:', responseText);
+
+      let data;
+      try {
+        data = JSON.parse(responseText);
+      } catch (parseError) {
+        throw new Error(`Invalid JSON response: ${responseText}`);
+      }
+
+      // Check if response is not OK OR if the data contains an error field
+      if (!response.ok || data.error || data.status === 'error') {
+        const errorMessage = data.error || data.reason || data.message || `HTTP ${response.status}: ${response.statusText}`;
+        console.log('Error response data:', data);
+
+        // Throw error with full response data
+        const error = new Error(errorMessage) as any;
+        error.responseData = data;
+        throw error;
+      }
+
+      // Handle different response formats:
+      // 1. Array response
+      // 2. Object with l2vpns/data properties
+      // 3. Object with UUID keys (convert to array)
+      let l2vpns: any[] = [];
+      
+      if (Array.isArray(data)) {
+        l2vpns = data;
+      } else if (data.l2vpns || data.data) {
+        l2vpns = data.l2vpns || data.data || [];
+      } else if (typeof data === 'object' && data !== null) {
+        // Convert object with UUID keys to array
+        // Each value should have a service_id or use the key as id
+        l2vpns = Object.entries(data).map(([key, value]: [string, any]) => ({
+          ...value,
+          id: value.service_id || key,
+          uuid: value.service_id || key,
+        }));
+      }
+      
+      console.log(`Fetched ${l2vpns.length} L2VPNs successfully`);
+      return l2vpns;
+
+    } catch (error) {
+      console.error('L2VPN list fetch failed with error:', error);
+      if (error instanceof TypeError) {
+        console.error('This might be a CORS or network connectivity issue');
+      }
+      throw error;
+    }
+  }
+
+  /**
+   * Delete an L2VPN connection
+   */
+  static async deleteL2VPN(serviceId: string): Promise<any> {
+    const token = this.getAuthToken();
+
+    if (!token) {
+      throw new Error('No authentication token available. Please login first.');
+    }
+
+    const url = `${config.api.baseUrl}/l2vpn/1.0/${serviceId}`;
+
+    console.log('Deleting L2VPN:', serviceId);
+    console.log('DELETE URL:', url);
+
+    try {
+      const response = await fetch(url, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+
+      console.log(`L2VPN DELETE response status: ${response.status}`);
+
+      const responseText = await response.text();
+      console.log('L2VPN DELETE response text:', responseText);
+
+      let data;
+      try {
+        data = responseText ? JSON.parse(responseText) : { success: true };
+      } catch (parseError) {
+        data = { message: responseText || 'Deleted successfully' };
+      }
+
+      if (!response.ok) {
+        const errorMessage = data.error || data.reason || data.message || `HTTP ${response.status}: ${response.statusText}`;
+        const error = new Error(errorMessage) as any;
+        error.responseData = data;
+        throw error;
+      }
+
+      console.log('L2VPN deleted successfully:', data);
+      return data;
+
+    } catch (error) {
+      console.error('L2VPN deletion failed with error:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Update an L2VPN connection
+   */
+  static async updateL2VPN(serviceId: string, updateData: any): Promise<any> {
+    const token = this.getAuthToken();
+
+    if (!token) {
+      throw new Error('No authentication token available. Please login first.');
+    }
+
+    const url = `${config.api.baseUrl}/l2vpn/1.0/${serviceId}`;
+
+    console.log('Updating L2VPN:', serviceId);
+    console.log('PATCH URL:', url);
+    console.log('Update data:', updateData);
+
+    try {
+      const response = await fetch(url, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify(updateData),
+      });
+
+      console.log(`L2VPN PATCH response status: ${response.status}`);
+
+      const responseText = await response.text();
+      console.log('L2VPN PATCH response text:', responseText);
+
+      let data;
+      try {
+        data = JSON.parse(responseText);
+      } catch (parseError) {
+        throw new Error(`Invalid JSON response: ${responseText}`);
+      }
+
+      if (!response.ok) {
+        const errorMessage = data.error || data.reason || data.message || `HTTP ${response.status}: ${response.statusText}`;
+        const error = new Error(errorMessage) as any;
+        error.responseData = data;
+        throw error;
+      }
+
+      console.log('L2VPN updated successfully:', data);
+      return data;
+
+    } catch (error) {
+      console.error('L2VPN update failed with error:', error);
+      throw error;
+    }
+  }
 }
