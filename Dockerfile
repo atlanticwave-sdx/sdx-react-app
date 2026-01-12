@@ -12,8 +12,8 @@ RUN npm ci --legacy-peer-deps
 # Copy source code
 COPY . .
 
-# Build the application
-RUN npm run build
+# Build the application (NODE_ENV=development uses base path "/" instead of "/multi-provider-authe/")
+RUN NODE_ENV=development npm run build
 
 # Stage 2: Serve with Nginx
 FROM nginx:alpine
