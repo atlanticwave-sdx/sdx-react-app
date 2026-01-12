@@ -1,0 +1,49 @@
+# Dependencies
+node_modules/
+backend/node_modules/
+
+# Build output
+dist/
+
+# Git
+.git/
+.gitignore
+
+# Environment files (loaded at runtime)
+.env
+.env.*
+backend/.env
+backend/.env.*
+
+# IDE and editor files
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Documentation (not needed in container)
+*.md
+!README.md
+docs/
+
+# Backend (separate build context)
+backend/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+npm-debug.log*
+
+# Test files
+*.test.*
+__tests__/
+
+# Misc
+pids/
+.spark-initial-sha
+spark.json
+spark.meta.json
+debug-*.html
