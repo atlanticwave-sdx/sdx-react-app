@@ -9,9 +9,7 @@ dist/
 .git/
 .gitignore
 
-# Environment files (loaded at runtime)
-.env
-.env.*
+# Environment files (backend loaded at runtime, frontend .env needed for build)
 backend/.env
 backend/.env.*
 
