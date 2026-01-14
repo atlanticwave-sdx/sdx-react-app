@@ -9,6 +9,8 @@ import { Button } from "@/components/ui/button";
 import { Provider } from "@/lib/config";
 import { FullSDXLogo } from "@/components/FullSDXLogo";
 import { CILogonProvider } from "@/lib/providers/cilogon";
+import cilogonIcon from "@/assets/images/CILogon-icon.png";
+import orcidIcon from "@/assets/images/ORCID-ICON.png";
 
 interface LandingPageProps {
   onLogin: (provider: Provider) => void;
@@ -18,12 +20,12 @@ interface LandingPageProps {
 const providerInfo = {
   cilogon: {
     name: "CILogon",
-    iconPath: "src/assets/images/CILogon-icon.png",
+    iconPath: cilogonIcon,
     description: "Academic federation",
   },
   orcid: {
     name: "ORCID",
-    iconPath: "src/assets/images/ORCID-ICON.png",
+    iconPath: orcidIcon,
     description: "Researcher identifiers",
   },
 } as const;
