@@ -22,7 +22,6 @@ services:
       - NODE_ENV=production
       - PORT=${BACKEND_PORT:-3004}
       - CORS_ORIGINS=http://127.0.0.1:${FRONTEND_PORT:-5000},http://localhost:${FRONTEND_PORT:-5000},http://localhost,http://frontend
-      - NODE_TLS_REJECT_UNAUTHORIZED=0
     extra_hosts:
       - "sdxapi.atlanticwave-sdx.ai:190.103.184.197"
     networks:

@@ -324,8 +324,7 @@ const transporter = nodemailer.createTransport({
   },
   family: 4,
   tls: {
-    rejectUnauthorized: isProduction,
-    ...(!isProduction && { ciphers: "SSLv3" }),
+    rejectUnauthorized: true,
   },
   connectionTimeout: 10000,
   greetingTimeout: 10000,
