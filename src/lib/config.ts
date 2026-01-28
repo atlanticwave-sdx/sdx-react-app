@@ -2,9 +2,9 @@
 export const config = {
   // Backend configuration
   backend: {
-    port: 3004, // Centralized port configuration
+    port: parseInt(import.meta.env.VITE_BACKEND_PORT || '3004', 10),
     get baseUrl() {
-      return `http://localhost:${config.backend.port}`;
+      return import.meta.env.VITE_API_BASE || `http://localhost:${config.backend.port}`;
     },
     get oauthExchangeUrl() {
       return `${config.backend.baseUrl}/oauth/exchange`;
@@ -51,7 +51,11 @@ export const config = {
     tokenUrl: "https://cilogon.org/oauth2/token",
     jwksUrl: "https://cilogon.org/oauth2/certs",
     issuerUrl: "https://cilogon.org",
-    redirectUri: "http://127.0.0.1:5000/auth/callback/cilogon",
+    get redirectUri() {
+      const baseUrl = config.getBaseUrl();
+      const appPath = config.getAppPath();
+      return `${baseUrl}${appPath}/auth/callback/cilogon`;
+    },
     usePkce: false, // Switch to client_secret flow instead of PKCE
   },
 

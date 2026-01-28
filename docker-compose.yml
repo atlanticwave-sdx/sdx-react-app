@@ -4,7 +4,7 @@ services:
       context: .
       dockerfile: Dockerfile
     ports:
-      - "5000:80"
+      - "${FRONTEND_PORT:-5000}:80"
     depends_on:
       - backend
     networks:
@@ -15,13 +15,13 @@ services:
       context: ./backend
       dockerfile: Dockerfile
     ports:
-      - "3004:3004"
+      - "${BACKEND_PORT:-3004}:${BACKEND_PORT:-3004}"
     env_file:
       - ./backend/.env
     environment:
       - NODE_ENV=production
-      - PORT=3004
-      - CORS_ORIGINS=http://127.0.0.1:5000,http://localhost:5000,http://localhost,http://frontend
+      - PORT=${BACKEND_PORT:-3004}
+      - CORS_ORIGINS=http://127.0.0.1:${FRONTEND_PORT:-5000},http://localhost:${FRONTEND_PORT:-5000},http://localhost,http://frontend
       - NODE_TLS_REJECT_UNAUTHORIZED=0
     extra_hosts:
       - "sdxapi.atlanticwave-sdx.ai:190.103.184.197"
