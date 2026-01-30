@@ -1,0 +1,20 @@
+# Dependencies (reinstalled in container)
+node_modules/
+
+# Environment files (loaded at runtime via env_file)
+.env
+.env.*
+
+# Documentation
+*.md
+
+# Logs
+*.log
+npm-debug.log*
+
+# IDE files
+.idea/
+.vscode/
+
+# OS files
+.DS_Store
