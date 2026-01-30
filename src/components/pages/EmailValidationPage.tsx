@@ -85,7 +85,7 @@ export function EmailValidationPage({
   }, []);
 
   async function postJson(path: string, body: any) {
-    const base = import.meta.env.VITE_API_BASE || "http://localhost:3002";
+    const base = `${import.meta.env.VITE_API_BASE}:${import.meta.env.VITE_BACKEND_PORT}`;
     const url = `${base}${path.startsWith("/") ? path : `/${path}`}`;
 
     const resp = await fetch(url, {
@@ -133,7 +133,7 @@ export function EmailValidationPage({
         // Verify reCAPTCHA with backend
         const recaptchaResponse = await fetch(
           `${
-            import.meta.env.VITE_API_BASE || "http://localhost:3002"
+            import.meta.env.VITE_API_BASE}:${import.meta.env.VITE_BACKEND_PORT
           }/api/verify-recaptcha`,
           {
             method: "POST",
@@ -234,7 +234,7 @@ export function EmailValidationPage({
         // Verify reCAPTCHA with backend
         const recaptchaResponse = await fetch(
           `${
-            import.meta.env.VITE_API_BASE || "http://localhost:3002"
+            import.meta.env.VITE_API_BASE}:${import.meta.env.VITE_BACKEND_PORT
           }/api/verify-recaptcha`,
           {
             method: "POST",

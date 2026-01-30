@@ -2,9 +2,9 @@
 export const config = {
   // Backend configuration
   backend: {
-    port: parseInt(import.meta.env.VITE_BACKEND_PORT || '3004', 10),
+    port: parseInt(import.meta.env.VITE_BACKEND_PORT),
     get baseUrl() {
-      return import.meta.env.VITE_API_BASE || `http://localhost:${config.backend.port}`;
+      return `${import.meta.env.VITE_API_BASE}:${config.backend.port}`;
     },
     get oauthExchangeUrl() {
       return `${config.backend.baseUrl}/oauth/exchange`;
@@ -37,18 +37,17 @@ export const config = {
 
   // Get the current app path based on environment
   getAppPath: () => {
-    const isProduction = process.env.NODE_ENV === "production";
+    const isProduction = import.meta.env.VITE_NODE_ENV === "production";
     return isProduction ? "/multi-provider-authe" : "";
   },
 
   // CILogon - Updated with correct OIDC settings
   cilogon: {
-    clientId: "cilogon:/client_id/49ffba66ee294f1a9530301d2a281c74",
-    clientSecret:
-      "pKdqDGRvbmQOdRgA2e-Ceh05xyFNN9sIYtGZs3s4Ym6iygdyX-qKynS4cyMS1VGZmCqGsp9fEFMwEh4HS4PbIQ",
+    clientId: import.meta.env.VITE_CILOGON_CLIENT_ID,
+    clientSecret: import.meta.env.VITE_CILOGON_CLIENT_SECRET,
     scope: "openid", // Strict scopes - only openid works
     authUrl: "https://cilogon.org/authorize",
-    tokenUrl: "https://cilogon.org/oauth2/token",
+    tokenUrl: import.meta.env.VITE_CILOGON_TOKEN_URL,
     jwksUrl: "https://cilogon.org/oauth2/certs",
     issuerUrl: "https://cilogon.org",
     get redirectUri() {
@@ -61,11 +60,11 @@ export const config = {
 
   // ORCID - Using sandbox environment for testing
   orcid: {
-    clientId: "APP-6U5WZH9AC4EYDVAD", // Updated with proper ORCID client ID
-    clientSecret: "c839f6ee-8991-4b4e-9ae3-aab528adc22c", // Client secret for token exchange
+    clientId: import.meta.env.VITE_ORCID_CLIENT_ID, // Updated with proper ORCID client ID
+    clientSecret: import.meta.env.VITE_ORCID_CLIENT_SECRET, // Client secret for token exchange
     issuerUrl: "https://orcid.org",
     authUrl: "https://orcid.org/oauth/authorize",
-    tokenUrl: "https://orcid.org/oauth/token",
+    tokenUrl: import.meta.env.VITE_ORCID_TOKEN_URL, // Updated with proper ORCID token URL
     logoutUrl: "https://orcid.org/signout", // ORCID logout endpoint
     scope: "openid /authenticate",
     get redirectUri() {

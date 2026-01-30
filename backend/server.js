@@ -11,7 +11,7 @@ const cors = require("cors");
 const fetch = require("node-fetch");
 
 const app = express();
-const PORT = process.env.PORT || 3004;
+const PORT = process.env.BACKEND_PORT;
 const isProduction = process.env.NODE_ENV === "production";
 
 // Enable CORS for frontend
@@ -36,22 +36,21 @@ app.use(express.urlencoded({ extended: true }));
 
 // ORCID OAuth configuration
 const ORCID_CONFIG = {
-  clientId: process.env.ORCID_CLIENT_ID || "APP-6U5WZH9AC4EYDVAD",
-  clientSecret:
-    process.env.ORCID_CLIENT_SECRET || "c839f6ee-8991-4b4e-9ae3-aab528adc22c",
-  tokenUrl: process.env.ORCID_TOKEN_URL || "https://orcid.org/oauth/token",
+  clientId: process.env.ORCID_CLIENT_ID,
+  clientSecret: process.env.ORCID_CLIENT_SECRET,
+  tokenUrl: process.env.ORCID_TOKEN_URL
 };
 
 // CILogon OAuth configuration
 const CILOGON_CONFIG = {
-  clientId: 'cilogon:/client_id/49ffba66ee294f1a9530301d2a281c74',
-  clientSecret: 'pKdqDGRvbmQOdRgA2e-Ceh05xyFNN9sIYtGZs3s4Ym6iygdyX-qKynS4cyMS1VGZmCqGsp9fEFMwEh4HS4PbIQ',
-  tokenUrl: 'https://cilogon.org/oauth2/token'
+  clientId: process.env.CILOGON_CLIENT_ID,
+  clientSecret: process.env.CILOGON_CLIENT_SECRET,
+  tokenUrl: process.env.CILOGON_TOKEN_URL
 };
 
 // SDX API configuration
 const SDX_API_CONFIG = {
-  baseUrl: "https://sdxapi.atlanticwave-sdx.ai/production",
+  baseUrl: process.env.SDX_API_BASE_URL,
   endpoints: {
     topology: "/topology",
   },

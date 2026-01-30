@@ -52,7 +52,9 @@ After cloning the repository, follow these steps:
   npm run dev
   3. Access the application:
   Open your browser and navigate to
-  http://localhost:5173
+  http://localhost:port (set in env)
+  4. go to /backend directory
+  5. run node server.js
 
   Optional steps:
 
