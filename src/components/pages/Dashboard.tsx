@@ -527,6 +527,7 @@ export function Dashboard({
       const requestPayload = {
         name: l2vpnData.name,
         endpoints: l2vpnData.endpoints,
+        ...(l2vpnData.description && { description: l2vpnData.description }),
         ownership: ownership,
       };
 

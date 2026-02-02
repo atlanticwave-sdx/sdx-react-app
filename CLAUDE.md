@@ -133,3 +133,5 @@ docker-compose build backend
 - Base path changes to `/multi-provider-authe` in production (see `vite.config.ts`)
 - GitHub Pages deployment configured
 - Docker deployment: Frontend on port 80, backend on port 3004
+
+application runs on http://127.0.0.1:5002/
