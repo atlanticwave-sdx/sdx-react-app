@@ -10,6 +10,7 @@ import {
 } from "@/components/ui/dialog";
 import Tooltip from "@mui/material/Tooltip";
 import { toast } from "sonner";
+import { Pencil, Trash2, Save, X } from "lucide-react";
 import {
   TokenData,
   TopologyResponse,
@@ -1405,24 +1406,34 @@ export function Dashboard({
                                 </details>
 
                                 {/* Save / Cancel Actions */}
-                                <div className="flex justify-end gap-2 pt-2">
+                                <div className="flex justify-end gap-2 pt-3 border-t border-[rgb(200,220,240)] dark:border-blue-500/20 mt-2">
                                   <Button
-                                    variant="ghost"
+                                    variant="outline"
                                     size="sm"
                                     onClick={handleCancelEdit}
                                     disabled={isSavingEdit}
-                                    className="h-8 px-3 text-[rgb(50,135,200)] dark:text-[rgb(100,180,255)] hover:bg-[rgb(236,244,250)] dark:hover:bg-blue-500/20"
+                                    className="h-9 px-4 border-2 border-[rgb(180,200,220)] dark:border-[rgb(100,150,200)] text-[rgb(80,120,160)] dark:text-[rgb(150,200,255)] hover:bg-[rgb(236,244,250)] dark:hover:bg-blue-500/20 hover:border-[rgb(120,176,219)] transition-all duration-200 shadow-sm hover:shadow-md font-medium"
                                   >
+                                    <X className="w-4 h-4 mr-1.5" />
                                     Cancel
                                   </Button>
                                   <Button
-                                    variant="ghost"
                                     size="sm"
                                     onClick={handleEditL2VPN}
                                     disabled={isSavingEdit || !editFormData.name.trim()}
-                                    className="h-8 px-3 text-green-600 dark:text-green-400 hover:bg-green-100 dark:hover:bg-green-500/20"
+                                    className="h-9 px-4 bg-green-600 hover:bg-green-700 dark:bg-green-600 dark:hover:bg-green-500 text-white shadow-sm hover:shadow-md transition-all duration-200 font-medium disabled:opacity-50"
                                   >
-                                    {isSavingEdit ? "Saving..." : "Save"}
+                                    {isSavingEdit ? (
+                                      <>
+                                        <div className="w-4 h-4 mr-1.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                        Saving...
+                                      </>
+                                    ) : (
+                                      <>
+                                        <Save className="w-4 h-4 mr-1.5" />
+                                        Save
+                                      </>
+                                    )}
                                   </Button>
                                 </div>
                               </>
@@ -1430,30 +1441,39 @@ export function Dashboard({
                               <>
                                 {/* Read-Only Mode */}
                                 {/* Actions Row */}
-                                <div className="flex justify-end gap-1">
+                                <div className="flex justify-end gap-2">
                                   <Button
-                                    variant="ghost"
+                                    variant="outline"
                                     size="sm"
                                     onClick={() => handleStartEdit(l2vpn)}
-                                    className="h-8 px-3 text-[rgb(50,135,200)] dark:text-[rgb(100,180,255)] hover:bg-[rgb(236,244,250)] dark:hover:bg-blue-500/20"
+                                    className="h-9 px-4 border-2 border-[rgb(120,176,219)] dark:border-[rgb(100,150,200)] text-[rgb(50,135,200)] dark:text-[rgb(100,180,255)] hover:bg-[rgb(50,135,200)] hover:text-white dark:hover:bg-[rgb(100,180,255)] dark:hover:text-gray-900 transition-all duration-200 shadow-sm hover:shadow-md font-medium"
                                     title="Edit L2VPN"
                                     disabled={editingL2VPNId !== null}
                                   >
+                                    <Pencil className="w-4 h-4 mr-1.5" />
                                     Edit
                                   </Button>
                                   <Button
-                                    variant="ghost"
+                                    variant="outline"
                                     size="sm"
                                     onClick={() =>
                                       setShowDeleteConfirm(l2vpnId)
                                     }
-                                    className="h-8 px-3 text-red-500 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-500/20"
+                                    className="h-9 px-4 border-2 border-red-300 dark:border-red-500/50 text-red-600 dark:text-red-400 hover:bg-red-600 hover:text-white hover:border-red-600 dark:hover:bg-red-600 dark:hover:text-white dark:hover:border-red-600 transition-all duration-200 shadow-sm hover:shadow-md font-medium"
                                     title="Delete L2VPN"
                                     disabled={deletingL2VPNId === l2vpnId}
                                   >
-                                    {deletingL2VPNId === l2vpnId
-                                      ? "Deleting..."
-                                      : "Delete"}
+                                    {deletingL2VPNId === l2vpnId ? (
+                                      <>
+                                        <div className="w-4 h-4 mr-1.5 border-2 border-red-300 border-t-red-600 rounded-full animate-spin" />
+                                        Deleting...
+                                      </>
+                                    ) : (
+                                      <>
+                                        <Trash2 className="w-4 h-4 mr-1.5" />
+                                        Delete
+                                      </>
+                                    )}
                                   </Button>
                                 </div>
 
@@ -1774,7 +1794,9 @@ export function Dashboard({
                 variant="outline"
                 onClick={() => setShowDeleteConfirm(null)}
                 disabled={deletingL2VPNId !== null}
+                className="border-2 border-[rgb(180,200,220)] dark:border-[rgb(100,150,200)] text-[rgb(80,120,160)] dark:text-[rgb(150,200,255)] hover:bg-[rgb(236,244,250)] dark:hover:bg-blue-500/20 hover:border-[rgb(120,176,219)] transition-all duration-200 shadow-sm hover:shadow-md font-medium"
               >
+                <X className="w-4 h-4 mr-1.5" />
                 Cancel
               </Button>
               <Button
@@ -1783,8 +1805,19 @@ export function Dashboard({
                   showDeleteConfirm && handleDeleteL2VPN(showDeleteConfirm)
                 }
                 disabled={deletingL2VPNId !== null}
+                className="bg-red-600 hover:bg-red-700 dark:bg-red-600 dark:hover:bg-red-500 text-white shadow-sm hover:shadow-md transition-all duration-200 font-medium"
               >
-                {deletingL2VPNId ? "Deleting..." : "Delete"}
+                {deletingL2VPNId ? (
+                  <>
+                    <div className="w-4 h-4 mr-1.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    Deleting...
+                  </>
+                ) : (
+                  <>
+                    <Trash2 className="w-4 h-4 mr-1.5" />
+                    Delete
+                  </>
+                )}
               </Button>
             </div>
           </div>
