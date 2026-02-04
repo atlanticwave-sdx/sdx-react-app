@@ -527,6 +527,8 @@ export function Dashboard({
         name: l2vpnData.name,
         endpoints: l2vpnData.endpoints,
         ...(l2vpnData.description && { description: l2vpnData.description }),
+        ...(l2vpnData.scheduling && { scheduling: l2vpnData.scheduling }),
+        ...(l2vpnData.qos_metrics && { qos_metrics: l2vpnData.qos_metrics }),
         ownership: ownership,
       };
 
@@ -1165,6 +1167,26 @@ export function Dashboard({
                                 )}
                               </div>
                             </div>
+
+                            {/* QoS Metrics */}
+                            {l2vpn.qos_metrics && (
+                              <div className="flex flex-col gap-1">
+                                <span className="text-xs font-semibold text-[rgb(64,143,204)] dark:text-[rgb(150,200,255)] uppercase tracking-wide">
+                                  📊 QoS Metrics
+                                </span>
+                                <div className="flex flex-col gap-1 text-sm text-foreground">
+                                  {l2vpn.qos_metrics.min_bw && (
+                                    <span>Min Bandwidth: {l2vpn.qos_metrics.min_bw.value} {l2vpn.qos_metrics.min_bw.strict ? "(strict)" : "(flexible)"}</span>
+                                  )}
+                                  {l2vpn.qos_metrics.max_delay && (
+                                    <span>Max Delay: {l2vpn.qos_metrics.max_delay.value} {l2vpn.qos_metrics.max_delay.strict ? "(strict)" : "(flexible)"}</span>
+                                  )}
+                                  {l2vpn.qos_metrics.max_number_oxps && (
+                                    <span>Max OXPs: {l2vpn.qos_metrics.max_number_oxps.value} {l2vpn.qos_metrics.max_number_oxps.strict ? "(strict)" : "(flexible)"}</span>
+                                  )}
+                                </div>
+                              </div>
+                            )}
 
                           </div>
                         ))}
