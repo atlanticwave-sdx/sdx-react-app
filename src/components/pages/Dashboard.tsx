@@ -1118,6 +1118,18 @@ export function Dashboard({
                               </span>
                             </div>
 
+                            {/* Description */}
+                            {l2vpn.description && (
+                              <div className="flex flex-col gap-1">
+                                <span className="text-xs font-semibold text-[rgb(64,143,204)] dark:text-[rgb(150,200,255)] uppercase tracking-wide">
+                                  📝 Description
+                                </span>
+                                <span className="text-sm text-foreground">
+                                  {l2vpn.description}
+                                </span>
+                              </div>
+                            )}
+
                             {/* Endpoints */}
                             <div className="flex flex-col gap-1">
                               <span className="text-xs font-semibold text-[rgb(64,143,204)] dark:text-[rgb(150,200,255)] uppercase tracking-wide">
