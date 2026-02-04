@@ -1169,8 +1169,28 @@ export function Dashboard({
                     </div>
                   ) : (
                     <div className="rounded-md border border-[rgb(200,220,240)] dark:border-blue-500/20 overflow-hidden max-h-[600px] overflow-y-auto">
+                      {editingL2VPNId && (
+                        <div className="flex items-center gap-2 px-4 py-2.5 bg-amber-50 dark:bg-amber-500/10 border-b border-amber-200 dark:border-amber-500/30">
+                          <Pencil className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+                          <span className="text-sm font-medium text-amber-700 dark:text-amber-300">
+                            Editing L2VPN
+                          </span>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={handleCancelEdit}
+                            className="ml-auto h-7 px-2 text-xs text-amber-700 dark:text-amber-300 hover:bg-amber-100 dark:hover:bg-amber-500/20"
+                          >
+                            <X className="w-3.5 h-3.5 mr-1" />
+                            Back to all
+                          </Button>
+                        </div>
+                      )}
                       <div className="divide-y divide-[rgb(200,220,240)] dark:divide-blue-500/20">
-                        {l2vpns.map((l2vpn, index) => {
+                        {(editingL2VPNId
+                          ? l2vpns.filter((l) => (l.id || l.uuid || l.service_id) === editingL2VPNId)
+                          : l2vpns
+                        ).map((l2vpn, index) => {
                           const l2vpnId = l2vpn.id || l2vpn.uuid || l2vpn.service_id;
                           const isEditing = editingL2VPNId === l2vpnId;
 
