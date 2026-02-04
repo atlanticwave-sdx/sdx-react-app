@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import {
   Dialog,
@@ -1167,53 +1166,6 @@ export function Dashboard({
                               </div>
                             </div>
 
-                            {/* Ownership */}
-                            <div className="flex flex-col gap-1">
-                              <span className="text-xs font-semibold text-[rgb(64,143,204)] dark:text-[rgb(150,200,255)] uppercase tracking-wide">
-                                👤 Ownership
-                              </span>
-                              <span className="text-sm text-foreground">
-                                {l2vpn.ownership || "N/A"}
-                              </span>
-                            </div>
-
-                            {/* Status */}
-                            <div className="flex flex-col gap-1">
-                              <span className="text-xs font-semibold text-[rgb(64,143,204)] dark:text-[rgb(150,200,255)] uppercase tracking-wide">
-                                🔄 Status
-                              </span>
-                              <div>
-                                <Badge
-                                  variant={
-                                    l2vpn.status === "active" ||
-                                    l2vpn.state === "active"
-                                      ? "default"
-                                      : l2vpn.status === "inactive" ||
-                                        l2vpn.state === "inactive"
-                                      ? "secondary"
-                                      : "outline"
-                                  }
-                                >
-                                  {l2vpn.status || l2vpn.state || "Unknown"}
-                                </Badge>
-                              </div>
-                            </div>
-
-                            {/* Created */}
-                            <div className="flex flex-col gap-1">
-                              <span className="text-xs font-semibold text-[rgb(64,143,204)] dark:text-[rgb(150,200,255)] uppercase tracking-wide">
-                                📅 Created
-                              </span>
-                              <span className="text-sm text-muted-foreground">
-                                {l2vpn.created_at
-                                  ? new Date(
-                                      l2vpn.created_at
-                                    ).toLocaleDateString()
-                                  : l2vpn.created
-                                  ? new Date(l2vpn.created).toLocaleDateString()
-                                  : "N/A"}
-                              </span>
-                            </div>
                           </div>
                         ))}
                       </div>
