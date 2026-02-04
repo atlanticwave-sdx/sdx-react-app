@@ -21,7 +21,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
 import { Trash2, Plus, ChevronDown, ChevronUp } from "lucide-react";
 
@@ -649,26 +648,13 @@ export function NewL2VPNModal({
                   step="1"
                   className="border-[rgb(120,176,219)] dark:border-[rgb(100,150,200)] focus:border-[rgb(50,135,200)] dark:focus:border-[rgb(100,180,255)] focus:ring-2 focus:ring-[rgb(50,135,200)]/30 dark:focus:ring-[rgb(100,180,255)]/30 bg-white dark:bg-gray-800 transition-all text-base"
                 />
-                <div className="flex items-center gap-2 whitespace-nowrap">
-                  <Controller
-                    control={control}
-                    name="min_bw_strict"
-                    render={({ field }) => (
-                      <Checkbox
-                        checked={field.value}
-                        onCheckedChange={field.onChange}
-                        id="min_bw_strict"
-                        className="border-[rgb(120,176,219)] data-[state=checked]:bg-[rgb(50,135,200)] data-[state=checked]:border-[rgb(50,135,200)]"
-                      />
-                    )}
+                <label className="flex items-center gap-1 text-sm text-[rgb(64,143,204)] dark:text-[rgb(150,200,255)] whitespace-nowrap cursor-pointer">
+                  <input
+                    type="checkbox"
+                    {...register("min_bw_strict")}
                   />
-                  <Label
-                    htmlFor="min_bw_strict"
-                    className="font-normal cursor-pointer text-[rgb(64,143,204)]"
-                  >
-                    Strict
-                  </Label>
-                </div>
+                  Strict
+                </label>
               </div>
             </div>
 
@@ -687,26 +673,13 @@ export function NewL2VPNModal({
                   step="1"
                   className="border-[rgb(120,176,219)] dark:border-[rgb(100,150,200)] focus:border-[rgb(50,135,200)] dark:focus:border-[rgb(100,180,255)] focus:ring-2 focus:ring-[rgb(50,135,200)]/30 dark:focus:ring-[rgb(100,180,255)]/30 bg-white dark:bg-gray-800 transition-all text-base"
                 />
-                <div className="flex items-center gap-2 whitespace-nowrap">
-                  <Controller
-                    control={control}
-                    name="max_delay_strict"
-                    render={({ field }) => (
-                      <Checkbox
-                        checked={field.value}
-                        onCheckedChange={field.onChange}
-                        id="max_delay_strict"
-                        className="border-[rgb(120,176,219)] data-[state=checked]:bg-[rgb(50,135,200)] data-[state=checked]:border-[rgb(50,135,200)]"
-                      />
-                    )}
+                <label className="flex items-center gap-1 text-sm text-[rgb(64,143,204)] dark:text-[rgb(150,200,255)] whitespace-nowrap cursor-pointer">
+                  <input
+                    type="checkbox"
+                    {...register("max_delay_strict")}
                   />
-                  <Label
-                    htmlFor="max_delay_strict"
-                    className="font-normal cursor-pointer text-[rgb(64,143,204)]"
-                  >
-                    Strict
-                  </Label>
-                </div>
+                  Strict
+                </label>
               </div>
             </div>
 
@@ -725,26 +698,13 @@ export function NewL2VPNModal({
                   step="1"
                   className="border-[rgb(120,176,219)] dark:border-[rgb(100,150,200)] focus:border-[rgb(50,135,200)] dark:focus:border-[rgb(100,180,255)] focus:ring-2 focus:ring-[rgb(50,135,200)]/30 dark:focus:ring-[rgb(100,180,255)]/30 bg-white dark:bg-gray-800 transition-all text-base"
                 />
-                <div className="flex items-center gap-2 whitespace-nowrap">
-                  <Controller
-                    control={control}
-                    name="max_number_oxps_strict"
-                    render={({ field }) => (
-                      <Checkbox
-                        checked={field.value}
-                        onCheckedChange={field.onChange}
-                        id="max_number_oxps_strict"
-                        className="border-[rgb(120,176,219)] data-[state=checked]:bg-[rgb(50,135,200)] data-[state=checked]:border-[rgb(50,135,200)]"
-                      />
-                    )}
+                <label className="flex items-center gap-1 text-sm text-[rgb(64,143,204)] dark:text-[rgb(150,200,255)] whitespace-nowrap cursor-pointer">
+                  <input
+                    type="checkbox"
+                    {...register("max_number_oxps_strict")}
                   />
-                  <Label
-                    htmlFor="max_number_oxps_strict"
-                    className="font-normal cursor-pointer text-[rgb(64,143,204)]"
-                  >
-                    Strict
-                  </Label>
-                </div>
+                  Strict
+                </label>
               </div>
             </div>
 
