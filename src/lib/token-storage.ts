@@ -121,27 +121,48 @@ export function decodeJWT(token: string): any {
 /**
  * Check if email validation can be skipped based on JWT claims
  */
-export function canSkipEmailValidation(token: TokenData): { canSkip: boolean; email?: string; eppn?: string } {
+export function canSkipEmailValidation(token: TokenData): {
+  canSkip: boolean;
+  email?: string;
+  eppn?: string;
+  reason?: string;
+  idp_name?: string;
+} {
   if (!token.id_token) {
-    return { canSkip: false };
+    return { canSkip: false, reason: 'No ID token' };
   }
-  
+
   const claims = decodeJWT(token.id_token);
   if (!claims) {
-    return { canSkip: false };
+    return { canSkip: false, reason: 'Failed to decode JWT' };
   }
-  
+
   const email = claims.email || claims.mail;
   const eppn = claims.eppn;
-  
-  console.log('JWT Claims check:', { email, eppn, claims });
-  
-  // Can skip if both eppn and email are present
+  const idp_name = claims.idp_name;
+
+  console.log('Email verification check:', { email, eppn, idp_name });
+
+  // Skip email validation if both eppn and email are present
+  // eppn is only provided by institutional SAML providers (InCommon/eduGAIN)
   if (eppn && email) {
-    return { canSkip: true, email, eppn };
+    return {
+      canSkip: true,
+      email,
+      eppn,
+      idp_name,
+      reason: 'Institutional provider with eppn'
+    };
   }
-  
-  return { canSkip: false, email, eppn };
+
+  // Cannot skip for social providers - they don't have eppn
+  return {
+    canSkip: false,
+    email,
+    eppn,
+    idp_name,
+    reason: eppn ? 'Missing email' : 'Social provider (no eppn)'
+  };
 }
 
 /**

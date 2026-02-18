@@ -188,10 +188,20 @@ export function ORCIDCallbackPage({
       );
 
       if (emailCheck.canSkip) {
-        // Skip email validation - go directly to dashboard
+        // CRITICAL FIX: Mark email as verified in session
+        SessionManager.setEmailVerified(emailCheck.email!);
+
         toast.success(
           `🎉 ORCID authentication successful! Email verified: ${emailCheck.email}`
         );
+
+        console.log('Email verification skipped:', {
+          reason: emailCheck.reason,
+          email: emailCheck.email,
+          eppn: emailCheck.eppn,
+          idp_name: emailCheck.idp_name
+        });
+
         setTimeout(() => {
           if (onNavigateToDashboard) {
             onNavigateToDashboard();

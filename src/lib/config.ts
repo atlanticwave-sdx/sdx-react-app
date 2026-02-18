@@ -45,7 +45,7 @@ export const config = {
   cilogon: {
     clientId: import.meta.env.VITE_CILOGON_CLIENT_ID,
     clientSecret: import.meta.env.VITE_CILOGON_CLIENT_SECRET,
-    scope: "openid", // Strict scopes - only openid works
+    scope: "openid email profile org.cilogon.userinfo", // Request user profile claims including eppn
     authUrl: "https://cilogon.org/authorize",
     tokenUrl: import.meta.env.VITE_CILOGON_TOKEN_URL,
     jwksUrl: "https://cilogon.org/oauth2/certs",
