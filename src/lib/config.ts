@@ -51,11 +51,14 @@ export const config = {
     jwksUrl: "https://cilogon.org/oauth2/certs",
     issuerUrl: "https://cilogon.org",
     get redirectUri() {
+      if (import.meta.env.VITE_CILOGON_REDIRECT_URI) {
+        return import.meta.env.VITE_CILOGON_REDIRECT_URI;
+      }
       const baseUrl = config.getBaseUrl();
       const appPath = config.getAppPath();
       return `${baseUrl}${appPath}/auth/callback/cilogon`;
     },
-    usePkce: false, // Switch to client_secret flow instead of PKCE
+    usePkce: true,  // Public client: use PKCE instead of client_secret
   },
 
   // ORCID - Using sandbox environment for testing

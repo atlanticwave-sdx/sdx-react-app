@@ -98,18 +98,29 @@ export function CILogonCallbackPage({
 
     // Get the code verifier from session storage for PKCE
     const codeVerifier = sessionStorage.getItem("cilogon_code_verifier");
-
-    console.log("Code verifier found:", !!codeVerifier);
-    if (!codeVerifier) {
-      console.warn("No code verifier found in sessionStorage");
+    let resolvedCodeVerifier = codeVerifier;
+    if (!resolvedCodeVerifier) {
+      try {
+        const backup = localStorage.getItem("cilogon_state_backup");
+        if (backup) {
+          const parsed = JSON.parse(backup);
+          if (Date.now() - parsed.timestamp < 600000) {
+            resolvedCodeVerifier = parsed.codeVerifier;
+          }
+        }
+      } catch (e) {
+        console.warn("Failed to recover code verifier from localStorage backup:", e);
+      }
     }
+
+    console.log("Code verifier found:", !!resolvedCodeVerifier);
 
     const requestBody = {
       provider: "cilogon",
       code: authCode,
       state: authState,
       redirect_uri: config.cilogon.redirectUri,
-      code_verifier: codeVerifier, // Add code verifier for PKCE
+      code_verifier: resolvedCodeVerifier,
     };
 
     console.log("Backend request body:", requestBody);

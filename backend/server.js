@@ -11,7 +11,7 @@ const cors = require("cors");
 const fetch = require("node-fetch");
 
 const app = express();
-const PORT = process.env.BACKEND_PORT;
+const PORT = process.env.PORT || process.env.BACKEND_PORT;
 const isProduction = process.env.NODE_ENV === "production";
 
 // Enable CORS for frontend
@@ -41,10 +41,9 @@ const ORCID_CONFIG = {
   tokenUrl: process.env.ORCID_TOKEN_URL
 };
 
-// CILogon OAuth configuration
+// CILogon OAuth configuration (public client, no client_secret)
 const CILOGON_CONFIG = {
   clientId: process.env.CILOGON_CLIENT_ID,
-  clientSecret: process.env.CILOGON_CLIENT_SECRET,
   tokenUrl: process.env.CILOGON_TOKEN_URL
 };
 
@@ -114,22 +113,16 @@ app.post("/oauth/exchange", async (req, res) => {
 
       providerName = "ORCID";
     } else if (provider === "cilogon") {
-      // CILogon requires PKCE flow - check for code_verifier
-      if (!code_verifier) {
-        return res.status(400).json({
-          error: "Missing code_verifier for CILogon PKCE flow",
-        });
-      }
-
-      // Prepare token exchange request for CILogon with PKCE
+      // Prepare token exchange request for CILogon (PKCE public client, no client_secret)
       const params = new URLSearchParams({
         client_id: CILOGON_CONFIG.clientId,
-        client_secret: CILOGON_CONFIG.clientSecret,
         grant_type: "authorization_code",
         redirect_uri: redirect_uri,
         code: code,
-        code_verifier: code_verifier, // Required for PKCE
       });
+      if (code_verifier) {
+        params.append("code_verifier", code_verifier);
+      }
 
       if (!isProduction) {
         console.log("Making request to CILogon token endpoint...");
