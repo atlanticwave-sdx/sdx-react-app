@@ -3,15 +3,12 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    ports:
-      - "80:80"
-      - "443:443"
-    volumes:
-      - /etc/letsencrypt:/etc/letsencrypt:ro
+    networks:
+      sdx-network:
+      kytos_network:
+        ipv4_address: 192.168.0.6
     depends_on:
       - backend
-    networks:
-      - sdx-network
 
   backend:
     build:
@@ -25,11 +22,11 @@ services:
       - NODE_ENV=production
       - PORT=${BACKEND_PORT:-3004}
       - CORS_ORIGINS=https://sdxapi.atlanticwave-sdx.net,http://localhost,http://frontend
-    extra_hosts:
-      - "sdxapi.atlanticwave-sdx.ai:190.103.184.197"
     networks:
       - sdx-network
 
 networks:
   sdx-network:
     driver: bridge
+  kytos_network:
+    external: true
