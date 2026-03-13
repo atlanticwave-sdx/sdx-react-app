@@ -112,6 +112,22 @@ const PlusIcon = ({ className }: { className?: string }) => (
   </svg>
 );
 
+const ExpandAllIcon = ({ className }: { className?: string }) => (
+  <svg
+    width="36"
+    height="36"
+    viewBox="0 0 24 24"
+    fill="none"
+    xmlns="http://www.w3.org/2000/svg"
+    className={className}
+  >
+    <path
+      d="M4 4H10V6H6V10H4V4ZM14 4H20V10H18V6H14V4ZM18 14V18H14V20H20V14H18ZM6 18V14H4V20H10V18H6Z"
+      fill="currentColor"
+    />
+  </svg>
+);
+
 const ContactIcon = ({ className }: { className?: string }) => (
   <svg
     width="36"
@@ -364,6 +380,7 @@ export function Dashboard({
   const [editingL2VPNId, setEditingL2VPNId] = useState<string | null>(null);
   const [editFormData, setEditFormData] = useState<any | null>(null);
   const [isSavingEdit, setIsSavingEdit] = useState(false);
+  const [expandedL2VPNs, setExpandedL2VPNs] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     loadTokens();
@@ -1202,6 +1219,23 @@ export function Dashboard({
                       <Button
                         variant="ghost"
                         size="sm"
+                        onClick={() => {
+                          const allIds = l2vpns.map((l) => l.id || l.uuid || l.service_id).filter(Boolean);
+                          if (expandedL2VPNs.size === allIds.length) {
+                            setExpandedL2VPNs(new Set());
+                          } else {
+                            setExpandedL2VPNs(new Set(allIds));
+                          }
+                        }}
+                        disabled={l2vpns.length === 0}
+                        className="h-8 px-3 text-[rgb(50,135,200)] dark:text-[rgb(100,180,255)] hover:bg-[rgb(236,244,250)] dark:hover:bg-blue-500/20 disabled:opacity-50"
+                        title={expandedL2VPNs.size === l2vpns.length ? "Collapse all" : "Expand all"}
+                      >
+                        <ExpandAllIcon className="w-4 h-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
                         onClick={loadL2VPNs}
                         disabled={isLoadingL2VPNs || !hasValidTokens}
                         className="h-8 px-3 text-[rgb(50,135,200)] dark:text-[rgb(100,180,255)] hover:bg-[rgb(236,244,250)] dark:hover:bg-blue-500/20 disabled:opacity-50"
@@ -1650,153 +1684,169 @@ export function Dashboard({
                               ) : (
                                 <>
                                   {/* Read-Only Mode */}
-                                  {/* Actions Row */}
-                                  <div className="flex justify-end gap-2">
-                                    <Button
-                                      variant="outline"
-                                      size="sm"
-                                      onClick={() => handleStartEdit(l2vpn)}
-                                      className="h-9 px-4 border-2 border-[rgb(120,176,219)] dark:border-[rgb(100,150,200)] text-[rgb(50,135,200)] dark:text-[rgb(100,180,255)] hover:bg-[rgb(50,135,200)] hover:text-white dark:hover:bg-[rgb(100,180,255)] dark:hover:text-gray-900 transition-all duration-200 shadow-sm hover:shadow-md font-medium"
-                                      title="Edit L2VPN"
-                                      disabled={editingL2VPNId !== null}
-                                    >
-                                      <Pencil className="w-4 h-4 mr-1.5" />
-                                      Edit
-                                    </Button>
-                                    <Button
-                                      variant="outline"
-                                      size="sm"
-                                      onClick={() =>
-                                        setShowDeleteConfirm(l2vpnId)
-                                      }
-                                      className="h-9 px-4 border-2 border-red-300 dark:border-red-500/50 text-red-600 dark:text-red-400 hover:bg-red-600 hover:text-white hover:border-red-600 dark:hover:bg-red-600 dark:hover:text-white dark:hover:border-red-600 transition-all duration-200 shadow-sm hover:shadow-md font-medium"
-                                      title="Delete L2VPN"
-                                      disabled={deletingL2VPNId === l2vpnId}
-                                    >
-                                      {deletingL2VPNId === l2vpnId ? (
-                                        <>
-                                          <div className="w-4 h-4 mr-1.5 border-2 border-red-300 border-t-red-600 rounded-full animate-spin" />
-                                          Deleting...
-                                        </>
-                                      ) : (
-                                        <>
-                                          <Trash2 className="w-4 h-4 mr-1.5" />
-                                          Delete
-                                        </>
-                                      )}
-                                    </Button>
-                                  </div>
-
-                                  {/* ID */}
-                                  <div className="flex flex-col gap-1">
-                                    <span className="text-xs font-semibold text-[rgb(64,143,204)] dark:text-[rgb(150,200,255)] uppercase tracking-wide">
-                                      ID
-                                    </span>
-                                    <span className="font-mono text-sm text-foreground break-all">
-                                      {l2vpn.id || l2vpn.uuid || "N/A"}
-                                    </span>
-                                  </div>
-
-                                  {/* Name */}
-                                  <div className="flex flex-col gap-1">
-                                    <span className="text-xs font-semibold text-[rgb(64,143,204)] dark:text-[rgb(150,200,255)] uppercase tracking-wide">
-                                      Name
-                                    </span>
-                                    <span className="text-sm font-medium text-foreground">
-                                      {l2vpn.name || "Unnamed"}
-                                    </span>
-                                  </div>
-
-                                  {/* Description */}
-                                  {l2vpn.description && (
-                                    <div className="flex flex-col gap-1">
-                                      <span className="text-xs font-semibold text-[rgb(64,143,204)] dark:text-[rgb(150,200,255)] uppercase tracking-wide">
-                                        Description
-                                      </span>
-                                      <span className="text-sm text-foreground">
-                                        {l2vpn.description}
+                                  {/* Header Row - always visible */}
+                                  <div
+                                    className="flex items-center justify-between cursor-pointer"
+                                    onClick={() => {
+                                      setExpandedL2VPNs((prev) => {
+                                        const next = new Set(prev);
+                                        if (next.has(l2vpnId!)) {
+                                          next.delete(l2vpnId!);
+                                        } else {
+                                          next.add(l2vpnId!);
+                                        }
+                                        return next;
+                                      });
+                                    }}
+                                  >
+                                    <div className="flex items-center gap-2">
+                                      <span className={`text-xs text-[rgb(50,135,200)] dark:text-[rgb(100,180,255)] transition-transform ${expandedL2VPNs.has(l2vpnId!) ? "rotate-90" : ""}`}>&#9654;</span>
+                                      <span className="text-sm font-medium text-foreground">
+                                        {l2vpn.name || "Unnamed"}
                                       </span>
                                     </div>
-                                  )}
+                                    <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+                                      <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => handleStartEdit(l2vpn)}
+                                        className="h-7 px-2 border-2 border-[rgb(120,176,219)] dark:border-[rgb(100,150,200)] text-[rgb(50,135,200)] dark:text-[rgb(100,180,255)] hover:bg-[rgb(50,135,200)] hover:text-white dark:hover:bg-[rgb(100,180,255)] dark:hover:text-gray-900 transition-all duration-200 shadow-sm hover:shadow-md font-medium"
+                                        title="Edit L2VPN"
+                                        disabled={editingL2VPNId !== null}
+                                      >
+                                        <Pencil className="w-3.5 h-3.5 mr-1" />
+                                        Edit
+                                      </Button>
+                                      <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() =>
+                                          setShowDeleteConfirm(l2vpnId)
+                                        }
+                                        className="h-7 px-2 border-2 border-red-300 dark:border-red-500/50 text-red-600 dark:text-red-400 hover:bg-red-600 hover:text-white hover:border-red-600 dark:hover:bg-red-600 dark:hover:text-white dark:hover:border-red-600 transition-all duration-200 shadow-sm hover:shadow-md font-medium"
+                                        title="Delete L2VPN"
+                                        disabled={deletingL2VPNId === l2vpnId}
+                                      >
+                                        {deletingL2VPNId === l2vpnId ? (
+                                          <>
+                                            <div className="w-3.5 h-3.5 mr-1 border-2 border-red-300 border-t-red-600 rounded-full animate-spin" />
+                                            Deleting...
+                                          </>
+                                        ) : (
+                                          <>
+                                            <Trash2 className="w-3.5 h-3.5 mr-1" />
+                                            Delete
+                                          </>
+                                        )}
+                                      </Button>
+                                    </div>
+                                  </div>
 
-                                  {/* Endpoints */}
-                                  <div className="flex flex-col gap-1">
-                                    <span className="text-xs font-semibold text-[rgb(64,143,204)] dark:text-[rgb(150,200,255)] uppercase tracking-wide">
-                                      Endpoints
-                                    </span>
-                                    <div className="flex flex-col gap-2">
-                                      {Array.isArray(l2vpn.endpoints) ? (
-                                        l2vpn.endpoints.map(
-                                          (endpoint: any, epIndex: number) => (
-                                            <div
-                                              key={epIndex}
-                                              className="text-sm text-foreground"
-                                            >
-                                              {typeof endpoint === "string" ? (
-                                                <span className="break-all">
-                                                  {endpoint}
-                                                </span>
-                                              ) : (
-                                                <span className="break-all">
-                                                  {endpoint.port_id ||
-                                                    endpoint.port ||
-                                                    "N/A"}
-                                                  {endpoint.vlan &&
-                                                    ` (VLAN: ${endpoint.vlan})`}
-                                                </span>
-                                              )}
-                                            </div>
-                                          ),
-                                        )
-                                      ) : (
-                                        <span className="text-sm text-muted-foreground">
-                                          {JSON.stringify(
-                                            l2vpn.endpoints || "N/A",
-                                          )}
+                                  {/* Expanded Details */}
+                                  {expandedL2VPNs.has(l2vpnId!) && (
+                                    <div className="space-y-3 pt-2">
+                                      {/* ID */}
+                                      <div className="flex flex-col gap-1">
+                                        <span className="text-xs font-semibold text-[rgb(64,143,204)] dark:text-[rgb(150,200,255)] uppercase tracking-wide">
+                                          ID
                                         </span>
-                                      )}
-                                    </div>
-                                  </div>
-
-                                  {/* QoS Metrics */}
-                                  {l2vpn.qos_metrics && (
-                                    <div className="flex flex-col gap-1">
-                                      <span className="text-xs font-semibold text-[rgb(64,143,204)] dark:text-[rgb(150,200,255)] uppercase tracking-wide">
-                                        QoS Metrics
-                                      </span>
-                                      <div className="flex flex-col gap-1 text-sm text-foreground">
-                                        {l2vpn.qos_metrics.min_bw && (
-                                          <span>
-                                            Min Bandwidth:{" "}
-                                            {l2vpn.qos_metrics.min_bw.value}{" "}
-                                            {l2vpn.qos_metrics.min_bw.strict
-                                              ? "(strict)"
-                                              : "(flexible)"}
-                                          </span>
-                                        )}
-                                        {l2vpn.qos_metrics.max_delay && (
-                                          <span>
-                                            Max Delay:{" "}
-                                            {l2vpn.qos_metrics.max_delay.value}{" "}
-                                            {l2vpn.qos_metrics.max_delay.strict
-                                              ? "(strict)"
-                                              : "(flexible)"}
-                                          </span>
-                                        )}
-                                        {l2vpn.qos_metrics.max_number_oxps && (
-                                          <span>
-                                            Max OXPs:{" "}
-                                            {
-                                              l2vpn.qos_metrics.max_number_oxps
-                                                .value
-                                            }{" "}
-                                            {l2vpn.qos_metrics.max_number_oxps
-                                              .strict
-                                              ? "(strict)"
-                                              : "(flexible)"}
-                                          </span>
-                                        )}
+                                        <span className="font-mono text-sm text-foreground break-all">
+                                          {l2vpn.id || l2vpn.uuid || "N/A"}
+                                        </span>
                                       </div>
+
+                                      {/* Description */}
+                                      {l2vpn.description && (
+                                        <div className="flex flex-col gap-1">
+                                          <span className="text-xs font-semibold text-[rgb(64,143,204)] dark:text-[rgb(150,200,255)] uppercase tracking-wide">
+                                            Description
+                                          </span>
+                                          <span className="text-sm text-foreground">
+                                            {l2vpn.description}
+                                          </span>
+                                        </div>
+                                      )}
+
+                                      {/* Endpoints */}
+                                      <div className="flex flex-col gap-1">
+                                        <span className="text-xs font-semibold text-[rgb(64,143,204)] dark:text-[rgb(150,200,255)] uppercase tracking-wide">
+                                          Endpoints
+                                        </span>
+                                        <div className="flex flex-col gap-2">
+                                          {Array.isArray(l2vpn.endpoints) ? (
+                                            l2vpn.endpoints.map(
+                                              (endpoint: any, epIndex: number) => (
+                                                <div
+                                                  key={epIndex}
+                                                  className="text-sm text-foreground"
+                                                >
+                                                  {typeof endpoint === "string" ? (
+                                                    <span className="break-all">
+                                                      {endpoint}
+                                                    </span>
+                                                  ) : (
+                                                    <span className="break-all">
+                                                      {endpoint.port_id ||
+                                                        endpoint.port ||
+                                                        "N/A"}
+                                                      {endpoint.vlan &&
+                                                        ` (VLAN: ${endpoint.vlan})`}
+                                                    </span>
+                                                  )}
+                                                </div>
+                                              ),
+                                            )
+                                          ) : (
+                                            <span className="text-sm text-muted-foreground">
+                                              {JSON.stringify(
+                                                l2vpn.endpoints || "N/A",
+                                              )}
+                                            </span>
+                                          )}
+                                        </div>
+                                      </div>
+
+                                      {/* QoS Metrics */}
+                                      {l2vpn.qos_metrics && (
+                                        <div className="flex flex-col gap-1">
+                                          <span className="text-xs font-semibold text-[rgb(64,143,204)] dark:text-[rgb(150,200,255)] uppercase tracking-wide">
+                                            QoS Metrics
+                                          </span>
+                                          <div className="flex flex-col gap-1 text-sm text-foreground">
+                                            {l2vpn.qos_metrics.min_bw && (
+                                              <span>
+                                                Min Bandwidth:{" "}
+                                                {l2vpn.qos_metrics.min_bw.value}{" "}
+                                                {l2vpn.qos_metrics.min_bw.strict
+                                                  ? "(strict)"
+                                                  : "(flexible)"}
+                                              </span>
+                                            )}
+                                            {l2vpn.qos_metrics.max_delay && (
+                                              <span>
+                                                Max Delay:{" "}
+                                                {l2vpn.qos_metrics.max_delay.value}{" "}
+                                                {l2vpn.qos_metrics.max_delay.strict
+                                                  ? "(strict)"
+                                                  : "(flexible)"}
+                                              </span>
+                                            )}
+                                            {l2vpn.qos_metrics.max_number_oxps && (
+                                              <span>
+                                                Max OXPs:{" "}
+                                                {
+                                                  l2vpn.qos_metrics.max_number_oxps
+                                                    .value
+                                                }{" "}
+                                                {l2vpn.qos_metrics.max_number_oxps
+                                                  .strict
+                                                  ? "(strict)"
+                                                  : "(flexible)"}
+                                              </span>
+                                            )}
+                                          </div>
+                                        </div>
+                                      )}
                                     </div>
                                   )}
                                 </>
