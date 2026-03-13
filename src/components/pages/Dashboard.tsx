@@ -359,7 +359,7 @@ export function Dashboard({
   const [l2vpnError, setL2vpnError] = useState<string | null>(null);
   const [deletingL2VPNId, setDeletingL2VPNId] = useState<string | null>(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState<string | null>(
-    null
+    null,
   );
   const [editingL2VPNId, setEditingL2VPNId] = useState<string | null>(null);
   const [editFormData, setEditFormData] = useState<any | null>(null);
@@ -419,7 +419,7 @@ export function Dashboard({
       // Process topology data using PHP-equivalent logic
       console.log(
         "Processing topology data with allowed domains:",
-        allowedDomains
+        allowedDomains,
       );
       const processed = processTopologyData(topologyData, allowedDomains);
       console.log("Processed topology data:", processed);
@@ -430,7 +430,7 @@ export function Dashboard({
       const linkCount = processed.latlng_array.length;
 
       toast.success(
-        `Topology processed: ${nodeCount} location groups, ${linkCount} connections`
+        `Topology processed: ${nodeCount} location groups, ${linkCount} connections`,
       );
     } catch (error) {
       console.error("Failed to load topology:", error);
@@ -484,8 +484,8 @@ export function Dashboard({
       // Remove from local state
       setL2vpns((prev) =>
         prev.filter(
-          (l2vpn) => (l2vpn.id || l2vpn.uuid || l2vpn.service_id) !== serviceId
-        )
+          (l2vpn) => (l2vpn.id || l2vpn.uuid || l2vpn.service_id) !== serviceId,
+        ),
       );
 
       toast.success("L2VPN deleted successfully");
@@ -510,7 +510,7 @@ export function Dashboard({
         ? l2vpn.endpoints.map((ep: any) =>
             typeof ep === "string"
               ? { port_id: ep, vlan: "" }
-              : { port_id: ep.port_id || ep.port || "", vlan: ep.vlan || "" }
+              : { port_id: ep.port_id || ep.port || "", vlan: ep.vlan || "" },
           )
         : [],
       qos_metrics: {
@@ -558,11 +558,20 @@ export function Dashboard({
       if (hasQos) {
         const qos_metrics: any = {};
         if (qm.min_bw && qm.min_bw.value > 0)
-          qos_metrics.min_bw = { value: Number(qm.min_bw.value), strict: qm.min_bw.strict };
+          qos_metrics.min_bw = {
+            value: Number(qm.min_bw.value),
+            strict: qm.min_bw.strict,
+          };
         if (qm.max_delay && qm.max_delay.value > 0)
-          qos_metrics.max_delay = { value: Number(qm.max_delay.value), strict: qm.max_delay.strict };
+          qos_metrics.max_delay = {
+            value: Number(qm.max_delay.value),
+            strict: qm.max_delay.strict,
+          };
         if (qm.max_number_oxps && qm.max_number_oxps.value > 0)
-          qos_metrics.max_number_oxps = { value: Number(qm.max_number_oxps.value), strict: qm.max_number_oxps.strict };
+          qos_metrics.max_number_oxps = {
+            value: Number(qm.max_number_oxps.value),
+            strict: qm.max_number_oxps.strict,
+          };
         patchBody.qos_metrics = qos_metrics;
       }
 
@@ -580,7 +589,7 @@ export function Dashboard({
             endpoints: editFormData.endpoints,
             ...(hasQos && { qos_metrics: patchBody.qos_metrics }),
           };
-        })
+        }),
       );
 
       toast.success("L2VPN updated successfully");
@@ -638,7 +647,7 @@ export function Dashboard({
       const orcidToken = TokenStorage.getToken("orcid");
       const cilogonToken = TokenStorage.getToken("cilogon");
       const validTokens = [orcidToken, cilogonToken].filter(
-        (token) => token && TokenStorage.isTokenValid(token)
+        (token) => token && TokenStorage.isTokenValid(token),
       );
 
       if (validTokens.length === 0) {
@@ -647,7 +656,7 @@ export function Dashboard({
       }
 
       const mostRecentToken = validTokens.sort(
-        (a, b) => b!.issued_at - a!.issued_at
+        (a, b) => b!.issued_at - a!.issued_at,
       )[0];
 
       if (!mostRecentToken?.id_token) {
@@ -695,8 +704,8 @@ export function Dashboard({
         `✅ L2VPN Created Successfully!\n\nResponse:\n${JSON.stringify(
           response,
           null,
-          2
-        )}`
+          2,
+        )}`,
       );
 
       // Dismiss loading toast
@@ -728,7 +737,7 @@ export function Dashboard({
       toast.error(
         error instanceof Error
           ? `Failed to create L2VPN: ${error.message}`
-          : "Failed to create L2VPN connection"
+          : "Failed to create L2VPN connection",
       );
     }
   };
@@ -1198,7 +1207,9 @@ export function Dashboard({
                         className="h-8 px-3 text-[rgb(50,135,200)] dark:text-[rgb(100,180,255)] hover:bg-[rgb(236,244,250)] dark:hover:bg-blue-500/20 disabled:opacity-50"
                         title="Refresh L2VPN list"
                       >
-                        <RefreshIcon className={`w-4 h-4 ${isLoadingL2VPNs ? "animate-spin" : ""}`} />
+                        <RefreshIcon
+                          className={`w-4 h-4 ${isLoadingL2VPNs ? "animate-spin" : ""}`}
+                        />
                       </Button>
                       <Button
                         variant="ghost"
@@ -1256,406 +1267,541 @@ export function Dashboard({
                       )}
                       <div className="divide-y divide-[rgb(200,220,240)] dark:divide-blue-500/20">
                         {(editingL2VPNId
-                          ? l2vpns.filter((l) => (l.id || l.uuid || l.service_id) === editingL2VPNId)
+                          ? l2vpns.filter(
+                              (l) =>
+                                (l.id || l.uuid || l.service_id) ===
+                                editingL2VPNId,
+                            )
                           : l2vpns
                         ).map((l2vpn, index) => {
-                          const l2vpnId = l2vpn.id || l2vpn.uuid || l2vpn.service_id;
+                          const l2vpnId =
+                            l2vpn.id || l2vpn.uuid || l2vpn.service_id;
                           const isEditing = editingL2VPNId === l2vpnId;
 
                           return (
-                          <div
-                            key={l2vpnId || index}
-                            className="p-4 space-y-3 bg-gradient-to-br from-[rgb(248,251,255)] to-[rgb(240,247,255)] dark:from-blue-500/10 dark:to-blue-500/5 hover:bg-gradient-to-br hover:from-[rgb(240,247,255)] hover:to-[rgb(232,243,255)] dark:hover:from-blue-500/15 dark:hover:to-blue-500/10 transition-colors"
-                          >
-                            {isEditing && editFormData ? (
-                              <>
-                                {/* Edit Mode */}
-                                {/* Name */}
-                                <div className="flex flex-col gap-1">
-                                  <label className="text-xs font-semibold text-[rgb(64,143,204)] dark:text-[rgb(150,200,255)] uppercase tracking-wide">
-                                    Name
-                                  </label>
-                                  <input
-                                    type="text"
-                                    value={editFormData.name}
-                                    onChange={(e) =>
-                                      setEditFormData({ ...editFormData, name: e.target.value })
-                                    }
-                                    className="w-full px-3 py-2 text-sm border border-[rgb(200,220,240)] dark:border-blue-500/30 rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-[rgb(50,135,200)] dark:focus:ring-blue-400"
-                                  />
-                                </div>
-
-                                {/* Description */}
-                                <div className="flex flex-col gap-1">
-                                  <label className="text-xs font-semibold text-[rgb(64,143,204)] dark:text-[rgb(150,200,255)] uppercase tracking-wide">
-                                    Description
-                                  </label>
-                                  <textarea
-                                    value={editFormData.description}
-                                    onChange={(e) =>
-                                      setEditFormData({ ...editFormData, description: e.target.value })
-                                    }
-                                    rows={2}
-                                    className="w-full px-3 py-2 text-sm border border-[rgb(200,220,240)] dark:border-blue-500/30 rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-[rgb(50,135,200)] dark:focus:ring-blue-400 resize-vertical"
-                                  />
-                                </div>
-
-                                {/* Endpoints */}
-                                <div className="flex flex-col gap-1">
-                                  <label className="text-xs font-semibold text-[rgb(64,143,204)] dark:text-[rgb(150,200,255)] uppercase tracking-wide">
-                                    Endpoints
-                                  </label>
-                                  <div className="flex flex-col gap-2">
-                                    {editFormData.endpoints.map((ep: any, epIdx: number) => (
-                                      <div key={epIdx} className="flex flex-col gap-1 p-2 border border-[rgb(200,220,240)] dark:border-blue-500/20 rounded-md">
-                                        <label className="text-xs text-muted-foreground">Port ID</label>
-                                        <select
-                                          value={ep.port_id}
-                                          onChange={(e) => {
-                                            const newEndpoints = [...editFormData.endpoints];
-                                            newEndpoints[epIdx] = { ...newEndpoints[epIdx], port_id: e.target.value };
-                                            setEditFormData({ ...editFormData, endpoints: newEndpoints });
-                                          }}
-                                          className="w-full px-3 py-2 text-sm border border-[rgb(200,220,240)] dark:border-blue-500/30 rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-[rgb(50,135,200)] dark:focus:ring-blue-400"
-                                        >
-                                          <option value="">Select a port...</option>
-                                          {extractAllPorts().map((port) => (
-                                            <option key={port.id} value={port.id}>
-                                              {port.id}
-                                            </option>
-                                          ))}
-                                          {/* Keep current value if not in port list */}
-                                          {ep.port_id && !extractAllPorts().find((p) => p.id === ep.port_id) && (
-                                            <option value={ep.port_id}>{ep.port_id}</option>
-                                          )}
-                                        </select>
-                                        <label className="text-xs text-muted-foreground mt-1">VLAN</label>
-                                        <input
-                                          type="text"
-                                          value={ep.vlan}
-                                          onChange={(e) => {
-                                            const newEndpoints = [...editFormData.endpoints];
-                                            newEndpoints[epIdx] = { ...newEndpoints[epIdx], vlan: e.target.value };
-                                            setEditFormData({ ...editFormData, endpoints: newEndpoints });
-                                          }}
-                                          placeholder="e.g. 100"
-                                          className="w-full px-3 py-2 text-sm border border-[rgb(200,220,240)] dark:border-blue-500/30 rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-[rgb(50,135,200)] dark:focus:ring-blue-400"
-                                        />
-                                        {editFormData.endpoints.length > 2 && (
-                                          <Button
-                                            variant="ghost"
-                                            size="sm"
-                                            onClick={() => {
-                                              const newEndpoints = editFormData.endpoints.filter((_: any, i: number) => i !== epIdx);
-                                              setEditFormData({ ...editFormData, endpoints: newEndpoints });
-                                            }}
-                                            className="h-7 px-2 text-xs text-red-500 hover:bg-red-100 dark:hover:bg-red-500/20 self-end"
-                                          >
-                                            Remove
-                                          </Button>
-                                        )}
-                                      </div>
-                                    ))}
-                                    <Button
-                                      variant="ghost"
-                                      size="sm"
-                                      onClick={() => {
+                            <div
+                              key={l2vpnId || index}
+                              className="p-4 space-y-3 bg-gradient-to-br from-[rgb(248,251,255)] to-[rgb(240,247,255)] dark:from-blue-500/10 dark:to-blue-500/5 hover:bg-gradient-to-br hover:from-[rgb(240,247,255)] hover:to-[rgb(232,243,255)] dark:hover:from-blue-500/15 dark:hover:to-blue-500/10 transition-colors"
+                            >
+                              {isEditing && editFormData ? (
+                                <>
+                                  {/* Edit Mode */}
+                                  {/* Name */}
+                                  <div className="flex flex-col gap-1">
+                                    <label className="text-xs font-semibold text-[rgb(64,143,204)] dark:text-[rgb(150,200,255)] uppercase tracking-wide">
+                                      Name
+                                    </label>
+                                    <input
+                                      type="text"
+                                      value={editFormData.name}
+                                      onChange={(e) =>
                                         setEditFormData({
                                           ...editFormData,
-                                          endpoints: [...editFormData.endpoints, { port_id: "", vlan: "" }],
-                                        });
-                                      }}
-                                      className="h-8 text-xs text-[rgb(50,135,200)] dark:text-[rgb(100,180,255)] hover:bg-[rgb(236,244,250)] dark:hover:bg-blue-500/20"
-                                    >
-                                      + Add Endpoint
-                                    </Button>
+                                          name: e.target.value,
+                                        })
+                                      }
+                                      className="w-full px-3 py-2 text-sm border border-[rgb(200,220,240)] dark:border-blue-500/30 rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-[rgb(50,135,200)] dark:focus:ring-blue-400"
+                                    />
                                   </div>
-                                </div>
 
-                                {/* QoS Metrics */}
-                                <details className="group">
-                                  <summary className="text-xs font-semibold text-[rgb(64,143,204)] dark:text-[rgb(150,200,255)] uppercase tracking-wide cursor-pointer select-none list-none flex items-center gap-1">
-                                    <span className="transition-transform group-open:rotate-90">&#9654;</span>
-                                    QoS Metrics
-                                  </summary>
-                                  <div className="mt-2 flex flex-col gap-3 pl-2">
-                                    {/* Min Bandwidth */}
-                                    <div className="flex flex-col gap-1">
-                                      <label className="text-xs text-muted-foreground">Min Bandwidth</label>
-                                      <div className="flex items-center gap-2">
-                                        <input
-                                          type="number"
-                                          min="0"
-                                          value={editFormData.qos_metrics.min_bw.value}
-                                          onChange={(e) =>
-                                            setEditFormData({
-                                              ...editFormData,
-                                              qos_metrics: {
-                                                ...editFormData.qos_metrics,
-                                                min_bw: { ...editFormData.qos_metrics.min_bw, value: e.target.value },
-                                              },
-                                            })
-                                          }
-                                          className="flex-1 px-3 py-1.5 text-sm border border-[rgb(200,220,240)] dark:border-blue-500/30 rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-[rgb(50,135,200)]"
-                                        />
-                                        <label className="flex items-center gap-1 text-xs text-muted-foreground whitespace-nowrap">
-                                          <input
-                                            type="checkbox"
-                                            checked={editFormData.qos_metrics.min_bw.strict}
-                                            onChange={(e) =>
-                                              setEditFormData({
-                                                ...editFormData,
-                                                qos_metrics: {
-                                                  ...editFormData.qos_metrics,
-                                                  min_bw: { ...editFormData.qos_metrics.min_bw, strict: e.target.checked },
-                                                },
-                                              })
-                                            }
-                                          />
-                                          Strict
-                                        </label>
-                                      </div>
-                                    </div>
-                                    {/* Max Delay */}
-                                    <div className="flex flex-col gap-1">
-                                      <label className="text-xs text-muted-foreground">Max Delay</label>
-                                      <div className="flex items-center gap-2">
-                                        <input
-                                          type="number"
-                                          min="0"
-                                          value={editFormData.qos_metrics.max_delay.value}
-                                          onChange={(e) =>
-                                            setEditFormData({
-                                              ...editFormData,
-                                              qos_metrics: {
-                                                ...editFormData.qos_metrics,
-                                                max_delay: { ...editFormData.qos_metrics.max_delay, value: e.target.value },
-                                              },
-                                            })
-                                          }
-                                          className="flex-1 px-3 py-1.5 text-sm border border-[rgb(200,220,240)] dark:border-blue-500/30 rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-[rgb(50,135,200)]"
-                                        />
-                                        <label className="flex items-center gap-1 text-xs text-muted-foreground whitespace-nowrap">
-                                          <input
-                                            type="checkbox"
-                                            checked={editFormData.qos_metrics.max_delay.strict}
-                                            onChange={(e) =>
-                                              setEditFormData({
-                                                ...editFormData,
-                                                qos_metrics: {
-                                                  ...editFormData.qos_metrics,
-                                                  max_delay: { ...editFormData.qos_metrics.max_delay, strict: e.target.checked },
-                                                },
-                                              })
-                                            }
-                                          />
-                                          Strict
-                                        </label>
-                                      </div>
-                                    </div>
-                                    {/* Max OXPs */}
-                                    <div className="flex flex-col gap-1">
-                                      <label className="text-xs text-muted-foreground">Max OXPs</label>
-                                      <div className="flex items-center gap-2">
-                                        <input
-                                          type="number"
-                                          min="0"
-                                          value={editFormData.qos_metrics.max_number_oxps.value}
-                                          onChange={(e) =>
-                                            setEditFormData({
-                                              ...editFormData,
-                                              qos_metrics: {
-                                                ...editFormData.qos_metrics,
-                                                max_number_oxps: { ...editFormData.qos_metrics.max_number_oxps, value: e.target.value },
-                                              },
-                                            })
-                                          }
-                                          className="flex-1 px-3 py-1.5 text-sm border border-[rgb(200,220,240)] dark:border-blue-500/30 rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-[rgb(50,135,200)]"
-                                        />
-                                        <label className="flex items-center gap-1 text-xs text-muted-foreground whitespace-nowrap">
-                                          <input
-                                            type="checkbox"
-                                            checked={editFormData.qos_metrics.max_number_oxps.strict}
-                                            onChange={(e) =>
-                                              setEditFormData({
-                                                ...editFormData,
-                                                qos_metrics: {
-                                                  ...editFormData.qos_metrics,
-                                                  max_number_oxps: { ...editFormData.qos_metrics.max_number_oxps, strict: e.target.checked },
-                                                },
-                                              })
-                                            }
-                                          />
-                                          Strict
-                                        </label>
-                                      </div>
-                                    </div>
-                                  </div>
-                                </details>
-
-                                {/* Save / Cancel Actions */}
-                                <div className="flex justify-end gap-2 pt-3 border-t border-[rgb(200,220,240)] dark:border-blue-500/20 mt-2">
-                                  <Button
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={handleCancelEdit}
-                                    disabled={isSavingEdit}
-                                    className="h-9 px-4 border-2 border-[rgb(180,200,220)] dark:border-[rgb(100,150,200)] text-[rgb(80,120,160)] dark:text-[rgb(150,200,255)] hover:bg-[rgb(236,244,250)] dark:hover:bg-blue-500/20 hover:border-[rgb(120,176,219)] transition-all duration-200 shadow-sm hover:shadow-md font-medium"
-                                  >
-                                    <X className="w-4 h-4 mr-1.5" />
-                                    Cancel
-                                  </Button>
-                                  <Button
-                                    size="sm"
-                                    onClick={handleEditL2VPN}
-                                    disabled={isSavingEdit || !editFormData.name.trim()}
-                                    className="h-9 px-4 bg-green-600 hover:bg-green-700 dark:bg-green-600 dark:hover:bg-green-500 text-white shadow-sm hover:shadow-md transition-all duration-200 font-medium disabled:opacity-50"
-                                  >
-                                    {isSavingEdit ? (
-                                      <>
-                                        <div className="w-4 h-4 mr-1.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                                        Saving...
-                                      </>
-                                    ) : (
-                                      <>
-                                        <Save className="w-4 h-4 mr-1.5" />
-                                        Save
-                                      </>
-                                    )}
-                                  </Button>
-                                </div>
-                              </>
-                            ) : (
-                              <>
-                                {/* Read-Only Mode */}
-                                {/* Actions Row */}
-                                <div className="flex justify-end gap-2">
-                                  <Button
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={() => handleStartEdit(l2vpn)}
-                                    className="h-9 px-4 border-2 border-[rgb(120,176,219)] dark:border-[rgb(100,150,200)] text-[rgb(50,135,200)] dark:text-[rgb(100,180,255)] hover:bg-[rgb(50,135,200)] hover:text-white dark:hover:bg-[rgb(100,180,255)] dark:hover:text-gray-900 transition-all duration-200 shadow-sm hover:shadow-md font-medium"
-                                    title="Edit L2VPN"
-                                    disabled={editingL2VPNId !== null}
-                                  >
-                                    <Pencil className="w-4 h-4 mr-1.5" />
-                                    Edit
-                                  </Button>
-                                  <Button
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={() =>
-                                      setShowDeleteConfirm(l2vpnId)
-                                    }
-                                    className="h-9 px-4 border-2 border-red-300 dark:border-red-500/50 text-red-600 dark:text-red-400 hover:bg-red-600 hover:text-white hover:border-red-600 dark:hover:bg-red-600 dark:hover:text-white dark:hover:border-red-600 transition-all duration-200 shadow-sm hover:shadow-md font-medium"
-                                    title="Delete L2VPN"
-                                    disabled={deletingL2VPNId === l2vpnId}
-                                  >
-                                    {deletingL2VPNId === l2vpnId ? (
-                                      <>
-                                        <div className="w-4 h-4 mr-1.5 border-2 border-red-300 border-t-red-600 rounded-full animate-spin" />
-                                        Deleting...
-                                      </>
-                                    ) : (
-                                      <>
-                                        <Trash2 className="w-4 h-4 mr-1.5" />
-                                        Delete
-                                      </>
-                                    )}
-                                  </Button>
-                                </div>
-
-                                {/* ID */}
-                                <div className="flex flex-col gap-1">
-                                  <span className="text-xs font-semibold text-[rgb(64,143,204)] dark:text-[rgb(150,200,255)] uppercase tracking-wide">
-                                    ID
-                                  </span>
-                                  <span className="font-mono text-sm text-foreground break-all">
-                                    {l2vpn.id || l2vpn.uuid || "N/A"}
-                                  </span>
-                                </div>
-
-                                {/* Name */}
-                                <div className="flex flex-col gap-1">
-                                  <span className="text-xs font-semibold text-[rgb(64,143,204)] dark:text-[rgb(150,200,255)] uppercase tracking-wide">
-                                    Name
-                                  </span>
-                                  <span className="text-sm font-medium text-foreground">
-                                    {l2vpn.name || "Unnamed"}
-                                  </span>
-                                </div>
-
-                                {/* Description */}
-                                {l2vpn.description && (
+                                  {/* Description */}
                                   <div className="flex flex-col gap-1">
-                                    <span className="text-xs font-semibold text-[rgb(64,143,204)] dark:text-[rgb(150,200,255)] uppercase tracking-wide">
+                                    <label className="text-xs font-semibold text-[rgb(64,143,204)] dark:text-[rgb(150,200,255)] uppercase tracking-wide">
                                       Description
-                                    </span>
-                                    <span className="text-sm text-foreground">
-                                      {l2vpn.description}
-                                    </span>
+                                    </label>
+                                    <textarea
+                                      value={editFormData.description}
+                                      onChange={(e) =>
+                                        setEditFormData({
+                                          ...editFormData,
+                                          description: e.target.value,
+                                        })
+                                      }
+                                      rows={2}
+                                      className="w-full px-3 py-2 text-sm border border-[rgb(200,220,240)] dark:border-blue-500/30 rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-[rgb(50,135,200)] dark:focus:ring-blue-400 resize-vertical"
+                                    />
                                   </div>
-                                )}
 
-                                {/* Endpoints */}
-                                <div className="flex flex-col gap-1">
-                                  <span className="text-xs font-semibold text-[rgb(64,143,204)] dark:text-[rgb(150,200,255)] uppercase tracking-wide">
-                                    Endpoints
-                                  </span>
-                                  <div className="flex flex-col gap-2">
-                                    {Array.isArray(l2vpn.endpoints) ? (
-                                      l2vpn.endpoints.map(
-                                        (endpoint: any, epIndex: number) => (
+                                  {/* Endpoints */}
+                                  <div className="flex flex-col gap-1">
+                                    <label className="text-xs font-semibold text-[rgb(64,143,204)] dark:text-[rgb(150,200,255)] uppercase tracking-wide">
+                                      Endpoints
+                                    </label>
+                                    <div className="flex flex-col gap-2">
+                                      {editFormData.endpoints.map(
+                                        (ep: any, epIdx: number) => (
                                           <div
-                                            key={epIndex}
-                                            className="text-sm text-foreground"
+                                            key={epIdx}
+                                            className="flex flex-col gap-1 p-2 border border-[rgb(200,220,240)] dark:border-blue-500/20 rounded-md"
                                           >
-                                            {typeof endpoint === "string" ? (
-                                              <span className="break-all">
-                                                {endpoint}
-                                              </span>
-                                            ) : (
-                                              <span className="break-all">
-                                                {endpoint.port_id ||
-                                                  endpoint.port ||
-                                                  "N/A"}
-                                                {endpoint.vlan &&
-                                                  ` (VLAN: ${endpoint.vlan})`}
-                                              </span>
+                                            <label className="text-xs text-muted-foreground">
+                                              Port ID
+                                            </label>
+                                            <select
+                                              value={ep.port_id}
+                                              onChange={(e) => {
+                                                const newEndpoints = [
+                                                  ...editFormData.endpoints,
+                                                ];
+                                                newEndpoints[epIdx] = {
+                                                  ...newEndpoints[epIdx],
+                                                  port_id: e.target.value,
+                                                };
+                                                setEditFormData({
+                                                  ...editFormData,
+                                                  endpoints: newEndpoints,
+                                                });
+                                              }}
+                                              className="w-full px-3 py-2 text-sm border border-[rgb(200,220,240)] dark:border-blue-500/30 rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-[rgb(50,135,200)] dark:focus:ring-blue-400"
+                                            >
+                                              <option value="">
+                                                Select a port...
+                                              </option>
+                                              {extractAllPorts().map((port) => (
+                                                <option
+                                                  key={port.id}
+                                                  value={port.id}
+                                                >
+                                                  {port.id}
+                                                </option>
+                                              ))}
+                                              {/* Keep current value if not in port list */}
+                                              {ep.port_id &&
+                                                !extractAllPorts().find(
+                                                  (p) => p.id === ep.port_id,
+                                                ) && (
+                                                  <option value={ep.port_id}>
+                                                    {ep.port_id}
+                                                  </option>
+                                                )}
+                                            </select>
+                                            <label className="text-xs text-muted-foreground mt-1">
+                                              VLAN
+                                            </label>
+                                            <input
+                                              type="text"
+                                              value={ep.vlan}
+                                              onChange={(e) => {
+                                                const newEndpoints = [
+                                                  ...editFormData.endpoints,
+                                                ];
+                                                newEndpoints[epIdx] = {
+                                                  ...newEndpoints[epIdx],
+                                                  vlan: e.target.value,
+                                                };
+                                                setEditFormData({
+                                                  ...editFormData,
+                                                  endpoints: newEndpoints,
+                                                });
+                                              }}
+                                              placeholder="e.g. 100"
+                                              className="w-full px-3 py-2 text-sm border border-[rgb(200,220,240)] dark:border-blue-500/30 rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-[rgb(50,135,200)] dark:focus:ring-blue-400"
+                                            />
+                                            {editFormData.endpoints.length >
+                                              2 && (
+                                              <Button
+                                                variant="ghost"
+                                                size="sm"
+                                                onClick={() => {
+                                                  const newEndpoints =
+                                                    editFormData.endpoints.filter(
+                                                      (_: any, i: number) =>
+                                                        i !== epIdx,
+                                                    );
+                                                  setEditFormData({
+                                                    ...editFormData,
+                                                    endpoints: newEndpoints,
+                                                  });
+                                                }}
+                                                className="h-7 px-2 text-xs text-red-500 hover:bg-red-100 dark:hover:bg-red-500/20 self-end"
+                                              >
+                                                Remove
+                                              </Button>
                                             )}
                                           </div>
-                                        )
-                                      )
-                                    ) : (
-                                      <span className="text-sm text-muted-foreground">
-                                        {JSON.stringify(l2vpn.endpoints || "N/A")}
-                                      </span>
-                                    )}
+                                        ),
+                                      )}
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={() => {
+                                          setEditFormData({
+                                            ...editFormData,
+                                            endpoints: [
+                                              ...editFormData.endpoints,
+                                              { port_id: "", vlan: "" },
+                                            ],
+                                          });
+                                        }}
+                                        className="h-8 text-xs text-[rgb(50,135,200)] dark:text-[rgb(100,180,255)] hover:bg-[rgb(236,244,250)] dark:hover:bg-blue-500/20"
+                                      >
+                                        + Add Endpoint
+                                      </Button>
+                                    </div>
                                   </div>
-                                </div>
 
-                                {/* QoS Metrics */}
-                                {l2vpn.qos_metrics && (
+                                  {/* QoS Metrics */}
+                                  <details className="group">
+                                    <summary className="text-xs font-semibold text-[rgb(64,143,204)] dark:text-[rgb(150,200,255)] uppercase tracking-wide cursor-pointer select-none list-none flex items-center gap-1">
+                                      <span className="transition-transform group-open:rotate-90">
+                                        &#9654;
+                                      </span>
+                                      QoS Metrics
+                                    </summary>
+                                    <div className="mt-2 flex flex-col gap-3 pl-2">
+                                      {/* Min Bandwidth */}
+                                      <div className="flex flex-col gap-1">
+                                        <label className="text-xs text-muted-foreground">
+                                          Min Bandwidth
+                                        </label>
+                                        <div className="flex items-center gap-2">
+                                          <input
+                                            type="number"
+                                            min="0"
+                                            value={
+                                              editFormData.qos_metrics.min_bw
+                                                .value
+                                            }
+                                            onChange={(e) =>
+                                              setEditFormData({
+                                                ...editFormData,
+                                                qos_metrics: {
+                                                  ...editFormData.qos_metrics,
+                                                  min_bw: {
+                                                    ...editFormData.qos_metrics
+                                                      .min_bw,
+                                                    value: e.target.value,
+                                                  },
+                                                },
+                                              })
+                                            }
+                                            className="flex-1 px-3 py-1.5 text-sm border border-[rgb(200,220,240)] dark:border-blue-500/30 rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-[rgb(50,135,200)]"
+                                          />
+                                          <label className="flex items-center gap-1 text-xs text-muted-foreground whitespace-nowrap">
+                                            <input
+                                              type="checkbox"
+                                              checked={
+                                                editFormData.qos_metrics.min_bw
+                                                  .strict
+                                              }
+                                              onChange={(e) =>
+                                                setEditFormData({
+                                                  ...editFormData,
+                                                  qos_metrics: {
+                                                    ...editFormData.qos_metrics,
+                                                    min_bw: {
+                                                      ...editFormData
+                                                        .qos_metrics.min_bw,
+                                                      strict: e.target.checked,
+                                                    },
+                                                  },
+                                                })
+                                              }
+                                            />
+                                            Strict
+                                          </label>
+                                        </div>
+                                      </div>
+                                      {/* Max Delay */}
+                                      <div className="flex flex-col gap-1">
+                                        <label className="text-xs text-muted-foreground">
+                                          Max Delay
+                                        </label>
+                                        <div className="flex items-center gap-2">
+                                          <input
+                                            type="number"
+                                            min="0"
+                                            value={
+                                              editFormData.qos_metrics.max_delay
+                                                .value
+                                            }
+                                            onChange={(e) =>
+                                              setEditFormData({
+                                                ...editFormData,
+                                                qos_metrics: {
+                                                  ...editFormData.qos_metrics,
+                                                  max_delay: {
+                                                    ...editFormData.qos_metrics
+                                                      .max_delay,
+                                                    value: e.target.value,
+                                                  },
+                                                },
+                                              })
+                                            }
+                                            className="flex-1 px-3 py-1.5 text-sm border border-[rgb(200,220,240)] dark:border-blue-500/30 rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-[rgb(50,135,200)]"
+                                          />
+                                          <label className="flex items-center gap-1 text-xs text-muted-foreground whitespace-nowrap">
+                                            <input
+                                              type="checkbox"
+                                              checked={
+                                                editFormData.qos_metrics
+                                                  .max_delay.strict
+                                              }
+                                              onChange={(e) =>
+                                                setEditFormData({
+                                                  ...editFormData,
+                                                  qos_metrics: {
+                                                    ...editFormData.qos_metrics,
+                                                    max_delay: {
+                                                      ...editFormData
+                                                        .qos_metrics.max_delay,
+                                                      strict: e.target.checked,
+                                                    },
+                                                  },
+                                                })
+                                              }
+                                            />
+                                            Strict
+                                          </label>
+                                        </div>
+                                      </div>
+                                      {/* Max OXPs */}
+                                      <div className="flex flex-col gap-1">
+                                        <label className="text-xs text-muted-foreground">
+                                          Max OXPs
+                                        </label>
+                                        <div className="flex items-center gap-2">
+                                          <input
+                                            type="number"
+                                            min="0"
+                                            value={
+                                              editFormData.qos_metrics
+                                                .max_number_oxps.value
+                                            }
+                                            onChange={(e) =>
+                                              setEditFormData({
+                                                ...editFormData,
+                                                qos_metrics: {
+                                                  ...editFormData.qos_metrics,
+                                                  max_number_oxps: {
+                                                    ...editFormData.qos_metrics
+                                                      .max_number_oxps,
+                                                    value: e.target.value,
+                                                  },
+                                                },
+                                              })
+                                            }
+                                            className="flex-1 px-3 py-1.5 text-sm border border-[rgb(200,220,240)] dark:border-blue-500/30 rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-[rgb(50,135,200)]"
+                                          />
+                                          <label className="flex items-center gap-1 text-xs text-muted-foreground whitespace-nowrap">
+                                            <input
+                                              type="checkbox"
+                                              checked={
+                                                editFormData.qos_metrics
+                                                  .max_number_oxps.strict
+                                              }
+                                              onChange={(e) =>
+                                                setEditFormData({
+                                                  ...editFormData,
+                                                  qos_metrics: {
+                                                    ...editFormData.qos_metrics,
+                                                    max_number_oxps: {
+                                                      ...editFormData
+                                                        .qos_metrics
+                                                        .max_number_oxps,
+                                                      strict: e.target.checked,
+                                                    },
+                                                  },
+                                                })
+                                              }
+                                            />
+                                            Strict
+                                          </label>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  </details>
+
+                                  {/* Save / Cancel Actions */}
+                                  <div className="flex justify-end gap-2 pt-3 border-t border-[rgb(200,220,240)] dark:border-blue-500/20 mt-2">
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      onClick={handleCancelEdit}
+                                      disabled={isSavingEdit}
+                                      className="h-9 px-4 border-2 border-[rgb(180,200,220)] dark:border-[rgb(100,150,200)] text-[rgb(80,120,160)] dark:text-[rgb(150,200,255)] hover:bg-[rgb(236,244,250)] dark:hover:bg-blue-500/20 hover:border-[rgb(120,176,219)] transition-all duration-200 shadow-sm hover:shadow-md font-medium"
+                                    >
+                                      <X className="w-4 h-4 mr-1.5" />
+                                      Cancel
+                                    </Button>
+                                    <Button
+                                      size="sm"
+                                      onClick={handleEditL2VPN}
+                                      disabled={
+                                        isSavingEdit ||
+                                        !editFormData.name.trim()
+                                      }
+                                      className="h-9 px-4 bg-green-600 hover:bg-green-700 dark:bg-green-600 dark:hover:bg-green-500 text-white shadow-sm hover:shadow-md transition-all duration-200 font-medium disabled:opacity-50"
+                                    >
+                                      {isSavingEdit ? (
+                                        <>
+                                          <div className="w-4 h-4 mr-1.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                          Saving...
+                                        </>
+                                      ) : (
+                                        <>
+                                          <Save className="w-4 h-4 mr-1.5" />
+                                          Save
+                                        </>
+                                      )}
+                                    </Button>
+                                  </div>
+                                </>
+                              ) : (
+                                <>
+                                  {/* Read-Only Mode */}
+                                  {/* Actions Row */}
+                                  <div className="flex justify-end gap-2">
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      onClick={() => handleStartEdit(l2vpn)}
+                                      className="h-9 px-4 border-2 border-[rgb(120,176,219)] dark:border-[rgb(100,150,200)] text-[rgb(50,135,200)] dark:text-[rgb(100,180,255)] hover:bg-[rgb(50,135,200)] hover:text-white dark:hover:bg-[rgb(100,180,255)] dark:hover:text-gray-900 transition-all duration-200 shadow-sm hover:shadow-md font-medium"
+                                      title="Edit L2VPN"
+                                      disabled={editingL2VPNId !== null}
+                                    >
+                                      <Pencil className="w-4 h-4 mr-1.5" />
+                                      Edit
+                                    </Button>
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      onClick={() =>
+                                        setShowDeleteConfirm(l2vpnId)
+                                      }
+                                      className="h-9 px-4 border-2 border-red-300 dark:border-red-500/50 text-red-600 dark:text-red-400 hover:bg-red-600 hover:text-white hover:border-red-600 dark:hover:bg-red-600 dark:hover:text-white dark:hover:border-red-600 transition-all duration-200 shadow-sm hover:shadow-md font-medium"
+                                      title="Delete L2VPN"
+                                      disabled={deletingL2VPNId === l2vpnId}
+                                    >
+                                      {deletingL2VPNId === l2vpnId ? (
+                                        <>
+                                          <div className="w-4 h-4 mr-1.5 border-2 border-red-300 border-t-red-600 rounded-full animate-spin" />
+                                          Deleting...
+                                        </>
+                                      ) : (
+                                        <>
+                                          <Trash2 className="w-4 h-4 mr-1.5" />
+                                          Delete
+                                        </>
+                                      )}
+                                    </Button>
+                                  </div>
+
+                                  {/* ID */}
                                   <div className="flex flex-col gap-1">
                                     <span className="text-xs font-semibold text-[rgb(64,143,204)] dark:text-[rgb(150,200,255)] uppercase tracking-wide">
-                                      QoS Metrics
+                                      ID
                                     </span>
-                                    <div className="flex flex-col gap-1 text-sm text-foreground">
-                                      {l2vpn.qos_metrics.min_bw && (
-                                        <span>Min Bandwidth: {l2vpn.qos_metrics.min_bw.value} {l2vpn.qos_metrics.min_bw.strict ? "(strict)" : "(flexible)"}</span>
-                                      )}
-                                      {l2vpn.qos_metrics.max_delay && (
-                                        <span>Max Delay: {l2vpn.qos_metrics.max_delay.value} {l2vpn.qos_metrics.max_delay.strict ? "(strict)" : "(flexible)"}</span>
-                                      )}
-                                      {l2vpn.qos_metrics.max_number_oxps && (
-                                        <span>Max OXPs: {l2vpn.qos_metrics.max_number_oxps.value} {l2vpn.qos_metrics.max_number_oxps.strict ? "(strict)" : "(flexible)"}</span>
+                                    <span className="font-mono text-sm text-foreground break-all">
+                                      {l2vpn.id || l2vpn.uuid || "N/A"}
+                                    </span>
+                                  </div>
+
+                                  {/* Name */}
+                                  <div className="flex flex-col gap-1">
+                                    <span className="text-xs font-semibold text-[rgb(64,143,204)] dark:text-[rgb(150,200,255)] uppercase tracking-wide">
+                                      Name
+                                    </span>
+                                    <span className="text-sm font-medium text-foreground">
+                                      {l2vpn.name || "Unnamed"}
+                                    </span>
+                                  </div>
+
+                                  {/* Description */}
+                                  {l2vpn.description && (
+                                    <div className="flex flex-col gap-1">
+                                      <span className="text-xs font-semibold text-[rgb(64,143,204)] dark:text-[rgb(150,200,255)] uppercase tracking-wide">
+                                        Description
+                                      </span>
+                                      <span className="text-sm text-foreground">
+                                        {l2vpn.description}
+                                      </span>
+                                    </div>
+                                  )}
+
+                                  {/* Endpoints */}
+                                  <div className="flex flex-col gap-1">
+                                    <span className="text-xs font-semibold text-[rgb(64,143,204)] dark:text-[rgb(150,200,255)] uppercase tracking-wide">
+                                      Endpoints
+                                    </span>
+                                    <div className="flex flex-col gap-2">
+                                      {Array.isArray(l2vpn.endpoints) ? (
+                                        l2vpn.endpoints.map(
+                                          (endpoint: any, epIndex: number) => (
+                                            <div
+                                              key={epIndex}
+                                              className="text-sm text-foreground"
+                                            >
+                                              {typeof endpoint === "string" ? (
+                                                <span className="break-all">
+                                                  {endpoint}
+                                                </span>
+                                              ) : (
+                                                <span className="break-all">
+                                                  {endpoint.port_id ||
+                                                    endpoint.port ||
+                                                    "N/A"}
+                                                  {endpoint.vlan &&
+                                                    ` (VLAN: ${endpoint.vlan})`}
+                                                </span>
+                                              )}
+                                            </div>
+                                          ),
+                                        )
+                                      ) : (
+                                        <span className="text-sm text-muted-foreground">
+                                          {JSON.stringify(
+                                            l2vpn.endpoints || "N/A",
+                                          )}
+                                        </span>
                                       )}
                                     </div>
                                   </div>
-                                )}
-                              </>
-                            )}
-                          </div>
+
+                                  {/* QoS Metrics */}
+                                  {l2vpn.qos_metrics && (
+                                    <div className="flex flex-col gap-1">
+                                      <span className="text-xs font-semibold text-[rgb(64,143,204)] dark:text-[rgb(150,200,255)] uppercase tracking-wide">
+                                        QoS Metrics
+                                      </span>
+                                      <div className="flex flex-col gap-1 text-sm text-foreground">
+                                        {l2vpn.qos_metrics.min_bw && (
+                                          <span>
+                                            Min Bandwidth:{" "}
+                                            {l2vpn.qos_metrics.min_bw.value}{" "}
+                                            {l2vpn.qos_metrics.min_bw.strict
+                                              ? "(strict)"
+                                              : "(flexible)"}
+                                          </span>
+                                        )}
+                                        {l2vpn.qos_metrics.max_delay && (
+                                          <span>
+                                            Max Delay:{" "}
+                                            {l2vpn.qos_metrics.max_delay.value}{" "}
+                                            {l2vpn.qos_metrics.max_delay.strict
+                                              ? "(strict)"
+                                              : "(flexible)"}
+                                          </span>
+                                        )}
+                                        {l2vpn.qos_metrics.max_number_oxps && (
+                                          <span>
+                                            Max OXPs:{" "}
+                                            {
+                                              l2vpn.qos_metrics.max_number_oxps
+                                                .value
+                                            }{" "}
+                                            {l2vpn.qos_metrics.max_number_oxps
+                                              .strict
+                                              ? "(strict)"
+                                              : "(flexible)"}
+                                          </span>
+                                        )}
+                                      </div>
+                                    </div>
+                                  )}
+                                </>
+                              )}
+                            </div>
                           );
                         })}
                       </div>
@@ -1680,42 +1826,23 @@ export function Dashboard({
                   </div>
 
                   {/* Contact Information */}
-                  <div className="p-5 bg-gradient-to-br from-[rgb(248,251,255)] to-[rgb(240,247,255)] dark:from-blue-500/10 dark:to-blue-500/5 rounded-xl border-2 border-[rgb(200,220,240)] dark:border-blue-500/20 shadow-md space-y-4">
+                  <div className="p-3 bg-gradient-to-br from-[rgb(248,251,255)] to-[rgb(240,247,255)] dark:from-blue-500/10 dark:to-blue-500/5 rounded-xl border-2 border-[rgb(200,220,240)] dark:border-blue-500/20 shadow-md space-y-1.5">
                     <h3 className="text-sm font-semibold text-[rgb(64,143,204)] dark:text-[rgb(150,200,255)] uppercase tracking-wide">
                       Get in Touch
                     </h3>
-                    <div className="space-y-3">
-                      <div>
-                        <p className="text-sm font-medium text-foreground">Email</p>
-                        <a
-                          href="mailto:sdx-support@renci.org"
-                          className="text-sm text-[rgb(50,135,200)] dark:text-[rgb(100,180,255)] hover:underline"
-                        >
-                          sdx-support@renci.org
-                        </a>
-                      </div>
-                      <div>
-                        <p className="text-sm font-medium text-foreground">Website</p>
-                        <a
-                          href="https://www.atlanticwave-sdx.net"
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-sm text-[rgb(50,135,200)] dark:text-[rgb(100,180,255)] hover:underline"
-                        >
-                          atlanticwave-sdx.net
-                        </a>
-                      </div>
-                      <div>
-                        <p className="text-sm font-medium text-foreground">GitHub</p>
-                        <a
-                          href="https://github.com/atlanticwave-sdx"
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-sm text-[rgb(50,135,200)] dark:text-[rgb(100,180,255)] hover:underline"
-                        >
-                          atlanticwave-sdx
-                        </a>
-                      </div>
+                    <div className="space-y-1">
+                      <p className="text-sm leading-none">
+                        <span className="font-medium text-foreground">Email: </span>
+                        <a href="mailto:sdx-support@renci.org" className="text-[rgb(50,135,200)] dark:text-[rgb(100,180,255)] hover:underline">sdx-support@renci.org</a>
+                      </p>
+                      <p className="text-sm leading-none">
+                        <span className="font-medium text-foreground">Website: </span>
+                        <a href="https://www.atlanticwave-sdx.net" target="_blank" rel="noopener noreferrer" className="text-[rgb(50,135,200)] dark:text-[rgb(100,180,255)] hover:underline">atlanticwave-sdx.net</a>
+                      </p>
+                      <p className="text-sm leading-none">
+                        <span className="font-medium text-foreground">GitHub: </span>
+                        <a href="https://github.com/atlanticwave-sdx" target="_blank" rel="noopener noreferrer" className="text-[rgb(50,135,200)] dark:text-[rgb(100,180,255)] hover:underline">atlanticwave-sdx</a>
+                      </p>
                     </div>
                   </div>
 
@@ -1728,10 +1855,20 @@ export function Dashboard({
                       onSubmit={(e) => {
                         e.preventDefault();
                         const form = e.target as HTMLFormElement;
-                        const name = (form.elements.namedItem("name") as HTMLInputElement).value;
-                        const email = (form.elements.namedItem("email") as HTMLInputElement).value;
-                        const subject = (form.elements.namedItem("subject") as HTMLInputElement).value;
-                        const message = (form.elements.namedItem("message") as HTMLTextAreaElement).value;
+                        const name = (
+                          form.elements.namedItem("name") as HTMLInputElement
+                        ).value;
+                        const email = (
+                          form.elements.namedItem("email") as HTMLInputElement
+                        ).value;
+                        const subject = (
+                          form.elements.namedItem("subject") as HTMLInputElement
+                        ).value;
+                        const message = (
+                          form.elements.namedItem(
+                            "message",
+                          ) as HTMLTextAreaElement
+                        ).value;
                         const mailtoLink = `mailto:sdx-support@renci.org?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(`Name: ${name}\nEmail: ${email}\n\n${message}`)}`;
                         window.open(mailtoLink, "_blank");
                         toast.success("Opening your email client...");
@@ -1739,7 +1876,9 @@ export function Dashboard({
                       className="space-y-3"
                     >
                       <div className="flex flex-col gap-1">
-                        <label className="text-xs text-muted-foreground">Name</label>
+                        <label className="text-xs text-muted-foreground">
+                          Name
+                        </label>
                         <input
                           name="name"
                           type="text"
@@ -1749,7 +1888,9 @@ export function Dashboard({
                         />
                       </div>
                       <div className="flex flex-col gap-1">
-                        <label className="text-xs text-muted-foreground">Email</label>
+                        <label className="text-xs text-muted-foreground">
+                          Email
+                        </label>
                         <input
                           name="email"
                           type="email"
@@ -1759,7 +1900,9 @@ export function Dashboard({
                         />
                       </div>
                       <div className="flex flex-col gap-1">
-                        <label className="text-xs text-muted-foreground">Subject</label>
+                        <label className="text-xs text-muted-foreground">
+                          Subject
+                        </label>
                         <input
                           name="subject"
                           type="text"
@@ -1769,7 +1912,9 @@ export function Dashboard({
                         />
                       </div>
                       <div className="flex flex-col gap-1">
-                        <label className="text-xs text-muted-foreground">Message</label>
+                        <label className="text-xs text-muted-foreground">
+                          Message
+                        </label>
                         <textarea
                           name="message"
                           required
