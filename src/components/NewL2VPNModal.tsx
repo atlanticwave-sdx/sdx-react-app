@@ -326,28 +326,6 @@ export function NewL2VPNModal({
 
         {/* Endpoints Section */}
         <div className="space-y-4">
-          <div className="flex items-center justify-between p-4 bg-gradient-to-r from-[rgb(236,244,250)] to-[rgb(248,251,255)] dark:from-blue-500/10 dark:to-blue-500/5 rounded-xl border-2 border-[rgb(200,220,240)] dark:border-blue-500/20 shadow-md">
-            <Label className="text-[rgb(64,143,204)] dark:text-[rgb(150,200,255)] font-bold text-lg flex items-center gap-2">
-              <span className="text-xl">📍</span>
-              <span>Endpoints</span>
-            </Label>
-            <Button
-              type="button"
-              onClick={() =>
-                appendEndpoint({
-                  port_id: "",
-                  vlan_type: "any",
-                  vlan_value: "",
-                })
-              }
-              className="bg-[rgb(50,135,200)] hover:bg-[rgb(64,143,204)] dark:bg-[rgb(100,180,255)] dark:hover:bg-[rgb(120,200,255)] text-white shadow-md hover:shadow-lg transition-all duration-200 hover:scale-105 active:scale-95"
-              size="sm"
-            >
-              <Plus className="w-4 h-4 mr-1" />
-              Add Endpoint
-            </Button>
-          </div>
-
           {endpointFields.map((field, index) => {
             const vlanType = watchedEndpoints[index]?.vlan_type;
             const portId = watchedEndpoints[index]?.port_id;
