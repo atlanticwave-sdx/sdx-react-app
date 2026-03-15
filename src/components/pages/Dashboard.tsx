@@ -732,8 +732,8 @@ export function Dashboard({
 
       toast.success(`L2VPN "${l2vpnData.name}" created successfully!`);
 
-      // Optionally reload topology to show new connection
-      // await loadTopology();
+      // Reload L2VPN list to include the new connection
+      await loadL2VPNs();
     } catch (error: any) {
       console.error("Failed to create L2VPN:", error);
       console.log("Error object:", error);

@@ -28,7 +28,7 @@ import { Trash2, Plus, ChevronDown, ChevronUp } from "lucide-react";
 const endpointSchema = z
   .object({
     port_id: z.string().min(1, "Port ID is required"),
-    vlan_type: z.enum(["any", "number", "untagged", "VLAN range", "all"]),
+    vlan_type: z.enum(["any", "number", "VLAN range"]),
     vlan_value: z.string().optional(),
   })
   .refine(
@@ -480,25 +480,11 @@ export function NewL2VPNModal({
                               VLAN ID
                             </SelectItem>
                             <SelectItem
-                              value="untagged"
-                              title="Transports Ethernet frames without IEEE 802.1Q Ethertype"
-                              className="hover:bg-[rgb(236,244,250)] dark:hover:bg-blue-500/20"
-                            >
-                              untagged
-                            </SelectItem>
-                            <SelectItem
                               value="VLAN range"
                               title="Range of VLANs, e.g., '50:55'"
                               className="hover:bg-[rgb(236,244,250)] dark:hover:bg-blue-500/20"
                             >
                               VLAN range
-                            </SelectItem>
-                            <SelectItem
-                              value="all"
-                              title="Transport all Ethernet frames with and without IEEE 802.Q Ethertype"
-                              className="hover:bg-[rgb(236,244,250)] dark:hover:bg-blue-500/20"
-                            >
-                              all
                             </SelectItem>
                           </SelectContent>
                         </Select>
