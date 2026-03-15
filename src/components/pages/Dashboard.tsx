@@ -381,6 +381,8 @@ export function Dashboard({
   const [editFormData, setEditFormData] = useState<any | null>(null);
   const [isSavingEdit, setIsSavingEdit] = useState(false);
   const [expandedL2VPNs, setExpandedL2VPNs] = useState<Set<string>>(new Set());
+  const [l2vpnTwoColumns, setL2vpnTwoColumns] = useState(false);
+  const [l2vpnSearchQuery, setL2vpnSearchQuery] = useState("");
 
   useEffect(() => {
     loadTokens();
@@ -925,6 +927,7 @@ export function Dashboard({
                 <Button
                   onClick={() => {
                     if (selectedSection === "listL2VPNs") {
+                      setL2vpnSearchQuery("");
                       setSelectedSection(null);
                     } else {
                       setSelectedSection("listL2VPNs");
@@ -1219,17 +1222,10 @@ export function Dashboard({
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => {
-                          const allIds = l2vpns.map((l) => l.id || l.uuid || l.service_id).filter(Boolean);
-                          if (expandedL2VPNs.size === allIds.length) {
-                            setExpandedL2VPNs(new Set());
-                          } else {
-                            setExpandedL2VPNs(new Set(allIds));
-                          }
-                        }}
+                        onClick={() => setL2vpnTwoColumns((prev) => !prev)}
                         disabled={l2vpns.length === 0}
                         className="h-8 px-3 text-[rgb(50,135,200)] dark:text-[rgb(100,180,255)] hover:bg-[rgb(236,244,250)] dark:hover:bg-blue-500/20 disabled:opacity-50"
-                        title={expandedL2VPNs.size === l2vpns.length ? "Collapse all" : "Expand all"}
+                        title={l2vpnTwoColumns ? "Single column" : "Two columns"}
                       >
                         <ExpandAllIcon className="w-4 h-4" />
                       </Button>
@@ -1248,7 +1244,7 @@ export function Dashboard({
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => setSelectedSection(null)}
+                        onClick={() => { setL2vpnSearchQuery(""); setSelectedSection(null); }}
                         className="h-8 w-8 p-0 text-[rgb(50,135,200)] dark:text-[rgb(100,180,255)] hover:bg-[rgb(236,244,250)] dark:hover:bg-blue-500/20"
                         title="Close"
                       >
@@ -1256,6 +1252,13 @@ export function Dashboard({
                       </Button>
                     </div>
                   </div>
+                  <input
+                    type="text"
+                    value={l2vpnSearchQuery}
+                    onChange={(e) => setL2vpnSearchQuery(e.target.value)}
+                    placeholder="Search by name..."
+                    className="w-full px-3 py-2 text-sm rounded-lg border-2 border-[rgb(200,220,240)] dark:border-blue-500/30 bg-white dark:bg-blue-500/5 focus:outline-none focus:border-[rgb(50,135,200)] dark:focus:border-blue-400 transition-colors placeholder:text-muted-foreground"
+                  />
                   {l2vpnError && (
                     <Alert className="border-2 border-red-200 bg-red-50 dark:border-red-800 dark:bg-red-900/20">
                       <AlertDescription className="text-red-800 dark:text-red-200">
@@ -1283,30 +1286,32 @@ export function Dashboard({
                   ) : (
                     <div className="rounded-md border border-[rgb(200,220,240)] dark:border-blue-500/20 overflow-hidden max-h-[600px] overflow-y-auto">
                       {editingL2VPNId && (
-                        <div className="flex items-center gap-2 px-4 py-2.5 bg-amber-50 dark:bg-amber-500/10 border-b border-amber-200 dark:border-amber-500/30">
-                          <Pencil className="w-4 h-4 text-amber-600 dark:text-amber-400" />
-                          <span className="text-sm font-medium text-amber-700 dark:text-amber-300">
+                        <div className="flex items-center gap-2 px-4 py-2.5 bg-[rgb(236,244,250)] dark:bg-blue-500/10 border-b border-[rgb(200,220,240)] dark:border-blue-500/30">
+                          <Pencil className="w-4 h-4 text-[rgb(50,135,200)] dark:text-[rgb(100,180,255)]" />
+                          <span className="text-sm font-medium text-[rgb(50,135,200)] dark:text-[rgb(100,180,255)]">
                             Editing L2VPN
                           </span>
                           <Button
                             variant="ghost"
                             size="sm"
                             onClick={handleCancelEdit}
-                            className="ml-auto h-7 px-2 text-xs text-amber-700 dark:text-amber-300 hover:bg-amber-100 dark:hover:bg-amber-500/20"
+                            className="ml-auto h-7 px-2 text-xs text-[rgb(50,135,200)] dark:text-[rgb(100,180,255)] hover:bg-[rgb(200,220,240)] dark:hover:bg-blue-500/20"
                           >
                             <X className="w-3.5 h-3.5 mr-1" />
                             Back to all
                           </Button>
                         </div>
                       )}
-                      <div className="divide-y divide-[rgb(200,220,240)] dark:divide-blue-500/20">
+                      <div className={l2vpnTwoColumns ? "grid grid-cols-2 gap-px bg-background" : "divide-y divide-[rgb(200,220,240)] dark:divide-blue-500/20"}>
                         {(editingL2VPNId
                           ? l2vpns.filter(
                               (l) =>
                                 (l.id || l.uuid || l.service_id) ===
                                 editingL2VPNId,
                             )
-                          : l2vpns
+                          : l2vpns.filter((l) =>
+                              (l.name || "").toLowerCase().includes(l2vpnSearchQuery.toLowerCase())
+                            )
                         ).map((l2vpn, index) => {
                           const l2vpnId =
                             l2vpn.id || l2vpn.uuid || l2vpn.service_id;
@@ -1315,7 +1320,7 @@ export function Dashboard({
                           return (
                             <div
                               key={l2vpnId || index}
-                              className="p-4 space-y-3 bg-gradient-to-br from-[rgb(248,251,255)] to-[rgb(240,247,255)] dark:from-blue-500/10 dark:to-blue-500/5 hover:bg-gradient-to-br hover:from-[rgb(240,247,255)] hover:to-[rgb(232,243,255)] dark:hover:from-blue-500/15 dark:hover:to-blue-500/10 transition-colors"
+                              className={`p-4 space-y-3 bg-background bg-gradient-to-br from-[rgb(248,251,255)] to-[rgb(240,247,255)] dark:from-blue-500/10 dark:to-blue-500/5 hover:from-[rgb(240,247,255)] hover:to-[rgb(232,243,255)] dark:hover:from-blue-500/15 dark:hover:to-blue-500/10 transition-colors${isEditing && l2vpnTwoColumns ? " col-span-2" : ""}`}
                             >
                               {isEditing && editFormData ? (
                                 <>
@@ -1745,6 +1750,22 @@ export function Dashboard({
                                   {/* Expanded Details */}
                                   {expandedL2VPNs.has(l2vpnId!) && (
                                     <div className="space-y-3 pt-2">
+                                      {/* Status */}
+                                      <div className="flex flex-col gap-1">
+                                        <span className="text-xs font-semibold text-[rgb(64,143,204)] dark:text-[rgb(150,200,255)] uppercase tracking-wide">
+                                          Status
+                                        </span>
+                                        <span className={`text-sm font-medium ${
+                                          (l2vpn.state || l2vpn.status || "").toLowerCase() === "up"
+                                            ? "text-green-600 dark:text-green-400"
+                                            : (l2vpn.state || l2vpn.status || "").toLowerCase() === "down"
+                                              ? "text-red-600 dark:text-red-400"
+                                              : "text-amber-600 dark:text-amber-400"
+                                        }`}>
+                                          {l2vpn.state || l2vpn.status || "Under provisioning"}
+                                        </span>
+                                      </div>
+
                                       {/* ID */}
                                       <div className="flex flex-col gap-1">
                                         <span className="text-xs font-semibold text-[rgb(64,143,204)] dark:text-[rgb(150,200,255)] uppercase tracking-wide">
