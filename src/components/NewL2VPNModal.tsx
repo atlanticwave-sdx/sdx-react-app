@@ -42,6 +42,35 @@ const endpointSchema = z
       message: "VLAN value is required for this type",
       path: ["vlan_value"],
     }
+  )
+  .refine(
+    (data) => {
+      if (data.vlan_type === "number" && data.vlan_value) {
+        const vlanId = parseInt(data.vlan_value, 10);
+        return !isNaN(vlanId) && vlanId >= 1 && vlanId <= 4095;
+      }
+      return true;
+    },
+    {
+      message: "VLAN ID must be between 1 and 4095",
+      path: ["vlan_value"],
+    }
+  )
+  .refine(
+    (data) => {
+      if (data.vlan_type === "VLAN range" && data.vlan_value) {
+        const parts = data.vlan_value.split(":");
+        if (parts.length !== 2) return false;
+        const start = parseInt(parts[0], 10);
+        const end = parseInt(parts[1], 10);
+        return !isNaN(start) && !isNaN(end) && start >= 1 && end <= 4095 && start <= end;
+      }
+      return true;
+    },
+    {
+      message: "VLAN range must be between 1 and 4095 (e.g., 50:55)",
+      path: ["vlan_value"],
+    }
   );
 
 const l2vpnSchema = z.object({
@@ -113,6 +142,7 @@ export function NewL2VPNModal({
     watch,
     setValue,
     reset,
+    setError,
     formState: { errors },
   } = useForm<L2VPNFormData>({
     resolver: zodResolver(l2vpnSchema),
@@ -202,6 +232,40 @@ export function NewL2VPNModal({
   }, []);
 
   const onSubmit = async (data: L2VPNFormData) => {
+    // Validate VLANs against available ranges per port
+    let hasVlanError = false;
+    data.endpoints.forEach((ep, index) => {
+      if (ep.vlan_type === "any") return;
+
+      const port = availablePorts.find((p) => p.id === ep.port_id);
+      const vlanRange = port?.vlan_range;
+      if (!vlanRange || vlanRange.length < 2) return;
+
+      const min = vlanRange[0];
+      const max = vlanRange[1];
+
+      if (ep.vlan_type === "number") {
+        const vlanId = parseInt(ep.vlan_value || "", 10);
+        if (isNaN(vlanId) || vlanId < min || vlanId > max) {
+          setError(`endpoints.${index}.vlan_value`, {
+            message: `VLAN must be between ${min} and ${max}`,
+          });
+          hasVlanError = true;
+        }
+      } else if (ep.vlan_type === "VLAN range") {
+        const parts = (ep.vlan_value || "").split(":");
+        const rangeStart = parseInt(parts[0], 10);
+        const rangeEnd = parseInt(parts[1], 10);
+        if (isNaN(rangeStart) || isNaN(rangeEnd) || rangeStart < min || rangeEnd > max || rangeStart > rangeEnd) {
+          setError(`endpoints.${index}.vlan_value`, {
+            message: `VLAN range must be within ${min}-${max}`,
+          });
+          hasVlanError = true;
+        }
+      }
+    });
+    if (hasVlanError) return;
+
     setIsLoading(true);
 
     try {
@@ -216,48 +280,6 @@ export function NewL2VPNModal({
               : ep.vlan_type,
         })),
         ...(data.description && { description: data.description }),
-        ...(data.start_time || data.end_time
-          ? {
-              scheduling: {
-                ...(data.start_time && {
-                  start_time: new Date(data.start_time).toISOString(),
-                }),
-                ...(data.end_time && {
-                  end_time: new Date(data.end_time).toISOString(),
-                }),
-              },
-            }
-          : {}),
-        ...(data.min_bw !== undefined ||
-        data.max_delay !== undefined ||
-        data.max_number_oxps !== undefined
-          ? {
-              qos_metrics: {
-                ...(data.min_bw !== undefined && {
-                  min_bw: {
-                    value: data.min_bw,
-                    strict: data.min_bw_strict || false,
-                  },
-                }),
-                ...(data.max_delay !== undefined && {
-                  max_delay: {
-                    value: data.max_delay,
-                    strict: data.max_delay_strict || false,
-                  },
-                }),
-                ...(data.max_number_oxps !== undefined && {
-                  max_number_oxps: {
-                    value: data.max_number_oxps,
-                    strict: data.max_number_oxps_strict || false,
-                  },
-                }),
-              },
-            }
-          : {}),
-        ...(data.notifications &&
-          data.notifications.length > 0 && {
-            notifications: data.notifications,
-          }),
       };
 
       console.log("Transformed L2VPN Data:", transformedData);
@@ -277,6 +299,44 @@ export function NewL2VPNModal({
       setIsLoading(false);
     }
   };
+
+  const getVlanValidationError = (index: number) => {
+    const ep = watchedEndpoints[index];
+    if (!ep || ep.vlan_type === "any" || !ep.vlan_value) return null;
+
+    if (ep.vlan_type === "number") {
+      const vlanId = parseInt(ep.vlan_value, 10);
+      if (isNaN(vlanId) || vlanId < 1 || vlanId > 4095) {
+        return "VLAN ID must be between 1 and 4095";
+      }
+      const port = availablePorts.find((p) => p.id === ep.port_id);
+      const range = port?.vlan_range;
+      if (range && range.length >= 2 && (vlanId < range[0] || vlanId > range[1])) {
+        return `VLAN must be within available range: ${range[0]}-${range[1]}`;
+      }
+    } else if (ep.vlan_type === "VLAN range") {
+      const parts = ep.vlan_value.split(":");
+      const start = parseInt(parts[0], 10);
+      const end = parseInt(parts[1], 10);
+      if (parts.length !== 2 || isNaN(start) || isNaN(end)) {
+        return "Invalid format. Use start:end (e.g., 50:55)";
+      }
+      if (start < 1 || end > 4095) {
+        return "VLAN range must be between 1 and 4095";
+      }
+      if (start > end) {
+        return "Start VLAN must be less than or equal to end VLAN";
+      }
+      const port = availablePorts.find((p) => p.id === ep.port_id);
+      const range = port?.vlan_range;
+      if (range && range.length >= 2 && (start < range[0] || end > range[1])) {
+        return `VLAN range must be within available range: ${range[0]}-${range[1]}`;
+      }
+    }
+    return null;
+  };
+
+  const hasAnyVlanError = watchedEndpoints.some((_, index) => getVlanValidationError(index) !== null);
 
   const getVlanRangeForPort = (portId: string) => {
     const port = availablePorts.find((p) => p.id === portId);
@@ -512,7 +572,12 @@ export function NewL2VPNModal({
                       {...register(`endpoints.${index}.vlan_value`)}
                       className="border-[rgb(120,176,219)] dark:border-[rgb(100,150,200)] focus:border-[rgb(50,135,200)] dark:focus:border-[rgb(100,180,255)] focus:ring-2 focus:ring-[rgb(50,135,200)]/30 dark:focus:ring-[rgb(100,180,255)]/30 bg-white dark:bg-gray-800 transition-all text-base"
                     />
-                    {errors.endpoints?.[index]?.vlan_value && (
+                    {getVlanValidationError(index) ? (
+                      <p className="text-red-500 dark:text-red-400 text-sm font-medium mt-1 flex items-center gap-1">
+                        <span>⚠️</span>{" "}
+                        {getVlanValidationError(index)}
+                      </p>
+                    ) : errors.endpoints?.[index]?.vlan_value && (
                       <p className="text-red-500 dark:text-red-400 text-sm font-medium mt-1 flex items-center gap-1">
                         <span>⚠️</span>{" "}
                         {errors.endpoints[index]?.vlan_value?.message}
@@ -544,27 +609,29 @@ export function NewL2VPNModal({
 
         {/* Start and End Time */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="space-y-2 p-5 bg-gradient-to-br from-[rgb(248,251,255)] to-[rgb(240,247,255)] dark:from-blue-500/10 dark:to-blue-500/5 rounded-xl border-2 border-[rgb(200,220,240)] dark:border-blue-500/20 shadow-sm hover:shadow-md transition-all duration-200">
+          <div className="space-y-2 p-5 bg-gradient-to-br from-[rgb(248,251,255)] to-[rgb(240,247,255)] dark:from-blue-500/10 dark:to-blue-500/5 rounded-xl border-2 border-[rgb(200,220,240)] dark:border-blue-500/20 shadow-sm hover:shadow-md transition-all duration-200 opacity-60">
             <Label className="text-[rgb(64,143,204)] dark:text-[rgb(150,200,255)] font-semibold text-sm">
               Start Time (optional)
             </Label>
             <Input
               type="date"
-              {...register("start_time")}
-              min={new Date().toISOString().split("T")[0]}
-              className="border-[rgb(120,176,219)] dark:border-[rgb(100,150,200)] focus:border-[rgb(50,135,200)] dark:focus:border-[rgb(100,180,255)] focus:ring-2 focus:ring-[rgb(50,135,200)]/30 dark:focus:ring-[rgb(100,180,255)]/30 bg-white dark:bg-gray-800 transition-all text-base"
+              disabled
+              placeholder="Coming Soon!"
+              className="border-[rgb(120,176,219)] dark:border-[rgb(100,150,200)] bg-white dark:bg-gray-800 text-base cursor-not-allowed"
             />
+            <p className="text-xs text-[rgb(64,143,204)] dark:text-[rgb(150,200,255)] italic">Coming Soon!</p>
           </div>
-          <div className="space-y-2 p-5 bg-gradient-to-br from-[rgb(248,251,255)] to-[rgb(240,247,255)] dark:from-blue-500/10 dark:to-blue-500/5 rounded-xl border-2 border-[rgb(200,220,240)] dark:border-blue-500/20 shadow-sm hover:shadow-md transition-all duration-200">
+          <div className="space-y-2 p-5 bg-gradient-to-br from-[rgb(248,251,255)] to-[rgb(240,247,255)] dark:from-blue-500/10 dark:to-blue-500/5 rounded-xl border-2 border-[rgb(200,220,240)] dark:border-blue-500/20 shadow-sm hover:shadow-md transition-all duration-200 opacity-60">
             <Label className="text-[rgb(64,143,204)] dark:text-[rgb(150,200,255)] font-semibold text-sm">
               End Time (optional)
             </Label>
             <Input
               type="date"
-              {...register("end_time")}
-              min={new Date().toISOString().split("T")[0]}
-              className="border-[rgb(120,176,219)] dark:border-[rgb(100,150,200)] focus:border-[rgb(50,135,200)] dark:focus:border-[rgb(100,180,255)] focus:ring-2 focus:ring-[rgb(50,135,200)]/30 dark:focus:ring-[rgb(100,180,255)]/30 bg-white dark:bg-gray-800 transition-all text-base"
+              disabled
+              placeholder="Coming Soon!"
+              className="border-[rgb(120,176,219)] dark:border-[rgb(100,150,200)] bg-white dark:bg-gray-800 text-base cursor-not-allowed"
             />
+            <p className="text-xs text-[rgb(64,143,204)] dark:text-[rgb(150,200,255)] italic">Coming Soon!</p>
           </div>
         </div>
 
@@ -592,10 +659,11 @@ export function NewL2VPNModal({
 
         {/* Advanced Options */}
         {showAdvanced && (
-          <div className="space-y-4 p-5 bg-gradient-to-br from-[rgb(248,251,255)] to-[rgb(240,247,255)] dark:from-blue-500/10 dark:to-blue-500/5 rounded-xl border-2 border-[rgb(200,220,240)] dark:border-blue-500/20 shadow-lg">
+          <div className="space-y-4 p-5 bg-gradient-to-br from-[rgb(248,251,255)] to-[rgb(240,247,255)] dark:from-blue-500/10 dark:to-blue-500/5 rounded-xl border-2 border-[rgb(200,220,240)] dark:border-blue-500/20 shadow-lg opacity-60">
             <h3 className="font-bold text-[rgb(50,135,200)] dark:text-[rgb(150,200,255)] text-lg mb-2 pb-2 border-b border-[rgb(200,220,240)] dark:border-blue-500/20">
               QoS Metrics
             </h3>
+            <p className="text-sm text-[rgb(64,143,204)] dark:text-[rgb(150,200,255)] italic">Coming Soon!</p>
 
             {/* Minimum Bandwidth */}
             <div className="space-y-2">
@@ -606,16 +674,13 @@ export function NewL2VPNModal({
                 <Input
                   type="number"
                   placeholder="0-100"
-                  {...register("min_bw", { valueAsNumber: true })}
-                  min="0"
-                  max="100"
-                  step="1"
-                  className="border-[rgb(120,176,219)] dark:border-[rgb(100,150,200)] focus:border-[rgb(50,135,200)] dark:focus:border-[rgb(100,180,255)] focus:ring-2 focus:ring-[rgb(50,135,200)]/30 dark:focus:ring-[rgb(100,180,255)]/30 bg-white dark:bg-gray-800 transition-all text-base"
+                  disabled
+                  className="border-[rgb(120,176,219)] dark:border-[rgb(100,150,200)] bg-white dark:bg-gray-800 text-base cursor-not-allowed"
                 />
-                <label className="flex items-center gap-1 text-sm text-[rgb(64,143,204)] dark:text-[rgb(150,200,255)] whitespace-nowrap cursor-pointer">
+                <label className="flex items-center gap-1 text-sm text-[rgb(64,143,204)] dark:text-[rgb(150,200,255)] whitespace-nowrap cursor-not-allowed">
                   <input
                     type="checkbox"
-                    {...register("min_bw_strict")}
+                    disabled
                   />
                   Strict
                 </label>
@@ -631,16 +696,13 @@ export function NewL2VPNModal({
                 <Input
                   type="number"
                   placeholder="0-1000"
-                  {...register("max_delay", { valueAsNumber: true })}
-                  min="0"
-                  max="1000"
-                  step="1"
-                  className="border-[rgb(120,176,219)] dark:border-[rgb(100,150,200)] focus:border-[rgb(50,135,200)] dark:focus:border-[rgb(100,180,255)] focus:ring-2 focus:ring-[rgb(50,135,200)]/30 dark:focus:ring-[rgb(100,180,255)]/30 bg-white dark:bg-gray-800 transition-all text-base"
+                  disabled
+                  className="border-[rgb(120,176,219)] dark:border-[rgb(100,150,200)] bg-white dark:bg-gray-800 text-base cursor-not-allowed"
                 />
-                <label className="flex items-center gap-1 text-sm text-[rgb(64,143,204)] dark:text-[rgb(150,200,255)] whitespace-nowrap cursor-pointer">
+                <label className="flex items-center gap-1 text-sm text-[rgb(64,143,204)] dark:text-[rgb(150,200,255)] whitespace-nowrap cursor-not-allowed">
                   <input
                     type="checkbox"
-                    {...register("max_delay_strict")}
+                    disabled
                   />
                   Strict
                 </label>
@@ -656,16 +718,13 @@ export function NewL2VPNModal({
                 <Input
                   type="number"
                   placeholder="0-100"
-                  {...register("max_number_oxps", { valueAsNumber: true })}
-                  min="0"
-                  max="100"
-                  step="1"
-                  className="border-[rgb(120,176,219)] dark:border-[rgb(100,150,200)] focus:border-[rgb(50,135,200)] dark:focus:border-[rgb(100,180,255)] focus:ring-2 focus:ring-[rgb(50,135,200)]/30 dark:focus:ring-[rgb(100,180,255)]/30 bg-white dark:bg-gray-800 transition-all text-base"
+                  disabled
+                  className="border-[rgb(120,176,219)] dark:border-[rgb(100,150,200)] bg-white dark:bg-gray-800 text-base cursor-not-allowed"
                 />
-                <label className="flex items-center gap-1 text-sm text-[rgb(64,143,204)] dark:text-[rgb(150,200,255)] whitespace-nowrap cursor-pointer">
+                <label className="flex items-center gap-1 text-sm text-[rgb(64,143,204)] dark:text-[rgb(150,200,255)] whitespace-nowrap cursor-not-allowed">
                   <input
                     type="checkbox"
-                    {...register("max_number_oxps_strict")}
+                    disabled
                   />
                   Strict
                 </label>
@@ -678,39 +737,13 @@ export function NewL2VPNModal({
                 <Label className="text-[rgb(64,143,204)] dark:text-[rgb(150,200,255)] font-semibold text-sm">
                   Notifications
                 </Label>
-                {notificationFields.length < 10 && (
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={() => appendNotification({ email: "" })}
-                    className="border-[rgb(120,176,219)] dark:border-[rgb(100,150,200)] text-[rgb(64,143,204)] dark:text-[rgb(150,200,255)] hover:bg-[rgb(236,244,250)] dark:hover:bg-blue-500/20 hover:border-[rgb(50,135,200)] dark:hover:border-[rgb(100,180,255)] transition-all shadow-sm hover:shadow-md"
-                  >
-                    <Plus className="w-4 h-4 mr-1" />
-                    Add Notification
-                  </Button>
-                )}
               </div>
-
-              {notificationFields.map((field, index) => (
-                <div key={field.id} className="flex items-center gap-2">
-                  <Input
-                    type="email"
-                    placeholder={`Notification Email ${index + 1} (optional)`}
-                    {...register(`notifications.${index}.email`)}
-                    className="border-[rgb(120,176,219)] dark:border-[rgb(100,150,200)] focus:border-[rgb(50,135,200)] dark:focus:border-[rgb(100,180,255)] focus:ring-2 focus:ring-[rgb(50,135,200)]/30 dark:focus:ring-[rgb(100,180,255)]/30 bg-white dark:bg-gray-800 transition-all text-base"
-                  />
-                  <Button
-                    type="button"
-                    variant="destructive"
-                    size="sm"
-                    onClick={() => removeNotification(index)}
-                    className="bg-red-500 hover:bg-red-600 dark:bg-red-600 dark:hover:bg-red-700 shadow-sm hover:shadow-md transition-all hover:scale-105 active:scale-95"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </Button>
-                </div>
-              ))}
+              <Input
+                type="email"
+                placeholder="Notification Email (optional)"
+                disabled
+                className="border-[rgb(120,176,219)] dark:border-[rgb(100,150,200)] bg-white dark:bg-gray-800 text-base cursor-not-allowed"
+              />
             </div>
           </div>
         )}
@@ -739,7 +772,7 @@ export function NewL2VPNModal({
 
             <Button
               type="submit"
-              disabled={isLoading}
+              disabled={isLoading || hasAnyVlanError}
               className="bg-[rgb(50,135,200)] hover:bg-[rgb(64,143,204)] dark:bg-[rgb(100,180,255)] dark:hover:bg-[rgb(120,200,255)] text-white px-8 shadow-lg hover:shadow-xl transition-all duration-200 font-semibold disabled:opacity-50 hover:scale-105 active:scale-95 ml-auto"
             >
               {isLoading ? (
@@ -776,7 +809,7 @@ export function NewL2VPNModal({
 
             <Button
               type="submit"
-              disabled={isLoading}
+              disabled={isLoading || hasAnyVlanError}
               className="bg-[rgb(50,135,200)] hover:bg-[rgb(64,143,204)] dark:bg-[rgb(100,180,255)] dark:hover:bg-[rgb(120,200,255)] text-white px-8 shadow-lg hover:shadow-xl transition-all duration-200 font-semibold disabled:opacity-50 hover:scale-105 active:scale-95"
             >
               {isLoading ? (
