@@ -47,6 +47,7 @@ import logoImage from "@/assets/images/no-background-logo 2.png";
 interface DashboardProps {
   onBack: () => void;
   onNavigateToTokens: () => void;
+  onNavigateToContactUs: () => void;
   onLogout?: () => void;
 }
 
@@ -343,6 +344,7 @@ function BlueTooltip({
 export function Dashboard({
   onBack,
   onNavigateToTokens,
+  onNavigateToContactUs,
   onLogout,
 }: DashboardProps) {
   const [tokens, setTokens] = useState<{
@@ -356,7 +358,6 @@ export function Dashboard({
     | "topologyStats"
     | "manageTokens"
     | "listL2VPNs"
-    | "contactUs"
     | null
   >(null);
   const [showNewL2VPNModal, setShowNewL2VPNModal] = useState(false);
@@ -1001,20 +1002,10 @@ export function Dashboard({
               {/* Contact Us Button */}
               <BlueTooltip title="Contact Us" placement="right">
                 <Button
-                  onClick={() => {
-                    if (selectedSection === "contactUs") {
-                      setSelectedSection(null);
-                    } else {
-                      setSelectedSection("contactUs");
-                    }
-                  }}
+                  onClick={onNavigateToContactUs}
                   variant="ghost"
                   size="sm"
-                  className={`w-full justify-center px-0 ${
-                    selectedSection === "contactUs"
-                      ? "bg-[rgb(236,244,250)] dark:bg-blue-500/20 border border-[rgb(64,143,204)] dark:border-blue-400/50"
-                      : ""
-                  } text-[rgb(50,135,200)] dark:text-blue-400 hover:bg-[rgb(236,244,250)] dark:hover:bg-blue-500/10 transition-all duration-200 hover:shadow-sm hover:translate-x-0.5`}
+                  className="w-full justify-center px-0 text-[rgb(50,135,200)] dark:text-blue-400 hover:bg-[rgb(236,244,250)] dark:hover:bg-blue-500/10 transition-all duration-200 hover:shadow-sm hover:translate-x-0.5"
                 >
                   <ContactIcon className="w-5 h-5" />
                 </Button>
@@ -1878,130 +1869,6 @@ export function Dashboard({
                       </div>
                     </div>
                   )}
-                </div>
-              )}
-              {selectedSection === "contactUs" && (
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between mb-4">
-                    <h2 className="text-xl font-bold text-[rgb(50,135,200)] dark:text-[rgb(100,180,255)]">
-                      Contact Us
-                    </h2>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => setSelectedSection(null)}
-                      className="h-8 w-8 p-0 text-[rgb(50,135,200)] dark:text-[rgb(100,180,255)] hover:bg-[rgb(236,244,250)] dark:hover:bg-blue-500/20"
-                    >
-                      <CloseIcon className="w-4 h-4" />
-                    </Button>
-                  </div>
-
-                  {/* Contact Information */}
-                  <div className="p-3 bg-gradient-to-br from-[rgb(248,251,255)] to-[rgb(240,247,255)] dark:from-blue-500/10 dark:to-blue-500/5 rounded-xl border-2 border-[rgb(200,220,240)] dark:border-blue-500/20 shadow-md space-y-1.5">
-                    <h3 className="text-sm font-semibold text-[rgb(64,143,204)] dark:text-[rgb(150,200,255)] uppercase tracking-wide">
-                      Get in Touch
-                    </h3>
-                    <div className="space-y-1">
-                      <p className="text-sm leading-none">
-                        <span className="font-medium text-foreground">Email: </span>
-                        <a href="mailto:sdx-support@renci.org" className="text-[rgb(50,135,200)] dark:text-[rgb(100,180,255)] hover:underline">sdx-support@renci.org</a>
-                      </p>
-                      <p className="text-sm leading-none">
-                        <span className="font-medium text-foreground">Website: </span>
-                        <a href="https://www.atlanticwave-sdx.net" target="_blank" rel="noopener noreferrer" className="text-[rgb(50,135,200)] dark:text-[rgb(100,180,255)] hover:underline">atlanticwave-sdx.net</a>
-                      </p>
-                      <p className="text-sm leading-none">
-                        <span className="font-medium text-foreground">GitHub: </span>
-                        <a href="https://github.com/atlanticwave-sdx" target="_blank" rel="noopener noreferrer" className="text-[rgb(50,135,200)] dark:text-[rgb(100,180,255)] hover:underline">atlanticwave-sdx</a>
-                      </p>
-                    </div>
-                  </div>
-
-                  {/* Feedback Form */}
-                  <div className="p-5 bg-gradient-to-br from-[rgb(248,251,255)] to-[rgb(240,247,255)] dark:from-blue-500/10 dark:to-blue-500/5 rounded-xl border-2 border-[rgb(200,220,240)] dark:border-blue-500/20 shadow-md space-y-4">
-                    <h3 className="text-sm font-semibold text-[rgb(64,143,204)] dark:text-[rgb(150,200,255)] uppercase tracking-wide">
-                      Send Feedback
-                    </h3>
-                    <form
-                      onSubmit={(e) => {
-                        e.preventDefault();
-                        const form = e.target as HTMLFormElement;
-                        const name = (
-                          form.elements.namedItem("name") as HTMLInputElement
-                        ).value;
-                        const email = (
-                          form.elements.namedItem("email") as HTMLInputElement
-                        ).value;
-                        const subject = (
-                          form.elements.namedItem("subject") as HTMLInputElement
-                        ).value;
-                        const message = (
-                          form.elements.namedItem(
-                            "message",
-                          ) as HTMLTextAreaElement
-                        ).value;
-                        const mailtoLink = `mailto:sdx-support@renci.org?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(`Name: ${name}\nEmail: ${email}\n\n${message}`)}`;
-                        window.open(mailtoLink, "_blank");
-                        toast.success("Opening your email client...");
-                      }}
-                      className="space-y-3"
-                    >
-                      <div className="flex flex-col gap-1">
-                        <label className="text-xs text-muted-foreground">
-                          Name
-                        </label>
-                        <input
-                          name="name"
-                          type="text"
-                          required
-                          className="w-full px-3 py-2 text-sm rounded-lg border-2 border-[rgb(200,220,240)] dark:border-blue-500/30 bg-white dark:bg-blue-500/5 focus:outline-none focus:border-[rgb(50,135,200)] dark:focus:border-blue-400 transition-colors"
-                          placeholder="Your name"
-                        />
-                      </div>
-                      <div className="flex flex-col gap-1">
-                        <label className="text-xs text-muted-foreground">
-                          Email
-                        </label>
-                        <input
-                          name="email"
-                          type="email"
-                          required
-                          className="w-full px-3 py-2 text-sm rounded-lg border-2 border-[rgb(200,220,240)] dark:border-blue-500/30 bg-white dark:bg-blue-500/5 focus:outline-none focus:border-[rgb(50,135,200)] dark:focus:border-blue-400 transition-colors"
-                          placeholder="your@email.com"
-                        />
-                      </div>
-                      <div className="flex flex-col gap-1">
-                        <label className="text-xs text-muted-foreground">
-                          Subject
-                        </label>
-                        <input
-                          name="subject"
-                          type="text"
-                          required
-                          className="w-full px-3 py-2 text-sm rounded-lg border-2 border-[rgb(200,220,240)] dark:border-blue-500/30 bg-white dark:bg-blue-500/5 focus:outline-none focus:border-[rgb(50,135,200)] dark:focus:border-blue-400 transition-colors"
-                          placeholder="Subject"
-                        />
-                      </div>
-                      <div className="flex flex-col gap-1">
-                        <label className="text-xs text-muted-foreground">
-                          Message
-                        </label>
-                        <textarea
-                          name="message"
-                          required
-                          rows={4}
-                          className="w-full px-3 py-2 text-sm rounded-lg border-2 border-[rgb(200,220,240)] dark:border-blue-500/30 bg-white dark:bg-blue-500/5 focus:outline-none focus:border-[rgb(50,135,200)] dark:focus:border-blue-400 transition-colors resize-none"
-                          placeholder="Your message or feedback..."
-                        />
-                      </div>
-                      <Button
-                        type="submit"
-                        className="w-full bg-[rgb(50,135,200)] hover:bg-[rgb(40,115,175)] text-white dark:bg-blue-600 dark:hover:bg-blue-700 transition-colors"
-                      >
-                        Send Feedback
-                      </Button>
-                    </form>
-                  </div>
                 </div>
               )}
             </div>

@@ -9,6 +9,7 @@ import { TokenPage } from "@/components/pages/TokenPage";
 import { Dashboard } from "@/components/pages/Dashboard";
 import { ORCIDCallbackPage } from "@/components/pages/ORCIDCallbackPage";
 import { CILogonCallbackPage } from "@/components/pages/CILogonCallbackPage";
+import { ContactUsPage } from "@/components/pages/ContactUsPage";
 import { TokenExpiryNotification } from "@/components/TokenExpiryNotification";
 import { config } from "@/lib/config";
 import { Provider } from "@/lib/config";
@@ -22,6 +23,7 @@ type Page =
   | "email-validation"
   | "token"
   | "dashboard"
+  | "contact-us"
   | "orcid-callback"
   | "cilogon-callback";
 
@@ -77,6 +79,8 @@ function App() {
         // Redirect token route to dashboard (token management is now a modal)
         setCurrentPage("dashboard");
         window.history.replaceState({}, "", `${basePath}/dashboard`);
+      } else if (path === `${basePath}/contact-us`) {
+        setCurrentPage("contact-us");
       } else if (path === `${basePath}/dashboard`) {
         // Check authentication before allowing dashboard access
         console.log("Dashboard accessed, checking authentication...");
@@ -174,6 +178,9 @@ function App() {
       case "dashboard":
         path = `${basePath}/dashboard`;
         break;
+      case "contact-us":
+        path = `${basePath}/contact-us`;
+        break;
       case "landing":
         path = basePath || "/";
         break;
@@ -253,6 +260,10 @@ function App() {
     navigateTo("token");
   };
 
+  const handleNavigateToContactUs = () => {
+    navigateTo("contact-us");
+  };
+
   const handleLogout = () => {
     toast.success("Logging out...");
     setSelectedProvider(undefined);
@@ -315,6 +326,7 @@ function App() {
           <Dashboard
             onBack={handleBackToLanding}
             onNavigateToTokens={handleNavigateToTokens}
+            onNavigateToContactUs={handleNavigateToContactUs}
             onLogout={handleLogout}
           />
         )}
@@ -336,6 +348,10 @@ function App() {
           onLogin={handleLogin}
           onNavigateToDashboard={handleNavigateToDashboard}
         />
+      )}
+
+      {currentPage === "contact-us" && (
+        <ContactUsPage onBack={() => window.history.back()} />
       )}
 
       {currentPage === "orcid-callback" && (
