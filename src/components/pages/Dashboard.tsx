@@ -48,6 +48,7 @@ interface DashboardProps {
   onBack: () => void;
   onNavigateToTokens: () => void;
   onNavigateToContactUs: () => void;
+  onNavigateToL2VPNList: () => void;
   onLogout?: () => void;
 }
 
@@ -345,6 +346,7 @@ export function Dashboard({
   onBack,
   onNavigateToTokens,
   onNavigateToContactUs,
+  onNavigateToL2VPNList,
   onLogout,
 }: DashboardProps) {
   const [tokens, setTokens] = useState<{
@@ -947,7 +949,7 @@ export function Dashboard({
                   disabled={!hasValidTokens}
                 >
                   {isLoadingL2VPNs ? (
-                    <span className="text-base">⏳</span>
+                    <span className="text-base">&#9203;</span>
                   ) : (
                     <ListIcon className="w-5 h-5" />
                   )}
@@ -1213,10 +1215,10 @@ export function Dashboard({
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => setL2vpnTwoColumns((prev) => !prev)}
+                        onClick={onNavigateToL2VPNList}
                         disabled={l2vpns.length === 0}
                         className="h-8 px-3 text-[rgb(50,135,200)] dark:text-[rgb(100,180,255)] hover:bg-[rgb(236,244,250)] dark:hover:bg-blue-500/20 disabled:opacity-50"
-                        title={l2vpnTwoColumns ? "Single column" : "Two columns"}
+                        title="Expand to full page"
                       >
                         <ExpandAllIcon className="w-4 h-4" />
                       </Button>
@@ -1293,7 +1295,7 @@ export function Dashboard({
                           </Button>
                         </div>
                       )}
-                      <div className={l2vpnTwoColumns ? "grid grid-cols-2 gap-px bg-background" : "divide-y divide-[rgb(200,220,240)] dark:divide-blue-500/20"}>
+                      <div className="divide-y divide-[rgb(200,220,240)] dark:divide-blue-500/20">
                         {(editingL2VPNId
                           ? l2vpns.filter(
                               (l) =>
@@ -1311,12 +1313,11 @@ export function Dashboard({
                           return (
                             <div
                               key={l2vpnId || index}
-                              className={`p-4 space-y-3 bg-background bg-gradient-to-br from-[rgb(248,251,255)] to-[rgb(240,247,255)] dark:from-blue-500/10 dark:to-blue-500/5 hover:from-[rgb(240,247,255)] hover:to-[rgb(232,243,255)] dark:hover:from-blue-500/15 dark:hover:to-blue-500/10 transition-colors${isEditing && l2vpnTwoColumns ? " col-span-2" : ""}`}
+                              className={`p-4 space-y-3 bg-background bg-gradient-to-br from-[rgb(248,251,255)] to-[rgb(240,247,255)] dark:from-blue-500/10 dark:to-blue-500/5 hover:from-[rgb(240,247,255)] hover:to-[rgb(232,243,255)] dark:hover:from-blue-500/15 dark:hover:to-blue-500/10 transition-colors`}
                             >
                               {isEditing && editFormData ? (
                                 <>
                                   {/* Edit Mode */}
-                                  {/* Name */}
                                   <div className="flex flex-col gap-1">
                                     <label className="text-xs font-semibold text-[rgb(64,143,204)] dark:text-[rgb(150,200,255)] uppercase tracking-wide">
                                       Name
@@ -1334,7 +1335,6 @@ export function Dashboard({
                                     />
                                   </div>
 
-                                  {/* Description */}
                                   <div className="flex flex-col gap-1">
                                     <label className="text-xs font-semibold text-[rgb(64,143,204)] dark:text-[rgb(150,200,255)] uppercase tracking-wide">
                                       Description
@@ -1352,7 +1352,6 @@ export function Dashboard({
                                     />
                                   </div>
 
-                                  {/* Endpoints */}
                                   <div className="flex flex-col gap-1">
                                     <label className="text-xs font-semibold text-[rgb(64,143,204)] dark:text-[rgb(150,200,255)] uppercase tracking-wide">
                                       Endpoints
@@ -1395,7 +1394,6 @@ export function Dashboard({
                                                   {port.id}
                                                 </option>
                                               ))}
-                                              {/* Keep current value if not in port list */}
                                               {ep.port_id &&
                                                 !extractAllPorts().find(
                                                   (p) => p.id === ep.port_id,
@@ -1479,7 +1477,6 @@ export function Dashboard({
                                       QoS Metrics
                                     </summary>
                                     <div className="mt-2 flex flex-col gap-3 pl-2">
-                                      {/* Min Bandwidth */}
                                       <div className="flex flex-col gap-1">
                                         <label className="text-xs text-muted-foreground">
                                           Min Bandwidth
@@ -1532,7 +1529,6 @@ export function Dashboard({
                                           </label>
                                         </div>
                                       </div>
-                                      {/* Max Delay */}
                                       <div className="flex flex-col gap-1">
                                         <label className="text-xs text-muted-foreground">
                                           Max Delay
@@ -1585,7 +1581,6 @@ export function Dashboard({
                                           </label>
                                         </div>
                                       </div>
-                                      {/* Max OXPs */}
                                       <div className="flex flex-col gap-1">
                                         <label className="text-xs text-muted-foreground">
                                           Max OXPs
@@ -1680,7 +1675,6 @@ export function Dashboard({
                               ) : (
                                 <>
                                   {/* Read-Only Mode */}
-                                  {/* Header Row - always visible */}
                                   <div
                                     className="flex items-center justify-between cursor-pointer"
                                     onClick={() => {
@@ -1741,7 +1735,6 @@ export function Dashboard({
                                   {/* Expanded Details */}
                                   {expandedL2VPNs.has(l2vpnId!) && (
                                     <div className="space-y-3 pt-2">
-                                      {/* Status */}
                                       <div className="flex flex-col gap-1">
                                         <span className="text-xs font-semibold text-[rgb(64,143,204)] dark:text-[rgb(150,200,255)] uppercase tracking-wide">
                                           Status
@@ -1757,7 +1750,6 @@ export function Dashboard({
                                         </span>
                                       </div>
 
-                                      {/* ID */}
                                       <div className="flex flex-col gap-1">
                                         <span className="text-xs font-semibold text-[rgb(64,143,204)] dark:text-[rgb(150,200,255)] uppercase tracking-wide">
                                           ID
@@ -1767,7 +1759,6 @@ export function Dashboard({
                                         </span>
                                       </div>
 
-                                      {/* Description */}
                                       {l2vpn.description && (
                                         <div className="flex flex-col gap-1">
                                           <span className="text-xs font-semibold text-[rgb(64,143,204)] dark:text-[rgb(150,200,255)] uppercase tracking-wide">
@@ -1779,7 +1770,6 @@ export function Dashboard({
                                         </div>
                                       )}
 
-                                      {/* Endpoints */}
                                       <div className="flex flex-col gap-1">
                                         <span className="text-xs font-semibold text-[rgb(64,143,204)] dark:text-[rgb(150,200,255)] uppercase tracking-wide">
                                           Endpoints
@@ -1818,7 +1808,6 @@ export function Dashboard({
                                         </div>
                                       </div>
 
-                                      {/* QoS Metrics */}
                                       {l2vpn.qos_metrics && (
                                         <div className="flex flex-col gap-1">
                                           <span className="text-xs font-semibold text-[rgb(64,143,204)] dark:text-[rgb(150,200,255)] uppercase tracking-wide">

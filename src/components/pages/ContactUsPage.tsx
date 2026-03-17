@@ -12,20 +12,15 @@ export function ContactUsPage({ onBack }: ContactUsPageProps) {
       {/* Header */}
       <header className="bg-white dark:bg-gray-900 border-b border-[rgb(200,220,240)] dark:border-gray-700 shadow-sm">
         <div className="max-w-4xl mx-auto px-6 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <button onClick={onBack} className="text-[rgb(50,135,200)] hover:text-[rgb(40,115,175)] transition-colors">
-              <ArrowLeft className="w-6 h-6" />
-            </button>
-            <h1 className="text-xl font-bold text-[rgb(50,135,200)] dark:text-[rgb(100,180,255)]">
-              Contact Us
-            </h1>
-          </div>
+          <button onClick={onBack} className="text-[rgb(50,135,200)] hover:text-[rgb(40,115,175)] transition-colors">
+            <ArrowLeft className="w-6 h-6" />
+          </button>
         </div>
       </header>
 
       {/* Content */}
       <main className="max-w-4xl mx-auto px-6 py-10">
-        <div className="mb-8">
+        <div className="mb-8 text-center">
           <h2 className="text-2xl font-bold text-[rgb(50,135,200)] dark:text-[rgb(100,180,255)]">
             Get in Touch
           </h2>
@@ -34,10 +29,9 @@ export function ContactUsPage({ onBack }: ContactUsPageProps) {
           </p>
         </div>
 
-        <div className="grid md:grid-cols-2 gap-8">
+        <div className="space-y-8 max-w-2xl mx-auto">
           {/* Contact Information */}
-          <div className="space-y-6">
-            <div className="p-6 bg-white dark:bg-gray-800 rounded-xl border-2 border-[rgb(200,220,240)] dark:border-blue-500/20 shadow-md space-y-4">
+          <div className="p-6 bg-white dark:bg-gray-800 rounded-xl border-2 border-[rgb(200,220,240)] dark:border-blue-500/20 shadow-md space-y-4">
               <h3 className="text-base font-semibold text-[rgb(64,143,204)] dark:text-[rgb(150,200,255)] uppercase tracking-wide">
                 Contact Information
               </h3>
@@ -56,7 +50,6 @@ export function ContactUsPage({ onBack }: ContactUsPageProps) {
                 </p>
               </div>
             </div>
-          </div>
 
           {/* Feedback Form */}
           <div className="p-6 bg-white dark:bg-gray-800 rounded-xl border-2 border-[rgb(200,220,240)] dark:border-blue-500/20 shadow-md">
