@@ -156,3 +156,6 @@ dev.log
 
 # Local development
 .local
+
+CLAUDE.md
+.claude

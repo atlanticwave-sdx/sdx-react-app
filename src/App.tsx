@@ -9,6 +9,8 @@ import { TokenPage } from "@/components/pages/TokenPage";
 import { Dashboard } from "@/components/pages/Dashboard";
 import { ORCIDCallbackPage } from "@/components/pages/ORCIDCallbackPage";
 import { CILogonCallbackPage } from "@/components/pages/CILogonCallbackPage";
+import { ContactUsPage } from "@/components/pages/ContactUsPage";
+import { L2VPNListPage } from "@/components/pages/L2VPNListPage";
 import { TokenExpiryNotification } from "@/components/TokenExpiryNotification";
 import { config } from "@/lib/config";
 import { Provider } from "@/lib/config";
@@ -22,6 +24,8 @@ type Page =
   | "email-validation"
   | "token"
   | "dashboard"
+  | "contact-us"
+  | "l2vpn-list"
   | "orcid-callback"
   | "cilogon-callback";
 
@@ -77,6 +81,10 @@ function App() {
         // Redirect token route to dashboard (token management is now a modal)
         setCurrentPage("dashboard");
         window.history.replaceState({}, "", `${basePath}/dashboard`);
+      } else if (path === `${basePath}/contact-us`) {
+        setCurrentPage("contact-us");
+      } else if (path === `${basePath}/l2vpn-list`) {
+        setCurrentPage("l2vpn-list");
       } else if (path === `${basePath}/dashboard`) {
         // Check authentication before allowing dashboard access
         console.log("Dashboard accessed, checking authentication...");
@@ -174,6 +182,12 @@ function App() {
       case "dashboard":
         path = `${basePath}/dashboard`;
         break;
+      case "contact-us":
+        path = `${basePath}/contact-us`;
+        break;
+      case "l2vpn-list":
+        path = `${basePath}/l2vpn-list`;
+        break;
       case "landing":
         path = basePath || "/";
         break;
@@ -253,6 +267,14 @@ function App() {
     navigateTo("token");
   };
 
+  const handleNavigateToContactUs = () => {
+    navigateTo("contact-us");
+  };
+
+  const handleNavigateToL2VPNList = () => {
+    navigateTo("l2vpn-list");
+  };
+
   const handleLogout = () => {
     toast.success("Logging out...");
     setSelectedProvider(undefined);
@@ -315,6 +337,8 @@ function App() {
           <Dashboard
             onBack={handleBackToLanding}
             onNavigateToTokens={handleNavigateToTokens}
+            onNavigateToContactUs={handleNavigateToContactUs}
+            onNavigateToL2VPNList={handleNavigateToL2VPNList}
             onLogout={handleLogout}
           />
         )}
@@ -336,6 +360,14 @@ function App() {
           onLogin={handleLogin}
           onNavigateToDashboard={handleNavigateToDashboard}
         />
+      )}
+
+      {currentPage === "contact-us" && (
+        <ContactUsPage onBack={() => window.history.back()} />
+      )}
+
+      {currentPage === "l2vpn-list" && (
+        <L2VPNListPage onBack={() => window.history.back()} />
       )}
 
       {currentPage === "orcid-callback" && (

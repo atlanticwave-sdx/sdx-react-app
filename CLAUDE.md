@@ -41,6 +41,7 @@ npm run preview
 - **Path Alias**: `@/` maps to `src/` directory
 
 **Key Directories**:
+
 - `src/components/pages/` - Page components (Dashboard, LandingPage, LoginPage, etc.)
 - `src/components/ui/` - shadcn/ui components (Radix UI primitives)
 - `src/lib/` - Core services and utilities:
@@ -79,12 +80,14 @@ Located in `/backend/` with its own package.json.
 ## Environment Variables
 
 Frontend (`.env`):
+
 ```
 VITE_RECAPTCHA_SITE_KEY=...
 VITE_API_BASE=http://localhost:3002
 ```
 
 Backend (`backend/.env`):
+
 ```
 PORT=3002
 SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS, SMTP_EMAIL
@@ -105,7 +108,7 @@ SDX_API_BASE_URL=http://localhost:6098
 
 ```bash
 # Build and start all services
-docker-compose up --build
+docker-compose up --build -d
 
 # Run in background
 docker-compose up -d
@@ -122,6 +125,7 @@ docker-compose build backend
 ```
 
 **Container Architecture**:
+
 - `frontend`: Nginx serving static React build (port 80)
 - `backend`: Node.js Express server (port 3004)
 - Nginx proxies `/api/*` and `/oauth/*` requests to backend
