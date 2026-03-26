@@ -55,69 +55,56 @@ export class CILogonProvider {
     return base64url;
   }
 
-  private async getAuthUrl(state: string, codeVerifier: string): Promise<string> {
-    const codeChallenge = await this.generateCodeChallenge(codeVerifier);
-    
-    // Use the redirect URI from config
+  private getAuthUrl(state: string): string {
     const redirectUri = config.cilogon.redirectUri;
-    
+
     console.log('Building CILogon auth URL with config redirect URI:', redirectUri);
     console.log('Client ID from config:', config.cilogon.clientId);
-    
-    // Build URL manually using config values
+
     const params = [
       `response_type=code`,
       `client_id=${encodeURIComponent(config.cilogon.clientId)}`,
       `redirect_uri=${encodeURIComponent(redirectUri)}`,
       `scope=${encodeURIComponent(config.cilogon.scope)}`,
       `state=${encodeURIComponent(state)}`,
-      `code_challenge=${encodeURIComponent(codeChallenge)}`,
-      `code_challenge_method=S256`
     ];
-    
+
     const authUrlString = `https://cilogon.org/authorize?${params.join('&')}`;
-    
+
     console.log('Final CILogon auth URL:', authUrlString);
-    console.log('Extracted redirect_uri from URL:', decodeURIComponent(authUrlString.match(/redirect_uri=([^&]+)/)?.[1] || ''));
-    
+
     return authUrlString;
   }
 
-  async exchangeCodeForToken(code: string, state: string, codeVerifier: string): Promise<TokenData> {
+  async exchangeCodeForToken(code: string, state: string): Promise<TokenData> {
     let storedState = sessionStorage.getItem('cilogon_state');
-    let storedVerifier = codeVerifier;
-    
+
     // If sessionStorage is empty, try to recover from localStorage backup
     if (!storedState) {
       try {
         const backup = localStorage.getItem('cilogon_state_backup');
         if (backup) {
           const parsed = JSON.parse(backup);
-          // Only use backup if it's less than 10 minutes old
           if (Date.now() - parsed.timestamp < 600000) {
             storedState = parsed.state;
-            storedVerifier = parsed.codeVerifier;
             console.log('Recovered state from localStorage backup');
-          } else {
-            console.log('Backup state too old, ignoring');
           }
         }
       } catch (e) {
         console.warn('Failed to recover state from backup:', e);
       }
     }
-    
+
     console.log('State validation:', { receivedState: state, storedState, match: state === storedState });
-    
+
     if (!state) {
       throw new Error('Missing state parameter');
     }
-    
+
     if (!storedState) {
-      console.warn('No stored state found in sessionStorage or backup. This might be due to browser security or a new session.');
-      // Don't fail completely - allow authentication to proceed if we have code and verifier
-      if (!code || !storedVerifier) {
-        throw new Error('Missing required authentication parameters (state, code, or verifier)');
+      console.warn('No stored state found. This might be due to browser security or a new session.');
+      if (!code) {
+        throw new Error('Missing required authentication parameters (state or code)');
       }
     } else if (state !== storedState) {
       console.error(`State mismatch: received "${state}", expected "${storedState}"`);
@@ -125,20 +112,19 @@ export class CILogonProvider {
     }
 
     // Clean up stored values after validation
-    if (sessionStorage.getItem('cilogon_state')) {
-      sessionStorage.removeItem('cilogon_state');
-    }
-    if (sessionStorage.getItem('cilogon_code_verifier')) {
-      sessionStorage.removeItem('cilogon_code_verifier');
-    }
+    sessionStorage.removeItem('cilogon_state');
     localStorage.removeItem('cilogon_state_backup');
 
-    // Use the same redirect URI from config that was used in the authorization request
     const redirectUri = config.cilogon.redirectUri;
 
-    // Prepare token exchange request with PKCE using exact format required
-    // CRITICAL: code_verifier should NOT be URL encoded since it's already base64url
-    const body = `grant_type=authorization_code&code=${encodeURIComponent(code)}&redirect_uri=${encodeURIComponent(redirectUri)}&client_id=${encodeURIComponent(config.cilogon.clientId)}&code_verifier=${codeVerifier}`;
+    // Use client_secret flow (confidential client, no PKCE)
+    const body = new URLSearchParams({
+      grant_type: 'authorization_code',
+      code,
+      redirect_uri: redirectUri,
+      client_id: config.cilogon.clientId,
+      client_secret: config.cilogon.clientSecret,
+    }).toString();
 
     try {
       console.log('Token exchange using redirect_uri:', redirectUri);
@@ -182,14 +168,11 @@ export class CILogonProvider {
 
   async startAuthenticationPopup(): Promise<TokenData> {
     const state = this.generateState();
-    const codeVerifier = this.generateCodeVerifier();
-    
-    // Store both in sessionStorage and localStorage as backup
+
     sessionStorage.setItem('cilogon_state', state);
-    sessionStorage.setItem('cilogon_code_verifier', codeVerifier);
-    localStorage.setItem('cilogon_state_backup', JSON.stringify({ state, codeVerifier, timestamp: Date.now() }));
-    
-    const authUrl = await this.getAuthUrl(state, codeVerifier);
+    localStorage.setItem('cilogon_state_backup', JSON.stringify({ state, timestamp: Date.now() }));
+
+    const authUrl = this.getAuthUrl(state);
     
     console.log('Opening CILogon authentication window...');
     console.log('Stored state:', state);
@@ -227,38 +210,10 @@ export class CILogonProvider {
           clearInterval(checkClosed);
           clearInterval(fallbackCheck);
           popup.close();
-          
+
           const { code, state: returnedState } = event.data;
-          let storedCodeVerifier = sessionStorage.getItem('cilogon_code_verifier');
-          
-          // Try to recover from backup if missing
-          if (!storedCodeVerifier) {
-            try {
-              const backup = localStorage.getItem('cilogon_state_backup');
-              if (backup) {
-                const parsed = JSON.parse(backup);
-                if (Date.now() - parsed.timestamp < 600000) {
-                  storedCodeVerifier = parsed.codeVerifier;
-                  console.log('Recovered code verifier from backup');
-                }
-              }
-            } catch (e) {
-              console.warn('Failed to recover code verifier from backup:', e);
-            }
-          }
-          
-          if (!storedCodeVerifier) {
-            reject(new Error('Code verifier not found'));
-            return;
-          }
-          
-          console.log('Attempting token exchange with:', { 
-            code: code?.substring(0, 10) + '...', 
-            state: returnedState, 
-            hasCodeVerifier: !!storedCodeVerifier 
-          });
-          
-          this.exchangeCodeForToken(code, returnedState, storedCodeVerifier)
+
+          this.exchangeCodeForToken(code, returnedState)
             .then(resolve)
             .catch((error) => {
               console.error('Token exchange failed in popup handler:', error);
@@ -291,37 +246,8 @@ export class CILogonProvider {
               
               if (result.type === 'CILOGON_AUTH_SUCCESS') {
                 console.log('Processing stored successful auth result');
-                let storedCodeVerifier = sessionStorage.getItem('cilogon_code_verifier');
-                
-                // Try to recover from backup if missing
-                if (!storedCodeVerifier) {
-                  try {
-                    const backup = localStorage.getItem('cilogon_state_backup');
-                    if (backup) {
-                      const parsed = JSON.parse(backup);
-                      if (Date.now() - parsed.timestamp < 600000) {
-                        storedCodeVerifier = parsed.codeVerifier;
-                        console.log('Recovered code verifier from backup for localStorage fallback');
-                      }
-                    }
-                  } catch (e) {
-                    console.warn('Failed to recover code verifier from backup:', e);
-                  }
-                }
-                
-                if (!storedCodeVerifier) {
-                  console.error('Code verifier missing from sessionStorage');
-                  reject(new Error('Code verifier not found'));
-                  return;
-                }
-                
-                console.log('Attempting token exchange with stored result:', {
-                  hasCode: !!result.code,
-                  hasState: !!result.state,
-                  hasVerifier: !!storedCodeVerifier
-                });
-                
-                this.exchangeCodeForToken(result.code, result.state, storedCodeVerifier)
+
+                this.exchangeCodeForToken(result.code, result.state)
                   .then((tokenData) => {
                     console.log('Token exchange successful from localStorage fallback:', tokenData);
                     resolve(tokenData);
@@ -358,31 +284,8 @@ export class CILogonProvider {
                   window.removeEventListener('message', messageHandler);
                   clearInterval(checkClosed);
                   clearInterval(fallbackCheck);
-                  
-                  const storedCodeVerifier = sessionStorage.getItem('cilogon_code_verifier');
-                  if (!storedCodeVerifier) {
-                    // Try backup recovery
-                    try {
-                      const backup = localStorage.getItem('cilogon_state_backup');
-                      if (backup) {
-                        const parsed = JSON.parse(backup);
-                        if (Date.now() - parsed.timestamp < 600000) {
-                          const recoveredVerifier = parsed.codeVerifier;
-                          this.exchangeCodeForToken(result.code, result.state, recoveredVerifier)
-                            .then(resolve)
-                            .catch(reject);
-                          return;
-                        }
-                      }
-                    } catch (e) {
-                      console.warn('Failed to recover from backup in popup closed handler:', e);
-                    }
-                    
-                    reject(new Error('Code verifier not found'));
-                    return;
-                  }
-                  
-                  this.exchangeCodeForToken(result.code, result.state, storedCodeVerifier)
+
+                  this.exchangeCodeForToken(result.code, result.state)
                     .then(resolve)
                     .catch(reject);
                   return;
@@ -433,33 +336,23 @@ export class CILogonProvider {
       throw new Error('No authorization code received from CILogon');
     }
 
-    const storedCodeVerifier = sessionStorage.getItem('cilogon_code_verifier');
-    if (!storedCodeVerifier) {
-      throw new Error('Code verifier not found in session storage');
-    }
-
-    return await this.exchangeCodeForToken(code, state, storedCodeVerifier);
+    return await this.exchangeCodeForToken(code, state);
   }
 
   async startAuthentication(): Promise<void> {
     const state = this.generateState();
-    const codeVerifier = this.generateCodeVerifier();
-    
+
     sessionStorage.setItem('cilogon_state', state);
-    sessionStorage.setItem('cilogon_code_verifier', codeVerifier);
-    
-    const authUrl = await this.getAuthUrl(state, codeVerifier);
+
+    const authUrl = this.getAuthUrl(state);
     window.location.href = authUrl;
   }
 
-  // Keep static methods for backward compatibility
-  static async getAuthUrl(): Promise<string> {
+  static getAuthUrl(): string {
     const provider = new CILogonProvider();
     const state = provider.generateState();
-    const codeVerifier = provider.generateCodeVerifier();
     sessionStorage.setItem('cilogon_state', state);
-    sessionStorage.setItem('cilogon_code_verifier', codeVerifier);
-    return provider.getAuthUrl(state, codeVerifier);
+    return provider.getAuthUrl(state);
   }
 
   static handleCallback(): Promise<TokenData> {

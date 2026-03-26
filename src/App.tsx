@@ -1,5 +1,4 @@
 import { useState, useEffect } from "react";
-import { useKV } from "@github/spark/hooks";
 import { Toaster } from "@/components/ui/sonner";
 import { toast } from "sonner";
 import { LandingPage } from "@/components/pages/LandingPage";

@@ -1,5 +1,4 @@
-import { useEffect, useCallback, useRef } from 'react';
-import { useKV } from '@github/spark/hooks';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { TokenData, Provider } from '@/lib/types';
 import { TokenStorage } from '@/lib/token-storage';
 import { CILogonProvider } from '@/lib/providers/cilogon';
@@ -31,7 +30,7 @@ export function useTokenRefresh(config: TokenRefreshConfig = {}) {
     showNotifications = true
   } = config;
 
-  const [refreshStatus, setRefreshStatus] = useKV<TokenRefreshStatus>('token-refresh-status', {
+  const [refreshStatus, setRefreshStatus] = useState<TokenRefreshStatus>({
     isRefreshing: false,
     lastRefresh: { cilogon: 0, orcid: 0 },
     refreshErrors: { cilogon: null, orcid: null }
