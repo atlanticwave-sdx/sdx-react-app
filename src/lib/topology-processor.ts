@@ -1,5 +1,6 @@
 import { TopologyResponse, TopologyNode, TopologyLink } from "@/lib/types";
 import { LatLngExpression } from 'leaflet';
+import { getRegionCoordinates } from './region-coordinates';
 
 // Types matching the PHP processing structure
 export interface ProcessedSubNode {
@@ -7,12 +8,20 @@ export interface ProcessedSubNode {
   ports: any[];
   name: string;
   id: string;
+  // Individual node coordinates from API
+  latitude: number;
+  longitude: number;
 }
 
 export interface ProcessedLocationNode {
   sub_nodes: ProcessedSubNode[];
+  // First node's coordinates (for fallback/backward compatibility)
   latitude: number;
   longitude: number;
+  // Official region center coordinates for clustered view
+  regionLatitude: number;
+  regionLongitude: number;
+  regionCode: string;
 }
 
 export interface ProcessedLink {
@@ -87,30 +96,43 @@ export function processTopologyData(
   
   // Process nodes into hierarchical structure
   const nodesArray: Record<string, ProcessedLocationNode> = {};
-  
+
   for (const node of nodes) {
     const location = node.location;
     const ports = node.ports || []; // Ports are directly on the node
-    
+
     if (!location?.iso3166_2_lvl4) continue;
-    
+
     const locationKey = location.iso3166_2_lvl4;
-    
+    const nodeLat = location.latitude || 0;
+    const nodeLng = location.longitude || 0;
+
     if (!nodesArray[locationKey]) {
+      // Get official region center coordinates from lookup table
+      const regionCoords = getRegionCoordinates(locationKey, nodeLat, nodeLng);
+
       nodesArray[locationKey] = {
         sub_nodes: [],
-        latitude: location.latitude || 0,
-        longitude: location.longitude || 0
+        // Keep first node's coordinates for backward compatibility
+        latitude: nodeLat,
+        longitude: nodeLng,
+        // Region center coordinates for clustered view
+        regionLatitude: regionCoords.latitude,
+        regionLongitude: regionCoords.longitude,
+        regionCode: locationKey,
       };
     }
-    
+
     const tempArr: ProcessedSubNode = {
       sub_node_name: location.address || '',
       ports: ports,
       name: node.name,
-      id: node.id
+      id: node.id,
+      // Preserve individual node coordinates
+      latitude: nodeLat,
+      longitude: nodeLng,
     };
-    
+
     nodesArray[locationKey].sub_nodes.push(tempArr);
   }
   
@@ -127,7 +149,7 @@ export function processTopologyData(
     
     if (latlng.node && latlng2.node && latlng.latlngs && latlng2.latlngs) {
       const tempNode: ProcessedLink = {
-        link: `${latlng.node}-${latlng2.node}`,
+        link: `${latlng.node}::${latlng2.node}`,
         latlngs: {
           [link.id]: [latlng.latlngs, latlng2.latlngs]
         }

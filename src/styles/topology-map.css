@@ -96,6 +96,38 @@
   box-shadow: none !important;
 }
 
+/* Cluster marker styles */
+.custom-cluster-marker {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+.custom-cluster-marker > div {
+  transition: transform 0.2s ease;
+}
+
+.custom-cluster-marker:hover > div {
+  transform: scale(1.15);
+}
+
+/* Badge pulse animation for cluster markers */
+.custom-cluster-marker span {
+  animation: cluster-pulse 2s ease-in-out infinite;
+}
+
+@keyframes cluster-pulse {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.85;
+    transform: scale(1.05);
+  }
+}
+
 /* Map tiles styling for better theme integration */
 .map-tiles-light {
   filter: none;

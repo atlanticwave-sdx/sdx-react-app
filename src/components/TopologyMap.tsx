@@ -6,7 +6,9 @@ import {
   ProcessedTopology,
   ProcessedLocationNode,
   ProcessedLink,
+  ProcessedSubNode,
 } from "@/lib/topology-processor";
+import { getRegionName } from "@/lib/region-coordinates";
 import {
   Dialog,
   DialogContent,
@@ -23,6 +25,9 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { useTheme } from "@/components/ThemeProvider";
+
+// Zoom threshold for switching between clustered and individual views
+const ZOOM_THRESHOLD = 7;
 
 // Fix for default markers in React
 delete (L.Icon.Default.prototype as any)._getIconUrl;
@@ -57,6 +62,9 @@ export const TopologyMap: React.FC<TopologyMapProps> = ({
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<L.Map | null>(null);
   const tileLayerRef = useRef<L.TileLayer | null>(null);
+  const markersLayerRef = useRef<L.LayerGroup | null>(null);
+  const polylinesLayerRef = useRef<L.LayerGroup | null>(null);
+  const [currentZoom, setCurrentZoom] = useState<number>(3);
   const [portModalData, setPortModalData] = useState<PortModalData | null>(
     null
   );
@@ -109,11 +117,24 @@ export const TopologyMap: React.FC<TopologyMapProps> = ({
       className: tileConfig.className,
     }).addTo(map);
 
+    // Initialize layer groups for markers and polylines
+    const markersLayer = L.layerGroup().addTo(map);
+    const polylinesLayer = L.layerGroup().addTo(map);
+    markersLayerRef.current = markersLayer;
+    polylinesLayerRef.current = polylinesLayer;
+
+    // Add zoom event listener
+    map.on("zoomend", () => {
+      const newZoom = map.getZoom();
+      setCurrentZoom(newZoom);
+    });
+
     mapInstanceRef.current = map;
     tileLayerRef.current = tileLayer;
 
     return () => {
       if (mapInstanceRef.current) {
+        mapInstanceRef.current.off("zoomend");
         mapInstanceRef.current.remove();
         mapInstanceRef.current = null;
       }
@@ -146,94 +167,92 @@ export const TopologyMap: React.FC<TopologyMapProps> = ({
     });
   }, [theme]);
 
-  useEffect(() => {
-    if (!mapInstanceRef.current) return;
+  // Helper: Render clustered markers (zoomed out view)
+  const renderClusteredMarkers = (
+    markersLayer: L.LayerGroup,
+    nodesArray: Record<string, ProcessedLocationNode>,
+    isDark: boolean
+  ) => {
+    Object.entries(nodesArray).forEach(([locationKey, locationData]) => {
+      // Use REGION center coordinates for clustered view
+      const lat = locationData.regionLatitude;
+      const lng = locationData.regionLongitude;
+      const nodeCount = locationData.sub_nodes.length;
 
-    const map = mapInstanceRef.current;
-
-    console.log("TopologyMap rendering with data:", {
-      nodes: Object.keys(processedData.nodes_array).length,
-      links: processedData.latlng_array.length,
-      linksArray: Object.keys(linksArray).length,
-    });
-
-    // Clear existing layers
-    map.eachLayer((layer) => {
-      if (layer instanceof L.Marker || layer instanceof L.Polyline) {
-        layer.remove();
-      }
-    });
-
-    // Add markers for each location
-    const currentTheme = getCurrentTheme();
-    const isDark = currentTheme === "dark";
-
-    Object.entries(processedData.nodes_array).forEach(
-      ([locationKey, locationData]) => {
-        // Create custom marker icon based on theme
-        const markerIcon = L.divIcon({
-          className: "custom-node-marker",
-          html: `
+      // Create cluster marker with count badge
+      const markerIcon = L.divIcon({
+        className: "custom-cluster-marker",
+        html: `
           <div style="
+            position: relative;
             background-color: ${isDark ? "#3b82f6" : "#2563eb"};
-            width: 16px;
-            height: 16px;
+            width: 20px;
+            height: 20px;
             border-radius: 50%;
             border: 3px solid ${isDark ? "#1f2937" : "#ffffff"};
-            box-shadow: 0 2px 8px ${
-              isDark ? "rgba(0,0,0,0.8)" : "rgba(0,0,0,0.3)"
-            };
-          "></div>
-        `,
-          iconSize: [22, 22],
-          iconAnchor: [11, 11],
-        });
-
-        const marker = L.marker(
-          [locationData.latitude, locationData.longitude],
-          { icon: markerIcon }
-        );
-
-        // Create location names string
-        const locations = locationData.sub_nodes
-          .map((subNode) => subNode.sub_node_name)
-          .join(" ");
-
-        // Count ports down
-        let portsDown = 0;
-        locationData.sub_nodes.forEach((subNode) => {
-          subNode.ports.forEach((port) => {
-            if (
-              (port.status !== "up" && port.state === "enabled") ||
-              port.state === "disabled"
-            ) {
-              portsDown++;
+            box-shadow: 0 2px 8px ${isDark ? "rgba(0,0,0,0.8)" : "rgba(0,0,0,0.3)"};
+          ">
+            ${
+              nodeCount > 1
+                ? `<span style="
+                position: absolute;
+                top: -10px;
+                right: -10px;
+                background: #8b5cf6;
+                color: white;
+                font-size: 10px;
+                font-weight: bold;
+                padding: 2px 5px;
+                border-radius: 10px;
+                min-width: 16px;
+                text-align: center;
+              ">${nodeCount}</span>`
+                : ""
             }
-          });
+          </div>
+        `,
+        iconSize: [26, 26],
+        iconAnchor: [13, 13],
+      });
+
+      const marker = L.marker([lat, lng], { icon: markerIcon });
+
+      // Get region name and node names
+      const regionName = getRegionName(locationKey);
+      const nodeNames = locationData.sub_nodes
+        .map((subNode) => subNode.sub_node_name)
+        .filter((name) => name)
+        .join(", ");
+
+      // Tooltip shows region name
+      const tooltip = L.tooltip({
+        permanent: true,
+        className: isDark ? "leaflet-tooltip-dark" : "leaflet-tooltip-light",
+      }).setContent(nodeNames || regionName);
+      marker.bindTooltip(tooltip);
+
+      // Count ports down
+      let portsDown = 0;
+      locationData.sub_nodes.forEach((subNode) => {
+        subNode.ports.forEach((port) => {
+          if (
+            (port.status !== "up" && port.state === "enabled") ||
+            port.state === "disabled"
+          ) {
+            portsDown++;
+          }
         });
+      });
 
-        // Add permanent tooltip with theme-aware styling
-        const tooltip = L.tooltip({
-          permanent: true,
-          className: isDark ? "leaflet-tooltip-dark" : "leaflet-tooltip-light",
-        }).setContent(locations);
-        marker.bindTooltip(tooltip);
-
-        // Add click handler for port modal
-        marker.on("click", () => {
-          setPortModalData({ locationKey, locationData });
-        });
-
-        // Add popup for ports down with theme-aware styling
-        if (portsDown > 0) {
-          const popup = L.popup({
-            autoClose: false,
-            closeOnClick: false,
-            keepInView: true,
-            permanent: true,
-            interactive: true,
-            className: isDark ? "leaflet-popup-dark" : "leaflet-popup-light",
-          }).setContent(`
+      // Add popup for ports down
+      if (portsDown > 0) {
+        const popup = L.popup({
+          autoClose: false,
+          closeOnClick: false,
+          keepInView: true,
+          interactive: true,
+          className: isDark ? "leaflet-popup-dark" : "leaflet-popup-light",
+        }).setContent(`
           <div style="
             color: ${isDark ? "#f3f4f6" : "#1f2937"};
             background: ${isDark ? "#1f2937" : "#ffffff"};
@@ -243,53 +262,205 @@ export const TopologyMap: React.FC<TopologyMapProps> = ({
             ports down: <b style="color: #ef4444">${portsDown}</b>
           </div>
         `);
+        marker.bindPopup(popup);
+        marker.openPopup();
+      }
 
+      // Click handler opens the port modal
+      marker.on("click", () => {
+        setPortModalData({ locationKey, locationData });
+      });
+
+      markersLayer.addLayer(marker);
+      marker.openTooltip();
+    });
+  };
+
+  // Helper: Render individual node markers (zoomed in view)
+  const renderIndividualMarkers = (
+    markersLayer: L.LayerGroup,
+    nodesArray: Record<string, ProcessedLocationNode>,
+    isDark: boolean
+  ) => {
+    Object.entries(nodesArray).forEach(([locationKey, locationData]) => {
+      locationData.sub_nodes.forEach((subNode: ProcessedSubNode) => {
+        // Use INDIVIDUAL node coordinates
+        const lat = subNode.latitude;
+        const lng = subNode.longitude;
+
+        // Skip if no valid coordinates
+        if (!lat || !lng) return;
+
+        const markerIcon = L.divIcon({
+          className: "custom-node-marker",
+          html: `
+            <div style="
+              background-color: ${isDark ? "#3b82f6" : "#2563eb"};
+              width: 14px;
+              height: 14px;
+              border-radius: 50%;
+              border: 2px solid ${isDark ? "#1f2937" : "#ffffff"};
+              box-shadow: 0 2px 6px ${isDark ? "rgba(0,0,0,0.8)" : "rgba(0,0,0,0.3)"};
+            "></div>
+          `,
+          iconSize: [18, 18],
+          iconAnchor: [9, 9],
+        });
+
+        const marker = L.marker([lat, lng], { icon: markerIcon });
+
+        // Tooltip shows individual node/location name
+        const tooltip = L.tooltip({
+          permanent: true,
+          className: isDark ? "leaflet-tooltip-dark" : "leaflet-tooltip-light",
+        }).setContent(subNode.sub_node_name || subNode.name);
+        marker.bindTooltip(tooltip);
+
+        // Count ports down for this specific node
+        let portsDown = 0;
+        subNode.ports.forEach((port) => {
+          if (
+            (port.status !== "up" && port.state === "enabled") ||
+            port.state === "disabled"
+          ) {
+            portsDown++;
+          }
+        });
+
+        // Add popup for ports down
+        if (portsDown > 0) {
+          const popup = L.popup({
+            autoClose: false,
+            closeOnClick: false,
+            keepInView: true,
+            interactive: true,
+            className: isDark ? "leaflet-popup-dark" : "leaflet-popup-light",
+          }).setContent(`
+            <div style="
+              color: ${isDark ? "#f3f4f6" : "#1f2937"};
+              background: ${isDark ? "#1f2937" : "#ffffff"};
+              padding: 4px;
+              border-radius: 4px;
+            ">
+              ports down: <b style="color: #ef4444">${portsDown}</b>
+            </div>
+          `);
           marker.bindPopup(popup);
           marker.openPopup();
         }
 
-        marker.addTo(map);
-        marker.openTooltip();
-      }
-    );
-
-    // Add polylines for connections with theme-aware colors
-    processedData.latlng_array.forEach((linkData) => {
-      Object.entries(linkData.latlngs).forEach(([linkId, coordinates]) => {
-        const latlngs = coordinates as [number[], number[]];
-        const linkName = linkData.link;
-
-        // Check if any links are down for this polyline
-        const links = linksArray[linkName] || [];
-        const hasDownLinks = links.some((link) => link.status !== "up");
-
-        // Theme-aware colors
-        const colors = {
-          active: isDark ? "#60a5fa" : "#3b82f6", // Blue
-          down: isDark ? "#fbbf24" : "#f59e0b", // Yellow/Orange
-        };
-
-        const polyline = L.polyline(latlngs, {
-          color: hasDownLinks ? colors.down : colors.active,
-          weight: 3,
-          opacity: isDark ? 0.9 : 0.7,
-        })
-          .bindTooltip(linkName, {
-            className: isDark
-              ? "leaflet-tooltip-dark"
-              : "leaflet-tooltip-light",
-          })
-          .addTo(map);
-
-        // Add click handler for link modal
-        polyline.on("click", () => {
-          if (links.length > 0) {
-            setLinkModalData({ linkName, links });
-          }
+        // Click opens the region modal (showing all ports in the region)
+        marker.on("click", () => {
+          setPortModalData({ locationKey, locationData });
         });
+
+        markersLayer.addLayer(marker);
+        marker.openTooltip();
       });
     });
-  }, [processedData, linksArray]);
+  };
+
+  // Helper: Render links using region centers (clustered view)
+  const renderClusteredLinks = (
+    polylinesLayer: L.LayerGroup,
+    latlngArray: ProcessedLink[],
+    nodesArray: Record<string, ProcessedLocationNode>,
+    isDark: boolean
+  ) => {
+    // Track rendered links to avoid duplicates
+    const renderedLinks = new Set<string>();
+
+    latlngArray.forEach((linkData) => {
+      const [sourceKey, targetKey] = linkData.link.split("::");
+      const sourceNode = nodesArray[sourceKey];
+      const targetNode = nodesArray[targetKey];
+
+      if (!sourceNode || !targetNode) return;
+
+      // Create a unique key for this link pair
+      const linkPairKey = [sourceKey, targetKey].sort().join("-");
+      if (renderedLinks.has(linkPairKey)) return;
+      renderedLinks.add(linkPairKey);
+
+      // Use region centers for clustered view
+      const latlngs: [number, number][] = [
+        [sourceNode.regionLatitude, sourceNode.regionLongitude],
+        [targetNode.regionLatitude, targetNode.regionLongitude],
+      ];
+
+      const linkName = linkData.link;
+      const links = linksArray[linkName] || [];
+      const hasDownLinks = links.some((link) => link.status !== "up");
+
+      const colors = {
+        active: isDark ? "#60a5fa" : "#3b82f6",
+        down: isDark ? "#fbbf24" : "#f59e0b",
+      };
+
+      const polyline = L.polyline(latlngs, {
+        color: hasDownLinks ? colors.down : colors.active,
+        weight: 3,
+        opacity: isDark ? 0.9 : 0.7,
+      }).bindTooltip(linkName, {
+        className: isDark ? "leaflet-tooltip-dark" : "leaflet-tooltip-light",
+      });
+
+      polyline.on("click", () => {
+        if (links.length > 0) {
+          setLinkModalData({ linkName, links });
+        }
+      });
+
+      polylinesLayer.addLayer(polyline);
+    });
+  };
+
+  // Main rendering effect - responds to data and zoom changes
+  useEffect(() => {
+    if (
+      !mapInstanceRef.current ||
+      !markersLayerRef.current ||
+      !polylinesLayerRef.current
+    )
+      return;
+
+    const markersLayer = markersLayerRef.current;
+    const polylinesLayer = polylinesLayerRef.current;
+
+    // Clear existing layers
+    markersLayer.clearLayers();
+    polylinesLayer.clearLayers();
+
+    const currentTheme = getCurrentTheme();
+    const isDark = currentTheme === "dark";
+
+    // Determine view mode based on zoom
+    const isClusteredView = currentZoom < ZOOM_THRESHOLD;
+
+    console.log("TopologyMap rendering with data:", {
+      nodes: Object.keys(processedData.nodes_array).length,
+      links: processedData.latlng_array.length,
+      linksArray: Object.keys(linksArray).length,
+      zoom: currentZoom,
+      clustered: isClusteredView,
+    });
+
+    // Always render links using region centers (consistent across all zoom levels)
+    renderClusteredLinks(
+      polylinesLayer,
+      processedData.latlng_array,
+      processedData.nodes_array,
+      isDark
+    );
+
+    if (isClusteredView) {
+      // Zoomed out: show region markers
+      renderClusteredMarkers(markersLayer, processedData.nodes_array, isDark);
+    } else {
+      // Zoomed in: show individual node markers
+      renderIndividualMarkers(markersLayer, processedData.nodes_array, isDark);
+    }
+  }, [processedData, linksArray, currentZoom]);
 
   // Filter ports based on search term
   const filteredPorts = portModalData
@@ -370,6 +541,9 @@ export const TopologyMap: React.FC<TopologyMapProps> = ({
                       <TableHead className="font-semibold min-w-[150px]">
                         🖥️ Node
                       </TableHead>
+                      <TableHead className="font-semibold min-w-[150px]">
+                        🏢 Entities
+                      </TableHead>
                       <TableHead className="font-semibold min-w-[100px]">
                         ⚡ Type
                       </TableHead>
@@ -385,7 +559,7 @@ export const TopologyMap: React.FC<TopologyMapProps> = ({
                     {filteredPorts.length === 0 ? (
                       <TableRow>
                         <TableCell
-                          colSpan={7}
+                          colSpan={8}
                           className="text-center py-8 text-muted-foreground"
                         >
                           {portSearchTerm
@@ -399,19 +573,8 @@ export const TopologyMap: React.FC<TopologyMapProps> = ({
                           key={index}
                           className="hover:bg-muted/50 transition-colors"
                         >
-                          <TableCell>
-                            <div className="space-y-1">
-                              <div className="font-medium">
-                                {port.locationName}
-                              </div>
-                              {port.entities.length > 0 && (
-                                <div className="text-xs text-muted-foreground">
-                                  <span className="inline-flex items-center gap-1 px-2 py-1 bg-primary/10 text-primary rounded-md">
-                                    🏢 {port.entities.join(", ")}
-                                  </span>
-                                </div>
-                              )}
-                            </div>
+                          <TableCell className="font-medium">
+                            {port.locationName}
                           </TableCell>
                           <TableCell className="font-mono text-xs max-w-[200px]">
                             <div className="truncate" title={port.id}>
@@ -423,6 +586,22 @@ export const TopologyMap: React.FC<TopologyMapProps> = ({
                           </TableCell>
                           <TableCell className="text-sm">
                             {port.node?.replace("urn:sdx:node:", "") || ""}
+                          </TableCell>
+                          <TableCell>
+                            {port.entities.length > 0 ? (
+                              <div className="flex flex-wrap gap-1">
+                                {port.entities.map((entity: string, i: number) => (
+                                  <span
+                                    key={i}
+                                    className="inline-flex items-center px-2 py-1 rounded-md bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200 text-xs font-medium"
+                                  >
+                                    {entity}
+                                  </span>
+                                ))}
+                              </div>
+                            ) : (
+                              <span className="text-muted-foreground text-xs">-</span>
+                            )}
                           </TableCell>
                           <TableCell>
                             <span className="inline-flex items-center px-2 py-1 rounded-md bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 text-xs font-medium">
